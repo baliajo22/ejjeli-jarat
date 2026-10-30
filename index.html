@@ -1016,9 +1016,9 @@ const fmt=n=>Math.round(n).toLocaleString('hu-HU');
 const now=()=>Date.now();
 const ENERGY_MAX=100, ENERGY_MS=4000, ARENA_CD=15000, INV_MAX=12, SAVE_KEY='ejjeli-jarat-v1';
 // enemy strength per difficulty: easy −10%, medium −20%, hard −20% compared to the first prototype (.8 / 1 / 1.22)
-const DIFF_MULT=[.85, 1.08, 1.42];
+const DIFF_MULT=[0.799, 1.015, 1.335];
 // the first levels stay gentle (only the starter weapon), full strength from level 4
-const DIFF_START=[.75, .85, .97];
+const DIFF_START=[0.705, 0.799, 0.912];
 function questMult(d,lvl){ const t=Math.min(1,Math.max(0,(lvl-1)/3)); return DIFF_START[d]+(DIFF_MULT[d]-DIFF_START[d])*t; }
 const MISS=0, DUNGEON_CD=30000;
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1037,14 +1037,14 @@ function genItem(lvl, slot, cls, force){
   let name=pick(PREFIX[r])+' '+base.toLowerCase();
   const it={id:uid(),slot,rar:r,lvl,base,name,bonus:{},armor:0};
   // flatter curve: rarity adds ~10–15% per tier, more stats instead of huge numbers
-  const RM_=[1,1.12,1.25,1.5,1.8][r];
+  const RM_=[.8,1,1.15,1.4,1.7][r]; // grey is the cheap, weak tier
   if(slot==='fegyver'){ it.min=Math.round((lvl*1.6+2)*RM_); it.max=Math.round((lvl*2.4+4)*RM_)+rand(0,1); }
   else if(ARMOR_W[slot]){ it.armor=Math.round((lvl*ARMOR_W[slot]+2)*RM_)+rand(0,1); }
   const n = TRINKET.includes(slot) ? [1,1,2,2,3][r] : [1,1,1,2,3][r];
   const pool=STATS.map(x=>x[0]).sort(()=>Math.random()-.5);
   if(slot==='kabala'){ pool.splice(pool.indexOf('lck'),1); pool.unshift('lck'); }
   for(let i=0;i<n;i++) it.bonus[pool[i]]=Math.round((1.6+lvl*.7)*RM_)+rand(0,1);
-  it.price = Math.round((18+lvl*14)*[1,1.35,1.9,2.8,3.6][r]);
+  it.price = Math.round((18+lvl*14)*[.6,1,1.5,2.3,3.1][r]);
   return it;
 }
 function itemStats(it){
@@ -2093,7 +2093,7 @@ document.addEventListener('click',e=>{
 
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.10.31 00:42';
+const BUILD='2026.10.31 00:52';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
