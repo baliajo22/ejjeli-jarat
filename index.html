@@ -1431,7 +1431,7 @@ function renderGarazs(){
 function renderBolt(){
   if(boltTab==='garazs') return renderGarazs();
   const refresh=5+state.level*2, coffee=8+state.level*2;
-  let html=`${boltTabs()}${banner('bolt')}<section class="scene"><span class="label">${ic('pin')}Kisbolt · non-stop</span><h2>Feri éjjel is nyitva tart</h2><p>Turis kabátok, átkozott sapkák és egy pult, ahol a kávé mindig forró.</p></section>
+  let html=`${boltTabs()}${banner('bolt')}<section class="scene"><span class="label">${ic('pin')}Kisbolt · non-stop</span><h2>Feri éjjel is nyitva tart</h2><p>Turis kabátok, átkozott sapkák és egy pult, ahol a kávé mindig forró. A kínálat minden éjfélkor megújul.</p></section>
   <section class="card"><div class="item" style="padding:0"><div class="itile" style="--rc:#d9a06b;display:grid;place-items:center;color:#d9a06b">${ic('coffee')}</div>
     <div><div class="item-name">Dupla eszpresszó</div><div class="item-stats"><span class="with-ic">${ic('coffee','ic-coffee')}+${ESPRESSO_GAIN} kávé azonnal</span><span>ma még ${espressoLeft()}/${ESPRESSO_DAILY}</span></div></div>
     <button class="btn small pog-btn" data-act="coffeepog" title="Dupla eszpresszó 1 pogácsáért" ${canEspresso()?'':'disabled'}>${espressoLeft()?`${pogIc()}1`:'Holnap újra'}</button></div></section>
@@ -2183,6 +2183,8 @@ function tick(force){
   const t=now();
   // coffee does not trickle back; the pot is refilled once a day at midnight
   if(state.energyDay!==todayKey()){ state.energyDay=todayKey(); state.energy=ENERGY_MAX; save(); }
+  // Feri restocks the shop at midnight
+  if(state.shopDay!==todayKey()){ const had=!!state.shopDay; state.shopDay=todayKey(); if(had){ state.shop=genShop(); if(view==='bolt'&&!battle&&!force){ render(); toast('Feri éjfélkor kipakolt egy új adagot.'); } } save(); }
   const en=$('#en'); if(en) en.textContent=state.energy;
   const ready = state.active ? state.active.endsAt<=t : null;
   if(!force && ready!==lastReady && !battle){ if(ready===true&&lastReady===false) sfx('arrive'); lastReady=ready; render(); return; }
