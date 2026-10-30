@@ -75,6 +75,8 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:
 .chips{display:flex;gap:6px;flex:none;flex-direction:column;align-items:flex-end}
 .chip-row{display:flex;gap:6px}
 .auth-err{margin:0;color:var(--sodium);font-size:13px}
+.remember{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+.remember input{width:18px;height:18px;accent-color:var(--sodium)}
 .acct{margin-top:-6px}
 .acct .note{display:inline-flex;align-items:center;gap:6px}
 .nm.stat-more{cursor:help}
@@ -2040,13 +2042,19 @@ document.addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
 const CFG=window.EJJELI_CONFIG||{};
-const SB=(window.supabase&&CFG.url&&CFG.anonKey&&!/IDE_/.test(CFG.url))?window.supabase.createClient(CFG.url,CFG.anonKey):null;
+const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
+  return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
+const SB=(window.supabase&&CFG.url&&CFG.anonKey&&!/IDE_/.test(CFG.url))?window.supabase.createClient(CFG.url,CFG.anonKey,{auth:{persistSession:true,storage:SESSION_STORE,autoRefreshToken:true}}):null;
 const ONLINE={user:null, players:[], playersAt:0, myRating:null, logs:[], mode:'login', err:'', busy:false};
 let cloudTimer=null, cloudPending=null;
 function cloudSave(st){ if(!SB||!ONLINE.user||!st) return; cloudPending=st; clearTimeout(cloudTimer); cloudTimer=setTimeout(()=>{ cloudTimer=null; pushChar(cloudPending); },1500); }
 async function pushChar(st){ if(!SB||!ONLINE.user||!st) return; const snap=JSON.parse(JSON.stringify(st));
-  const {error}=await SB.from('characters').upsert({id:snap.cid,user_id:ONLINE.user.id,name:snap.name,cls:snap.cls,level:snap.level,data:snap,updated_at:new Date().toISOString()});
-  if(error) console.warn('mentés hiba',error); }
+  const fields={name:String(snap.name||'Hős').slice(0,24),cls:snap.cls,level:snap.level,data:snap,updated_at:new Date().toISOString()};
+  try{
+    const up=await SB.from('characters').update(fields).eq('id',snap.cid).select('id'); if(up.error) throw up.error;
+    if(!up.data||!up.data.length){ const ins=await SB.from('characters').insert({...fields,id:snap.cid,user_id:ONLINE.user.id}); if(ins.error) throw ins.error; }
+    ONLINE.saveErr=false;
+  }catch(e){ console.warn('mentés hiba',e); if(!ONLINE.saveErr){ ONLINE.saveErr=true; toast('Nem sikerült menteni a szerverre. Ellenőrizd az internetet.'); } } }
 function flushCloud(){ if(cloudTimer){ clearTimeout(cloudTimer); cloudTimer=null; return pushChar(cloudPending); } return Promise.resolve(); }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') flushCloud(); });
 window.addEventListener('pagehide',()=>flushCloud());
@@ -2095,16 +2103,21 @@ function renderAuth(){
     <p class="tag">Éjfél után a városban más lakik a lépcsőházakban. Lépj be, és a hőseid minden eszközödön veled lesznek.</p>
     <form class="card stack" id="authf" onsubmit="event.preventDefault();doAuth()">
       <span class="label">${ic('user')}${su?'Regisztráció':'Belépés'}</span>
-      <div class="field"><label class="label" for="em">E-mail</label><input id="em" type="email" autocomplete="email" required></div>
-      <div class="field"><label class="label" for="pw">Jelszó</label><input id="pw" type="password" autocomplete="${su?'new-password':'current-password'}" minlength="6" required></div>
+      <div class="field"><label class="label" for="em">E-mail</label><input id="em" name="email" type="email" autocomplete="${su?'email':'username'}" value="${esc(rememberedEmail())}" required></div>
+      <div class="field"><label class="label" for="pw">Jelszó</label><input id="pw" name="password" type="password" autocomplete="${su?'new-password':'current-password'}" minlength="6" required></div>
+      <label class="remember"><input type="checkbox" id="rem" ${rememberOn()?'checked':''}> Emlékezz rám ezen az eszközön</label>
       ${ONLINE.err?`<p class="auth-err">${esc(ONLINE.err)}</p>`:''}
       <button class="btn primary" type="submit" ${ONLINE.busy?'disabled':''}>${ONLINE.busy?'Pillanat…':su?'Fiók létrehozása':'Belépés'}</button>
       <button class="btn small" type="button" data-act="authmode">${su?'Van már fiókom, belépek':'Még nincs fiókom, regisztrálok'}</button>
     </form></div>`;
 }
+function rememberOn(){ try{ return localStorage.getItem('ej-remember')!=='0'; }catch(e){ return true; } }
+function rememberedEmail(){ try{ return rememberOn()?(localStorage.getItem('ej-email')||''):''; }catch(e){ return ''; } }
 async function doAuth(){
+  const rem=$('#rem')?$('#rem').checked:true;
+  try{ localStorage.setItem('ej-remember',rem?'1':'0'); if(rem) localStorage.setItem('ej-email',($('#em')?.value||'').trim()); else localStorage.removeItem('ej-email'); }catch(e){}
   const em=($('#em')?.value||'').trim(), pw=$('#pw')?.value||''; if(!em||pw.length<6){ ONLINE.err='Adj meg egy e-mail-címet és legalább 6 karakteres jelszót.'; render(); return; }
-  ONLINE.busy=true; ONLINE.err=''; render(); $('#em').value=em; $('#pw').value=pw;
+  ONLINE.busy=true; ONLINE.err=''; render(); $('#em').value=em; $('#pw').value=pw; if($('#rem')) $('#rem').checked=rem;
   try{
     const r= ONLINE.mode==='signup' ? await SB.auth.signUp({email:em,password:pw}) : await SB.auth.signInWithPassword({email:em,password:pw});
     if(r.error) throw r.error;
