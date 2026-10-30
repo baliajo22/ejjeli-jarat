@@ -878,7 +878,7 @@ function activeVeh(){ const r=state.vehicle; if(!r||!r.id||r.until<=now()) retur
 function fmtLeft(ms){ const m=Math.max(1,Math.floor(ms/60000)), d=Math.floor(m/1440), h=Math.floor(m%1440/60); return d?`${d} nap ${h} óra`:h?`${h} óra ${m%60} perc`:`${m} perc`; }
 function mountRed(){ const v=activeVeh(); return v?v.red:0; }
 function effDur(q){ return Math.max(3,Math.round(q.dur*(1-mountRed()))); }
-function qCost(q){ const v=activeVeh(), d=v&&v.coffee?effDur(q):q.dur; return Math.max(1,Math.round((Math.round(d*.8)+5)*.4)); }
+function qCost(q){ const v=activeVeh(), d=v&&v.coffee?effDur(q):q.dur; return Math.max(1,Math.round((Math.round(d*.8)+5)*.24)); }
 /* double espresso: pogácsa only, +20 coffee, max 10 per day */
 const ESPRESSO_GAIN=20, ESPRESSO_DAILY=10;
 function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
