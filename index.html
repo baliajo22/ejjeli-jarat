@@ -829,7 +829,7 @@ Object.assign(I,{
 /* ================= data ================= */
 const CLASSES = {
   kidobo:{name:'Kidobó', main:'str', hp:5.5, dmg:.74, crit:1, maxArmor:.45, dodge:0, block:.15, desc:'Romkocsma-ajtók őre. Sok élet, nagy ütés.', perk:'A legtöbb élet. 15% eséllyel pajzzsal hárít, páncélja max 45%-ot fog meg'},
-  magus:{name:'Panelmágus', main:'int', hp:1.8, dmg:1.9, crit:1.35, maxArmor:.1, dodge:0, block:0, desc:'Tizedik emeleti varázsló egy lift nélküli panelból. Törékeny, de fáj.', perk:'Kevés élet, de a legnagyobb sebzés. Varázslata sosem téved, átüti a páncélt és a pajzsot, +35% krit esély'},
+  magus:{name:'Panelmágus', main:'int', hp:1.8, dmg:2.0, crit:1.35, maxArmor:.1, dodge:0, block:0, desc:'Tizedik emeleti varázsló egy lift nélküli panelból. Törékeny, de fáj.', perk:'Kevés élet, de a legnagyobb sebzés. Varázslata elől nem lehet kitérni, átüti a páncélt és a pajzsot, +35% krit esély'},
   futar:{name:'Tetőlövész', main:'dex', hp:4, dmg:1.1, crit:1, maxArmor:.25, dodge:.3, block:0, ranged:true, desc:'A háztetőkről vadászik csúzlival és számszeríjjal. Messziről talál, közelről elugrik.', perk:'Távolsági fegyverrel lő, 30% eséllyel kitér a támadás elől'},
   zsebmetszo:{name:'Zsebmetsző', main:'dex', hp:3.6, dmg:.63, crit:1, maxArmor:.25, dodge:.2, block:0, hits:2, desc:'A sikátorok árnya, két bicskával. Kétszer szúr, mielőtt észbe kapnál.', perk:'Körönként kétszer támad kisebb sebzéssel, 20% kitérés'}
 };
@@ -1012,7 +1012,7 @@ const now=()=>Date.now();
 const ENERGY_MAX=100, ENERGY_MS=4000, ARENA_CD=15000, INV_MAX=12, SAVE_KEY='ejjeli-jarat-v1';
 // enemy strength per difficulty: easy −10%, medium −20%, hard −20% compared to the first prototype (.8 / 1 / 1.22)
 const DIFF_MULT=[.75, .85, .97];
-const MISS=.06, DUNGEON_CD=30000;
+const MISS=0, DUNGEON_CD=30000;
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 let mapSig=null, selQuest=null; const LOOT={};
@@ -2083,7 +2083,7 @@ document.addEventListener('click',e=>{
 
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.10.31 00:17';
+const BUILD='2026.10.31 00:20';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
