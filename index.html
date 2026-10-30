@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#13141f">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Éjjeli Járat</title>
@@ -1312,6 +1314,7 @@ function renderCreate(){
     <button class="btn primary" data-act="start" style="padding:14px;font-size:16px" ${full?'disabled':''}>Indulás az éjszakába</button>
     <div class="row between acct"><span class="note">${ic('user')} ${esc(ONLINE.user.email||'')}</span><button class="btn small" data-act="logout">Kijelentkezés</button></div>
     <p class="note">Tesztverzió: a küldetések idejét másodpercekre gyorsítottuk. A hőseid a fiókodban mentődnek, bármelyik eszközről eléred őket.</p>
+    <p class="note" style="text-align:center;opacity:.6">Verzió: ${BUILD}</p>
   </div>`;
 }
 function renderHud(){
@@ -2080,6 +2083,7 @@ document.addEventListener('click',e=>{
 
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
+const BUILD='2026.10.31 00:16';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
