@@ -1313,7 +1313,7 @@ function renderKocsma(){
       <div class="row">${ready?`<button class="btn primary pulse" data-act="fight">${ic('fight')}Harc: ${esc(q.enemy)}</button>`:`<button class="btn small pog-btn" data-act="rushquest" ${(state.pog||0)<1?'disabled':''}>${pogIc()}Azonnal ott vagyok · 1</button><button class="btn small" data-act="cancel">${ic('back')}Visszafordulok (kávé vissza)</button>`}</div>
     </section>`;
   }
-  html+=`<section class="stack"><div class="row between"><span class="label">${ic('box')}Bejelentések</span><span class="note with-ic">${ic('coffee','ic-coffee')}+1 kávé / 4 mp</span></div>`;
+  html+=`<section class="stack"><div class="row between"><span class="label">${ic('box')}Bejelentések</span><span class="note with-ic">${ic('coffee','ic-coffee')}Éjfélkor újratöltődik</span></div>`;
   if(selQuest&&!state.quests.some(q=>q.id===selQuest)) selQuest=null;
   for(const q of state.quests){
     const busy=!!state.active, poor=state.energy<qCost(q), sel=selQuest===q.id;
@@ -1328,7 +1328,7 @@ function renderKocsma(){
     </div>`;
   }
   html+=`</section>`;
-  if(!state.active && state.quests.every(q=>state.energy<qCost(q))) html+=`<div class="card row between"><span class="note">Elfogyott a kávé. Várj egy kicsit, vagy igyál egy duplát.</span><button class="btn small pog-btn" data-act="coffeepog" ${canEspresso()?'':'disabled'}>${ic('coffee')}+${ESPRESSO_GAIN} · ${pogIc()}1</button></div>`;
+  if(!state.active && state.quests.every(q=>state.energy<qCost(q))) html+=`<div class="card row between"><span class="note">Elfogyott a kávé. Éjfélkor újratöltődik, addig igyál egy duplát.</span><button class="btn small pog-btn" data-act="coffeepog" ${canEspresso()?'':'disabled'}>${ic('coffee')}+${ESPRESSO_GAIN} · ${pogIc()}1</button></div>`;
   return html;
 }
 function fmtTime(ms){ const s=Math.ceil(ms/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
@@ -2142,7 +2142,8 @@ async function boot(){
 function tick(force){
   if(!state) return;
   const t=now();
-  if(state.energy<ENERGY_MAX){ const n=Math.floor((t-state.lastTick)/ENERGY_MS); if(n>0){ state.energy=Math.min(ENERGY_MAX,state.energy+n); state.lastTick+=n*ENERGY_MS; save(); } } else state.lastTick=t;
+  // coffee does not trickle back; the pot is refilled once a day at midnight
+  if(state.energyDay!==todayKey()){ state.energyDay=todayKey(); state.energy=ENERGY_MAX; save(); }
   const en=$('#en'); if(en) en.textContent=state.energy;
   const ready = state.active ? state.active.endsAt<=t : null;
   if(!force && ready!==lastReady && !battle){ if(ready===true&&lastReady===false) sfx('arrive'); lastReady=ready; render(); return; }
