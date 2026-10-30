@@ -1344,7 +1344,7 @@ function questCost(q){
   return `<span class="with-ic">${ic('clock','ic-time')}${effDur(q)} mp${mountRed()?` <s class="muted">${q.dur}</s>`:''}</span><span class="with-ic">${ic('coffee','ic-coffee')}−${qCost(q)} kávé</span>`;
 }
 function questRewards(q){
-  return `<span class="rw rw-gold">${ic('coin')}<b>+${fmt(Math.round(q.gold*goldMult()))}</b> Ft</span><span class="rw rw-xp">${ic('xp')}<b>+${fmt(Math.round(q.xp*xpMult()))}</b> XP</span>${q.drop?`<span class="rw rw-item">${ic('box')}<b>Tárgy</b></span>`:''}${q.pog?`<span class="rw rw-pog">${pogIc()}<b>+1</b></span>`:''}`;
+  return `<span class="rw rw-gold">${ic('coin')}<b>+${fmt(Math.round(q.gold*goldMult()))}</b> Ft</span><span class="rw rw-xp">${ic('xp')}<b>+${fmt(Math.round(q.xp*xpMult()))}</b> XP</span>${q.drop?`<span class="rw rw-item">${ic('box')}<b>Tárgy</b></span>`:''}${q.pog?`<span class="rw rw-pog">${pogIc()}<b>+1</b></span>`:''}${state.firstQuestDay!==todayKey()?`<span class="rw rw-pog">${pogIc()}<b>+1</b> napi első</span>`:''}`;
 }
 function renderKocsma(){
   let html=`${banner('kocsma')}<section class="scene"><span class="label">${ic('pin')}Romkocsma · VII. kerület · 23:47</span><h2>Ica a pult mögül int</h2><p>„Megint gyűlnek a bejelentések, drágám. Válassz egyet, de előtte igyál egy kávét.”</p>${vehicleLine()}</section>`;
@@ -1889,6 +1889,7 @@ function doFight(){
     state.gold+=qg; rw+=`<span class="chip">${ic('coin','ic-gold')}+${qg} Ft</span><span class="chip">${ic('xp','ic-xp')}+${qx} XP</span>`;
     if(state.guild&&state.guild.members.length){ const d=state.guild.members.length*3; state.guild.treasury+=d; rw+=`<span class="chip">${ic('user')}+${d} Ft a céhkasszába</span>`; }
     if(q.pog){ state.pog++; rw+=pogChip(1); }
+    if(state.firstQuestDay!==todayKey()){ state.firstQuestDay=todayKey(); state.pog++; rw+=`<span class="chip pog-chip">${pogIc()}+1 · napi első küldetés</span>`; }
     if(q.drop){ const it=genItem(state.level,null,null,questRarity(q.diff)); const ok=addItem(it); rw+=`<span class="chip loot" data-tip="loot:${(LOOT[it.id]=it).id}" style="padding:3px 10px 3px 3px">${itemTile(it).replace('class="itile','style="width:30px;height:30px;border-radius:999px" class="itile')}<span class="r${it.rar}">${esc(it.name)}</span>${ok?'':' (eladva, tele a hátizsák)'}</span>`; }
     gainXp(qx);
   } else { const x=Math.round(q.xp*.15); gainXp(x); rw+=`<span class="chip">${ic('xp','ic-xp')}+${x} XP</span><span class="note">Edzz vagy szerezz jobb felszerelést, aztán próbáld újra.</span>`; }
@@ -2092,7 +2093,7 @@ document.addEventListener('click',e=>{
 
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.10.31 00:37';
+const BUILD='2026.10.31 00:42';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
