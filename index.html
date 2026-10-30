@@ -19,7 +19,7 @@
   --text:#ece7da; --muted:#9a9bb4;
   --sodium:#f2a33a; --sodium-ink:#1b1206;
   --hex:#9d8bff; --ok:#5fc48b; --bad:#ec6552; --gold:#f2c230; --teal:#5fc4b4;
-  --r-common:#c9c6bb; --r-rare:#63b0ff; --r-epic:#d48cff; --r-special:#ffb454;
+  --r-common:#c9c6bb; --r-uncommon:#5fd17a; --r-rare:#63b0ff; --r-epic:#d48cff; --r-special:#ffb454;
   --f-display:"Unbounded","Arial Black",system-ui,sans-serif;
   --f-body:"Golos Text",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -56,9 +56,9 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:
   background:radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--rc) 30%,transparent),var(--panel) 72%);
   box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--rc) 55%,transparent)}
 .itile svg{display:block;width:100%;height:100%;padding:5px}
-.itile.t1{--rc:var(--r-rare)} .itile.t2{--rc:var(--r-epic)}
-.itile.t3{--rc:var(--r-special);position:relative;overflow:hidden;box-shadow:inset 0 0 0 2px var(--r-special),0 0 12px rgba(255,180,84,.45)}
-.itile.t3::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,236,190,.45) 50%,transparent 65%);background-size:250% 100%;animation:shine 2.6s ease-in-out infinite;pointer-events:none}
+.itile.t1{--rc:var(--r-uncommon)} .itile.t2{--rc:var(--r-rare)} .itile.t3{--rc:var(--r-epic)}
+.itile.t4{--rc:var(--r-special);position:relative;overflow:hidden;box-shadow:inset 0 0 0 2px var(--r-special),0 0 12px rgba(255,180,84,.45)}
+.itile.t4::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,236,190,.45) 50%,transparent 65%);background-size:250% 100%;animation:shine 2.6s ease-in-out infinite;pointer-events:none}
 @keyframes shine{0%{background-position:130% 0}60%,100%{background-position:-30% 0}}
 .itile.empty{background:var(--panel);box-shadow:inset 0 0 0 2px var(--line);display:grid;place-items:center;color:var(--line)}
 .itile.empty svg{width:60%;height:60%;padding:0}
@@ -192,7 +192,7 @@ main{flex:1;padding-block:16px calc(110px + env(safe-area-inset-bottom,0px));dis
 .slot>div:last-child{min-width:0}
 .slot .itile{background:radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--rc) 30%,transparent),var(--concrete) 72%)}
 .item-name{font-weight:700;font-size:14px}
-.r0{color:var(--r-common)} .r1{color:var(--r-rare)} .r2{color:var(--r-epic)} .item-name.r3,.r3{color:var(--r-special)}
+.r0{color:var(--r-common)} .r1{color:var(--r-uncommon)} .r2{color:var(--r-rare)} .r3{color:var(--r-epic)} .item-name.r4,.r4{color:var(--r-special)}
 .item-stats{font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:2px 10px}
 .item{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;padding-block:10px;border-bottom:1px solid var(--line)}
 .item:last-child{border-bottom:0}
@@ -863,8 +863,11 @@ const GEAR = {fej:['Kötött sapka','Futársisak','Fejhallgató','Baseballsapka'
   ov:['Bőröv','Szerszámos öv','Övtáska','Futóöv'],
   gyuru:['Pecsétgyűrű','Kulcskarika-gyűrű','Hangulatgyűrű','Sörnyitós gyűrű'],
   nyaklanc:['Fokhagymafüzér','Dögcédula','Gyöngysor a nagyitól','Holdmedál']};
-const PREFIX = [['Kopott','Turis','Használt'],['Neonfényű','Szenteltvizes','Rúnás'],['Éjféli','Átkozott','Legendás'],['Ősi','Mélységi','Elfeledett']];
-const RAR_NAME = ['Közönséges','Ritka','Epikus','Különleges'];
+const PREFIX = [['Kopott','Turis','Használt'],['Megbízható','Strapabíró','Edzett'],['Neonfényű','Szenteltvizes','Rúnás'],['Éjféli','Átkozott','Legendás'],['Ősi','Mélységi','Elfeledett']];
+const RAR_NAME = ['Közönséges','Jó minőségű','Ritka','Epikus','Különleges'];
+const SPECIAL_RAR=4;
+// tavern loot by difficulty: easy grey/green, medium green/blue, hard green/blue/purple
+function questRarity(d){ const r=Math.random(); return d===0?(r<.6?0:1):d===1?(r<.7?1:2):(r<.4?1:r<.8?2:3); }
 const SPECIAL_CHANCE=.1, FLOOR_DROP=.4;
 const STAT_DMG=.8, HP_PER_CON=3;
 const GAIN_MAIN=2, GAIN_CON=2, ENEMY_GROW=1.45;
@@ -882,7 +885,7 @@ const VEHICLES=[
   {id:'roller',name:'Elektromos roller',red:.2,price:180,desc:'Nem kölcsönzős, ez tényleg a tiéd.'},
   {id:'bicikli',name:'Futárbicikli',red:.3,price:450,desc:'Csomagtartóval, csengővel, sárvédő nélkül.'},
   {id:'robogo',name:'Robogó',red:.4,price:1000,desc:'Kétütemű, füstöl, de átér a Lánchídon.'},
-  {id:'sepru',name:'Repülő seprű',red:.5,price:2200,pog:15,coffee:true,desc:'A dugó fölött suhan át, és az egyetlen, amivel kevesebb kávé is fogy.'}
+  {id:'sepru',name:'Repülő seprű',red:.5,price:0,pog:15,coffee:true,desc:'A dugó fölött suhan át, és az egyetlen, amivel kevesebb kávé is fogy.'}
 ];
 const RENT_MS=7*24*3600*1000;
 function activeVeh(){ const r=state.vehicle; if(!r||!r.id||r.until<=now()) return null; return VEHICLES.find(x=>x.id===r.id)||null; }
@@ -1029,19 +1032,19 @@ function statCost(n){return Math.round(4+n*1.6+n*n*.08)}
 /* ================= items ================= */
 function genItem(lvl, slot, cls, force){
   slot = slot || pick(SLOTS)[0];
-  const roll=Math.random(); const r = force!=null ? force : roll<.05?2:roll<.3?1:0;
+  const roll=Math.random(); const r = force!=null ? force : roll<.04?3:roll<.18?2:roll<.48?1:0;
   const base = slot==='fegyver' ? pick(WEAPONS[cls||state.cls]) : pick(GEAR[slot]);
   let name=pick(PREFIX[r])+' '+base.toLowerCase();
   const it={id:uid(),slot,rar:r,lvl,base,name,bonus:{},armor:0};
   // flatter curve: rarity adds ~10–15% per tier, more stats instead of huge numbers
-  const RM_=[1,1.25,1.5,1.8][r];
+  const RM_=[1,1.12,1.25,1.5,1.8][r];
   if(slot==='fegyver'){ it.min=Math.round((lvl*1.6+2)*RM_); it.max=Math.round((lvl*2.4+4)*RM_)+rand(0,1); }
   else if(ARMOR_W[slot]){ it.armor=Math.round((lvl*ARMOR_W[slot]+2)*RM_)+rand(0,1); }
-  const n = TRINKET.includes(slot) ? [1,2,2,3][r] : [1,1,2,3][r];
+  const n = TRINKET.includes(slot) ? [1,1,2,2,3][r] : [1,1,1,2,3][r];
   const pool=STATS.map(x=>x[0]).sort(()=>Math.random()-.5);
   if(slot==='kabala'){ pool.splice(pool.indexOf('lck'),1); pool.unshift('lck'); }
   for(let i=0;i<n;i++) it.bonus[pool[i]]=Math.round((1.6+lvl*.7)*RM_)+rand(0,1);
-  it.price = Math.round((18+lvl*14)*(1+r*.9));
+  it.price = Math.round((18+lvl*14)*[1,1.35,1.9,2.8,3.6][r]);
   return it;
 }
 function itemStats(it){
@@ -1069,7 +1072,7 @@ function newPlayer(name, cls){
   state={name, cls, level:1, xp:0, gold:40, energy:ENERGY_MAX, lastTick:now(), stats:s,
     bought:{str:0,dex:0,int:0,con:0,lck:0}, equip:Object.fromEntries(SLOTS.map(([k])=>[k,null])),
     inv:[], quests:[], active:null, shop:[], arena:[], arenaReadyAt:0, fame:0, wins:0, losses:0,
-    ladder:genLadder(), dungeons:{}, dungeonReadyAt:0, vehicle:null, pog:POG_START, guild:null, guildLadder:null, pogReset25:true, autoGain:true};
+    ladder:genLadder(), dungeons:{}, dungeonReadyAt:0, vehicle:null, pog:POG_START, guild:null, guildLadder:null, pogReset25:true, autoGain:true, rarV2:true};
   const starter=WEAPONS[cls][0];
   state.equip.fegyver={id:uid(),slot:'fegyver',rar:0,lvl:1,base:starter,name:starter,min:3,max:6,armor:0,bonus:{},price:10};
   state.quests=genQuests(); state.shop=genShop(); state.arena=genArena();
@@ -1081,6 +1084,7 @@ function migrate(s){
   s.equip=s.equip||{}; for(const [k] of SLOTS) if(!(k in s.equip)) s.equip[k]=null;
   if(typeof s.vehicle==='string') s.vehicle={id:s.vehicle,until:now()+RENT_MS};
   if(!s.autoGain){ s.autoGain=true; lvlGain(s,(s.level||1)-1); }
+  if(!s.rarV2){ s.rarV2=true; const up=it=>{ if(it&&it.rar>0) it.rar+=1; }; Object.values(s.equip||{}).forEach(up); (s.inv||[]).forEach(up); (s.shop||[]).forEach(up); }
   if(!s.ladder) s.ladder=genLadder(); s.dungeons=s.dungeons||{}; s.dungeonReadyAt=s.dungeonReadyAt||0; if(!('vehicle' in s)) s.vehicle=null; if(s.pog==null) s.pog=POG_START; if(!s.pogReset25){ s.pogReset25=true; if(s.pogTest5000||s.pog>POG_START) s.pog=POG_START; } if(!('guild' in s)) s.guild=null;
   Object.values(s.equip||{}).forEach(fix); (s.inv||[]).forEach(fix); (s.shop||[]).forEach(fix);
   (s.quests||[]).forEach(q=>q.mult=questMult(q.diff,s.level||1)); if(s.active) s.active.q.mult=questMult(s.active.q.diff,s.level||1);
@@ -1185,7 +1189,7 @@ function genQuests(){
     let q; do{ q=pick(QUESTS); }while(used.has(q[1])); used.add(q[1]);
     const lvl=state.level, dur=rand(8,24);
     out.push({id:uid(), district:q[0], title:q[1], desc:q[2], enemy:q[3], diff:d, mult:questMult(d,lvl), dur, cost:Math.round(dur*.8)+5,
-      gold:Math.round((5+lvl*6+rand(0,lvl*3))*(.7+d*.45)), xp:Math.round((14+lvl*9)*(.7+d*.45)+dur*.6), drop:Math.random()<[.1,.2,.35][d], pog:Math.random()<POG_RATE.quest[d]});
+      gold:Math.round((5+lvl*6+rand(0,lvl*3))*(.7+d*.45)), xp:Math.round((14+lvl*9)*(.7+d*.45)+dur*.6), drop:Math.random()<[.06,.12,.22][d], pog:Math.random()<POG_RATE.quest[d]});
   }
   return out.sort(()=>Math.random()-.5);
 }
@@ -1415,7 +1419,7 @@ function renderKarakter(){
 }
 function vehicleLine(){
   const v=activeVeh(), r=state.vehicle;
-  if(v) return `<button class="veh-line" data-act="gogarage"><span class="itile t${v.red>=.4?2:v.red>=.2?1:0}">${svg(VEH_ART[v.id])}</span>${v.name} · <span class="cmp-up">−${Math.round(v.red*100)}% út</span> · <span class="muted">még ${fmtLeft(r.until-now())}</span></button>`;
+  if(v) return `<button class="veh-line" data-act="gogarage"><span class="itile t${v.red>=.4?3:v.red>=.2?2:1}">${svg(VEH_ART[v.id])}</span>${v.name} · <span class="cmp-up">−${Math.round(v.red*100)}% út</span> · <span class="muted">még ${fmtLeft(r.until-now())}</span></button>`;
   if(r&&r.id){ const o=VEHICLES.find(x=>x.id===r.id); return `<button class="veh-line none expired" data-act="gogarage">${ic('clock')}Lejárt: ${o?o.name:'jármű'}. Újítsd meg a Garázsban →</button>`; }
   return `<button class="veh-line none" data-act="gogarage">${ic('wheel','ic-time')}Gyalog jársz. Jármű a Garázsban →</button>`;
 }
@@ -1427,10 +1431,10 @@ function renderGarazs(){
   html+=`<section class="card">`;
   for(const v of VEHICLES){
     const own=cur&&cur.id===v.id, worse=!own&&v.red<=curRed;
-    const cant=state.gold<v.price||(state.pog||0)<(v.pog||0), cost=`${fmt(v.price)} Ft${v.pog?`<span class="pog-line">+ ${v.pog} ${pogIc()}</span>`:''}`;
+    const cant=state.gold<v.price||(state.pog||0)<(v.pog||0), cost=v.price?`${fmt(v.price)} Ft${v.pog?`<span class="pog-line">+ ${v.pog} ${pogIc()}</span>`:''}`:`${v.pog} ${pogIc()}`;
     const btn= own ? `<button class="btn small primary" data-act="buyveh" data-id="${v.id}" ${cant?'disabled':''}>+7 nap · ${cost}</button>`
              : `<button class="btn small ${worse?'':'primary'}" data-act="buyveh" data-id="${v.id}" ${worse||cant?'disabled':''}>${worse?'Van jobbad':`7 nap · ${cost}`}</button>`;
-    html+=`<div class="item veh ${own?'own':''}"><div class="itile t${v.red>=.4?2:v.red>=.2?1:0}">${svg(VEH_ART[v.id])}</div>
+    html+=`<div class="item veh ${own?'own':''}"><div class="itile t${v.red>=.4?3:v.red>=.2?2:1}">${svg(VEH_ART[v.id])}</div>
       <div><div class="item-name">${v.name}${own?' <span class="own-tag">nálad</span>':''}</div><div class="item-stats"><span class="with-ic cmp-up">${ic('clock')}−${Math.round(v.red*100)}% idő</span>${v.coffee?`<span class="with-ic cmp-up">${ic('coffee')}−${Math.round(v.red*100)}% kávé</span>`:''}</div><div class="note">${v.desc}</div></div>
       ${btn}</div>`;
   }
@@ -1885,7 +1889,7 @@ function doFight(){
     state.gold+=qg; rw+=`<span class="chip">${ic('coin','ic-gold')}+${qg} Ft</span><span class="chip">${ic('xp','ic-xp')}+${qx} XP</span>`;
     if(state.guild&&state.guild.members.length){ const d=state.guild.members.length*3; state.guild.treasury+=d; rw+=`<span class="chip">${ic('user')}+${d} Ft a céhkasszába</span>`; }
     if(q.pog){ state.pog++; rw+=pogChip(1); }
-    if(q.drop){ const it=genItem(state.level); const ok=addItem(it); rw+=`<span class="chip loot" data-tip="loot:${(LOOT[it.id]=it).id}" style="padding:3px 10px 3px 3px">${itemTile(it).replace('class="itile','style="width:30px;height:30px;border-radius:999px" class="itile')}<span class="r${it.rar}">${esc(it.name)}</span>${ok?'':' (eladva, tele a hátizsák)'}</span>`; }
+    if(q.drop){ const it=genItem(state.level,null,null,questRarity(q.diff)); const ok=addItem(it); rw+=`<span class="chip loot" data-tip="loot:${(LOOT[it.id]=it).id}" style="padding:3px 10px 3px 3px">${itemTile(it).replace('class="itile','style="width:30px;height:30px;border-radius:999px" class="itile')}<span class="r${it.rar}">${esc(it.name)}</span>${ok?'':' (eladva, tele a hátizsák)'}</span>`; }
     gainXp(qx);
   } else { const x=Math.round(q.xp*.15); gainXp(x); rw+=`<span class="chip">${ic('xp','ic-xp')}+${x} XP</span><span class="note">Edzz vagy szerezz jobb felszerelést, aztán próbáld újra.</span>`; }
   state.active=null; state.quests=genQuests(); save();
@@ -1928,7 +1932,7 @@ function doDungeon(id,pay){
     state.dungeons[d.id]=fl+1; state.gold+=f.gold;
     const pg=f.boss?POG_BOSS:(Math.random()<POG_RATE.floor?1:0); state.pog+=pg;
     rw=`<span class="chip">${ic('coin','ic-gold')}+${f.gold} Ft</span><span class="chip">${ic('xp','ic-xp')}+${f.xp} XP</span>`;
-    if(f.boss||Math.random()<FLOOR_DROP){ const sp=f.boss||Math.random()<SPECIAL_CHANCE, it=genItem(Math.max(state.level,f.level),null,null,sp?3:undefined), ok=addItem(it); if(sp) rw+=`<span class="chip r3" style="font-weight:700">${ic('xp')}Különleges zsákmány!</span>`; rw+=`<span class="chip loot" data-tip="loot:${(LOOT[it.id]=it).id}" style="padding:3px 10px 3px 3px">${itemTile(it).replace('class="itile','style="width:30px;height:30px;border-radius:999px" class="itile')}<span class="r${it.rar}">${esc(it.name)}</span>${ok?'':' (eladva, tele a hátizsák)'}</span>`; }
+    if(f.boss||Math.random()<FLOOR_DROP){ const sp=f.boss||Math.random()<SPECIAL_CHANCE, it=genItem(Math.max(state.level,f.level),null,null,sp?SPECIAL_RAR:undefined), ok=addItem(it); if(sp) rw+=`<span class="chip r4" style="font-weight:700">${ic('xp')}Különleges zsákmány!</span>`; rw+=`<span class="chip loot" data-tip="loot:${(LOOT[it.id]=it).id}" style="padding:3px 10px 3px 3px">${itemTile(it).replace('class="itile','style="width:30px;height:30px;border-radius:999px" class="itile')}<span class="r${it.rar}">${esc(it.name)}</span>${ok?'':' (eladva, tele a hátizsák)'}</span>`; }
     if(pg) rw+=pogChip(pg);
     rw+=`<span class="chip">${ic('down')}${fl+1>=10?'Kazamata teljesítve!':`Nyitva: ${fl+2}. emelet`}</span>`;
     gainXp(f.xp);
@@ -2088,7 +2092,7 @@ document.addEventListener('click',e=>{
 
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.10.31 00:29';
+const BUILD='2026.10.31 00:37';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
