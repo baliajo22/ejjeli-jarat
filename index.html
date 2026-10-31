@@ -829,7 +829,7 @@ Object.assign(I,{
 /* ================= data ================= */
 const CLASSES = {
   kidobo:{name:'Kidobó', main:'str', hp:5.5, dmg:.74, crit:1, maxArmor:.45, dodge:0, block:.15, desc:'Romkocsma-ajtók őre. Sok élet, nagy ütés.', perk:'A legtöbb élet, 15% eséllyel pajzzsal hárít'},
-  magus:{name:'Panelmágus', main:'int', hp:1.8, dmg:2.0, crit:1.35, maxArmor:.1, dodge:0, block:0, desc:'Tizedik emeleti varázsló egy lift nélküli panelból. Törékeny, de fáj.', perk:'Kevés élet, de a legnagyobb sebzés. Varázslata elől nem lehet kitérni, átüti a páncélt és a pajzsot, ugyanannyi szerencséből több kritikus találat'},
+  magus:{name:'Panelmágus', main:'int', hp:1.8, dmg:2.0, crit:1.35, maxArmor:.1, dodge:0, block:0, desc:'Tizedik emeleti varázsló egy lift nélküli panelból. Törékeny, de fáj.', perk:'Kevés élet, de a legnagyobb sebzés. Varázslata elől nem lehet kitérni, átüti a páncélt és a pajzsot'},
   futar:{name:'Tetőlövész', main:'dex', hp:4, dmg:1.1, crit:1, maxArmor:.25, dodge:.3, block:0, ranged:true, desc:'A háztetőkről vadászik csúzlival és számszeríjjal. Messziről talál, közelről elugrik.', perk:'Távolsági fegyverrel lő, 30% eséllyel kitér a támadás elől'},
   zsebmetszo:{name:'Zsebmetsző', main:'dex', hp:3.6, dmg:.65, crit:1, maxArmor:.25, dodge:.2, block:0, hits:2, desc:'A sikátorok árnya, két bicskával. Kétszer szúr, mielőtt észbe kapnál.', perk:'Körönként kétszer támad kisebb sebzéssel, a második szúrást nem lehet pajzzsal hárítani, 20% kitérés'}
 };
@@ -2093,7 +2093,7 @@ document.addEventListener('click',e=>{
 
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.10.31 01:06';
+const BUILD='2026.10.31 01:08';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
