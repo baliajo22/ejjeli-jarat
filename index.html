@@ -1880,8 +1880,7 @@ function renderMuhely(){
   const m=mats(), n=craftStatN(), r=CRAFT.rar, cost=CRAFT_COST[r], fee=craftFee(r);
   CRAFT.stats=CRAFT.stats.slice(0,n);
   let html=`${boltTabs()}${banner('garazs')}<section class="scene"><span class="label">${ic('pin')}Műhely · Gyuri bácsi satupadja</span><h2>Amit nem használsz, abból lesz az új</h2><p>Szedd szét a felesleges cuccaidat nyersanyagra, aztán készíts belőlük saját tárgyat, olyan tulajdonságokkal, amilyeneket te választasz.</p></section>`;
-  html+=`<section class="card"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('box')}Nyersanyagaid</span></div><div class="mat-row">${MATS.map((x,i)=>`<div class="mat r${i}">${matIc(i)}<b class="mono">${m[x.id]||0}</b><span>${x.name}</span></div>`).join('')}</div>
-    <details class="mat-conv"><summary class="note">Átváltás: ${CONVERT_N} alacsonyabb → 1 magasabb</summary>${MATS.slice(0,4).map((x,i)=>`<div class="row between conv-row"><span class="row" style="gap:6px">${matIc(i,'sm')}${CONVERT_N} → ${matIc(i+1,'sm')}1</span><button class="btn small" data-act="matconv" data-r="${i}" ${(m[x.id]||0)<CONVERT_N||state.gold<craftFee(i)?'disabled':''}>${fmt(craftFee(i))} Ft</button></div>`).join('')}</details></section>`;
+  html+=`<section class="card"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('box')}Nyersanyagaid</span></div><div class="mat-row">${MATS.map((x,i)=>`<div class="mat r${i}">${matIc(i)}<b class="mono">${m[x.id]||0}</b><span>${x.name}</span></div>`).join('')}</div></section>`;
   // crafting
   html+=`<section class="card stack"><span class="label">${ic('refresh')}Saját tárgy készítése</span>
     <div><div class="note" style="margin-bottom:6px">1. Mit készítesz?</div><div class="craft-slots">${SLOTS.map(([k,nm])=>`<button class="cslot ${CRAFT.slot===k?'on':''}" data-act="cslot" data-k="${k}">${emptyTile(k)}<span>${nm}</span></button>`).join('')}</div></div>
@@ -2710,7 +2709,6 @@ document.addEventListener('click',e=>{
     case 'train': { const k=el.dataset.s, c=statCost(state.bought[k]); if(state.gold<c) return; state.gold-=c; state.stats[k]++; state.bought[k]++; save(); render(); } break;
     case 'equip': { const i=state.inv.findIndex(x=>x.id===id); if(i<0) return; const it=state.inv[i], old=state.equip[it.slot]; state.equip[it.slot]=it; state.inv.splice(i,1); if(old) state.inv.push(old); save(); render(); } break;
     case 'disench': disenchant(id); break;
-    case 'matconv': convertMat(+el.dataset.r); break;
     case 'cslot': CRAFT.slot=el.dataset.k; CRAFT.made=null; { const y=window.scrollY; render(); window.scrollTo(0,y); } return;
     case 'crar': CRAFT.rar=+el.dataset.r; CRAFT.made=null; { const y=window.scrollY; render(); window.scrollTo(0,y); } return;
     case 'cstat': { const k=el.dataset.k, n=craftStatN(); if(CRAFT.stats.includes(k)) CRAFT.stats=CRAFT.stats.filter(x=>x!==k); else { CRAFT.stats.push(k); if(CRAFT.stats.length>n) CRAFT.stats.shift(); } const y=window.scrollY; render(); window.scrollTo(0,y); } return;
@@ -2755,7 +2753,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 22:06';
+const BUILD='2026.11.01 22:07';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
