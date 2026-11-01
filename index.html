@@ -8,6 +8,11 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Éjjeli Járat">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Éjjeli Járat</title>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -446,6 +451,13 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .gw-t.dead .port{opacity:.3;filter:grayscale(1)}
 .gw-btns{gap:8px}
 .gw-btns .btn{flex:1}
+.install-card{display:flex;align-items:center;gap:12px}
+.install-card img{border-radius:12px;flex:none}
+.install-card>div{flex:1;min-width:0}
+details.install-card{display:block}
+details.install-card summary{display:flex;align-items:center;gap:12px;cursor:pointer;list-style:none}
+details.install-card summary::-webkit-details-marker{display:none}
+details.install-card ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
 .mg-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mg-tile{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 8px;color:inherit;font:inherit;cursor:pointer}
 .mg-tile:hover{border-color:var(--sodium)}
@@ -1555,7 +1567,7 @@ function renderCreate(){
     <button class="btn primary" data-act="start" id="startbtn" style="padding:14px;font-size:16px" disabled data-full="${full?1:''}">Indulás az éjszakába</button>
     <div class="row between acct"><span class="note">${ic('user')} ${esc(ONLINE.user.email||'')}</span><button class="btn small" data-act="logout">Kijelentkezés</button></div>
     <p class="note">Tesztverzió: a küldetések idejét másodpercekre gyorsítottuk. A hőseid a fiókodban mentődnek, bármelyik eszközről eléred őket.</p>
-    <p class="note" style="text-align:center;opacity:.6">Verzió: ${BUILD}</p>
+    ${installCard()}<p class="note" style="text-align:center;opacity:.6">Verzió: ${BUILD}</p>
   </div>`;
 }
 function renderHud(){
@@ -2627,6 +2639,7 @@ document.addEventListener('click',e=>{
     case 'authgo': doAuth(); break;
     case 'logout': flushCloud(); SB.auth.signOut(); break;
     case 'pduel': doOnlineDuel(id,el.dataset.pog); break;
+    case 'installapp': if(INSTALL_EVT){ INSTALL_EVT.prompt(); INSTALL_EVT.userChoice.finally(()=>{ INSTALL_EVT=null; render(); }); } break;
     case 'ginvyes': answerInvite(id,true); break;
     case 'ginvno': answerInvite(id,false); break;
     case 'clearlog': state.arenaLog=[]; save(); render(); break;
@@ -2644,7 +2657,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 16:25';
+const BUILD='2026.11.01 17:37';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -2758,6 +2771,19 @@ async function loadInvites(force){
     if((changed||sig!==GI.sig||force)&&view==='ceh'&&!battle&&!document.activeElement?.matches('input')) render(); GI.sig=sig;
   } finally{ GI.busy=false; } }
 setInterval(()=>{ if(state&&ONLINE.user&&(state.guild||state.memberOf||view==='ceh')) loadInvites(); },20000);
+/* ---------- install as an app (PWA) ---------- */
+let INSTALL_EVT=null;
+const IS_APP=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); INSTALL_EVT=e; if(!state) render(); });
+window.addEventListener('appinstalled',()=>{ INSTALL_EVT=null; toast('Telepítve! Mostantól a főképernyőről indíthatod.'); if(!state) render(); });
+if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+function installCard(){
+  if(IS_APP) return '';
+  if(INSTALL_EVT) return `<section class="card install-card"><img src="icon-192.png" alt="" width="48" height="48"><div><b>Telepítsd appként</b><div class="note">Saját ikon a főképernyőn, teljes képernyő, böngészősáv nélkül.</div></div><button class="btn small primary" data-act="installapp">Telepítés</button></section>`;
+  if(IS_IOS) return `<details class="card install-card ios"><summary><img src="icon-192.png" alt="" width="48" height="48"><div><b>Telepítsd appként</b><div class="note">Koppints ide, és megmutatom, hogyan.</div></div></summary><ol class="note"><li>Nyisd meg ezt az oldalt <b>Safariban</b>.</li><li>Koppints lent a <b>Megosztás</b> gombra (négyzet felfelé nyíllal).</li><li>Válaszd a <b>Főképernyőhöz adás</b> lehetőséget, majd a <b>Hozzáadás</b>t.</li><li>Ezután a főképernyőn lévő ikonnal indítsd, teljes képernyőn fut.</li></ol></details>`;
+  return `<details class="card install-card"><summary><img src="icon-192.png" alt="" width="48" height="48"><div><b>Telepítsd appként</b><div class="note">Koppints ide, és megmutatom, hogyan.</div></div></summary><ol class="note"><li>Androidon nyisd meg <b>Chrome</b>-ban.</li><li>Koppints a jobb felső <b>⋮</b> menüre.</li><li>Válaszd az <b>Alkalmazás telepítése</b> vagy <b>Hozzáadás a kezdőképernyőhöz</b> pontot.</li></ol></details>`;
+}
 function renderNoConfig(){
   return `<div class="create wrap">${banner('skyline')}<div class="logo">Éjjeli<br><span>Járat</span></div>
     <section class="card stack"><h3>A szerver még nincs beállítva</h3><p class="muted" style="margin:0">Töltsd ki a <b>config.js</b> fájlban a Supabase projekt címét és az anon kulcsot, aztán töltsd újra az oldalt.</p></section></div>`;
@@ -2774,7 +2800,7 @@ function renderAuth(){
       ${ONLINE.err?`<p class="auth-err">${esc(ONLINE.err)}</p>`:''}
       <button class="btn primary" type="submit" ${ONLINE.busy?'disabled':''}>${ONLINE.busy?'Pillanat…':su?'Fiók létrehozása':'Belépés'}</button>
       <button class="btn small" type="button" data-act="authmode">${su?'Van már fiókom, belépek':'Még nincs fiókom, regisztrálok'}</button>
-    </form><p class="note" style="text-align:center;opacity:.6">Verzió: ${BUILD}</p></div>`;
+    </form>${installCard()}</div>`;
 }
 function rememberOn(){ try{ return localStorage.getItem('ej-remember')!=='0'; }catch(e){ return true; } }
 function rememberedEmail(){ try{ return rememberOn()?(localStorage.getItem('ej-email')||''):''; }catch(e){ return ''; } }

@@ -1,0 +1,17 @@
+{
+  "name": "Éjjeli Járat",
+  "short_name": "Éjjeli Járat",
+  "description": "Böngészős szerepjáték a budapesti éjszakában.",
+  "lang": "hu",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#13141f",
+  "theme_color": "#13141f",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
