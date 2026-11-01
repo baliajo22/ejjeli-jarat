@@ -516,6 +516,18 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .item-type{font-size:12px;color:var(--muted);margin:1px 0 3px}
 .prem-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gold);background:rgba(242,194,48,.14);border-radius:4px;padding:0 5px;margin-left:4px}
 .buy-pog{display:flex;flex-direction:column;align-items:center;line-height:1.15;gap:1px}
+.boss-head{display:flex;gap:14px;align-items:flex-start}
+.boss-port{width:92px;height:92px;flex:none}
+.boss-head h2{margin:2px 0 4px;font-size:20px}
+.boss-head p{margin:0;font-size:13px}
+.boss-hp{position:relative;height:24px;border-radius:12px;background:var(--night);overflow:hidden;margin:12px 0 6px;border:1px solid var(--line)}
+.boss-hp i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#b8322a,var(--bad));transition:width .6s}
+.boss-hp span{position:relative;display:block;text-align:center;font-weight:700;font-size:12.5px;line-height:24px}
+.boss-card{border-color:rgba(236,101,82,.45)}
+.boss-card.dead{border-color:var(--gold)}
+.boss-card.dead .boss-port{filter:grayscale(.8)}
+.boss-win{border-color:var(--gold);background:linear-gradient(180deg,rgba(242,194,48,.12),transparent),var(--concrete)}
+.boss-win h3{display:flex;gap:8px;align-items:center;margin:0 0 6px;color:var(--gold)}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
 .install-card>div{flex:1;min-width:0}
@@ -1656,7 +1668,7 @@ function renderHud(){
 function renderTabs(){
   const t=[['terkep','Térkép'],['kocsma','Kocsma'],['karakter','Karakter'],['bolt','Bolt'],['arena','Aréna'],['kazamata','Kazamata'],['ceh','Céh']];
   const ready = state.active && state.active.endsAt<=now();
-  return `<nav class="tabs"><div class="in">${t.map(([k,l])=>`<button class="tab" data-act="view" data-v="${k}" ${view===k?'aria-current="page"':''}>${TAB_ICON[k]}${l}${(k==='kocsma'&&(ready||wheelFreeReady()||tasksClaimable())&&view!=='kocsma')||(k==='bolt'&&state.freeReshop&&view!=='bolt')?'<span class="dot"></span>':''}${(k==='kazamata'&&state.level<DUNGEON_UNLOCK)||(k==='ceh'&&state.level<GUILD_UNLOCK)?`<span class="lock-mini">${ic('lock')}</span>`:''}</button>`).join('')}</div></nav>`;
+  return `<nav class="tabs"><div class="in">${t.map(([k,l])=>`<button class="tab" data-act="view" data-v="${k}" ${view===k?'aria-current="page"':''}>${TAB_ICON[k]}${l}${(k==='kocsma'&&(ready||wheelFreeReady()||tasksClaimable())&&view!=='kocsma')||(k==='arena'&&view!=='arena'&&bossReady())||(k==='bolt'&&state.freeReshop&&view!=='bolt')?'<span class="dot"></span>':''}${(k==='kazamata'&&state.level<DUNGEON_UNLOCK)||(k==='ceh'&&state.level<GUILD_UNLOCK)?`<span class="lock-mini">${ic('lock')}</span>`:''}</button>`).join('')}</div></nav>`;
 }
 function questCost(q){
   return `<span class="with-ic">${ic('clock','ic-time')}${effDur(q)} mp${mountRed()?` <s class="muted">${q.dur}</s>`:''}</span><span class="with-ic">${ic('coffee','ic-coffee')}−${qCost(q)} kávé</span>`;
@@ -1812,6 +1824,7 @@ const TASKS=[ // ev: what counts, n(L): how many, d: difficulty (reward size), o
   {id:'cr2', ev:'crit',       t:n=>`Okozz ${n} kritikus találatot`, n:()=>rand(4,7), d:1},
   {id:'dg',  ev:'dodge',      t:n=>`Térj ki ${n} támadás elől`, n:()=>rand(5,8), d:1, ok:()=>CLASSES[state.cls].dodge>0},
   {id:'bl',  ev:'block',      t:n=>`Háríts ${n} ütést a pajzsoddal`, n:()=>rand(4,6), d:1, ok:()=>CLASSES[state.cls].block>0},
+  {id:'wb',  ev:'boss',       t:n=>`Csapj le ${n}× a városi főgonoszra`, n:()=>rand(1,2), d:1},
   {id:'gw',  ev:'guild_war',  t:n=>`Vezess ${n} céhharcot`, n:()=>1, d:2, ok:()=>!!state.guild},
   {id:'gd',  ev:'donate',     t:n=>`Fizess be ${fmt(n)} Ft-ot a céh kasszájába`, n:()=>Math.round((50+state.level*10)/50)*50, d:1, ok:()=>!!(state.guild||state.memberOf)}
 ];
@@ -2151,8 +2164,78 @@ function insTipHtml(it){
   return `<div class="tip-cols"><div class="tip-card"><div class="tip-tag">Nála</div>${tipHead(it)}<div class="tip-list">${tipStats(it)}</div></div>
     <div class="tip-card worn"><div class="tip-tag">Rajtad</div>${mine?`${tipHead(mine)}<div class="tip-list">${tipStats(mine)}</div>`:'<div class="note" style="margin-top:6px">Ez a hely nálad üres.</div>'}</div></div>`;
 }
+
+/* ================= city boss: one giant monster a week, everybody hits the same life pool ================= */
+const CITY_BOSSES=[
+  {id:'nyugati', name:'A Nyugati Lidérce', art:'boss_palyaudvar', desc:'Az Eiffel-féle csarnok vasszerkezetéből mászott elő, és minden vonatot lekésett, ami valaha elindult.'},
+  {id:'oroszlan',name:'A Nyelvtelen Oroszlán Bosszúja', art:'boss_hid', desc:'Kétszáz év gúnyolódás után megelégelte. Lemászott a Lánchídról, és mindenkit megharap, aki nyelvet ölt rá.'},
+  {id:'fantom',  name:'Az Operaház Kisebbik Fantomja', art:'boss_opera', desc:'A nagyobbik már nyugdíjas. Ez minden előadást leállít, és visszaköveteli a jegyárat.'},
+  {id:'metro',   name:'A Négyes Metró Sárkánya', art:'boss_metro', desc:'Huszonöt évig épült az alagútja, most kiköltözött belőle. Pontosan érkezik, de nem jó helyre.'},
+  {id:'paprika', name:'A Vásárcsarnok Paprikagólemje', art:'boss_csarnok', desc:'Kalocsai fűszerpaprikából gyúrták. Csíp, ég, és a turisták fotózzák, amíg széttapos mindent.'},
+  {id:'patkany', name:'A Nagykörúti Patkánykirály', art:'boss_csatorna', desc:'A csatornahálózat ura feljött a felszínre, mert a hatos villamos megint nem jött.'}
+];
+const BOSS_FREE=3, BOSS_PAID=5, BOSS_HP_BASE=20000, BOSS_HP_PER_LVL=2000;
+// every class should matter about the same against the city boss
+const BOSS_CLS={kidobo:1.4,magus:1.3,futar:.72,zsebmetszo:.7};
+function weekIndex(){ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-((d.getDay()+6)%7)); return Math.round(d.getTime()/604800000); }
+function cityBoss(){ return CITY_BOSSES[((weekIndex()%CITY_BOSSES.length)+CITY_BOSSES.length)%CITY_BOSSES.length]; }
+function weekLeft(){ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-((d.getDay()+6)%7)+7); return d.getTime()-now(); }
+function bossDay(){ const b=state.boss||(state.boss={}); if(b.day!==todayKey()){ b.day=todayKey(); b.used=0; b.paid=0; } return b; }
+function bossFreeLeft(){ return state?Math.max(0,BOSS_FREE-bossDay().used):0; }
+/* offline: the rest of the city is simulated by the heroes of the ladder */
+function bossBoard(){
+  const wk=weekKey(), frac=Math.min(1,Math.max(.02,1-weekLeft()/604800000));
+  const rows=state.ladder.filter(e=>!e.me&&!e.real).slice(0,16).map(e=>{ const L=entryLevel(e); return withSeed(e.id+wk,()=>({key:e.id,name:e.name,cls:e.cls,level:L,dmg:Math.round(L*BOSS_HP_PER_LVL*.82*frac*(.5+Math.random()))})); });
+  const mine=(state.bossDmg&&state.bossDmg[wk])||0; if(mine) rows.push({key:'me',name:state.name,cls:state.cls,level:state.level,dmg:mine,me:true});
+  return bossBoardOf(rows);
+}
+function bossBoardOf(rows){ rows.sort((a,b)=>b.dmg-a.dmg); const total=rows.reduce((a,r)=>a+r.dmg,0), max=BOSS_HP_BASE+rows.reduce((a,r)=>a+r.level*BOSS_HP_PER_LVL,0)+(rows.some(r=>r.me)?0:state.level*BOSS_HP_PER_LVL);
+  return {rows,total,max,dead:total>=max,hp:Math.max(0,max-total),meIdx:rows.findIndex(r=>r.me)}; }
+function recordBossHit(dealt){ const wk=weekKey(); state.bossDmg=state.bossDmg||{}; state.bossDmg[wk]=(state.bossDmg[wk]||0)+dealt; for(const k of Object.keys(state.bossDmg)) if(k!==wk&&k!==state.bossLastWk) delete state.bossDmg[k]; save(); }
+function bossFighter(){ const B=cityBoss(), f=genFighter(B.name,state.level+2,1.25,'kidobo'); f.art=ENEMY_ART[B.art]; return f; }
+function bossAttack(pay){
+  const b=bossDay(), board=bossBoard(); if(board.dead) return;
+  if(b.used<BOSS_FREE) b.used++; else { if(!pay||b.paid>=BOSS_PAID||!spendPog(1)) return; b.paid++; }
+  const me=playerFighter(), boss=bossFighter(), bdef={...boss,cls:'magus',armor:0}, pool=board.hp, cf=BOSS_CLS[state.cls]||1; let hA=me.hp, dealt=0, t=Math.random()<.5?0:1; const log=[];
+  // the boss has no armour or shield; you keep hitting until 20 blows or until it knocks you out
+  for(let n=0;n<40&&hA>0;n++){ const att=t?boss:me, hits=CLASSES[att.cls].hits||1;
+    for(let h=0;h<hits&&hA>0;h++){ const r=strike(att,t?me:bdef,h>0); if(!t) r.dmg=Math.round(r.dmg*cf); if(t) hA=Math.max(0,hA-r.dmg); else dealt+=r.dmg; log.push({...r,side:t,hA,hB:Math.max(0,pool-dealt),extra:h>0}); }
+    t=1-t; }
+  dealt=Math.min(dealt,pool);
+  const g=Math.round((10+state.level*6)*goldMult()), x=Math.max(10,Math.round(xpNeed(state.level)*.03*xpMult()));
+  state.gold+=g; gainXp(x); recordBossHit(dealt); track('boss',1);
+  const disp={...boss,hp:Math.max(1,pool)};
+  openBattle(me,disp,{log,win:true,boss:true,dealt,dead:dealt>=pool},`<span class="chip">${ic('coin','ic-gold')}+${fmt(g)} Ft</span><span class="chip">${ic('xp','ic-xp')}+${fmt(x)} XP</span>`);
+}
+function bossReward(rank){ return {pog:rank===0?10:rank<3?5:rank<10?3:1, gold:Math.round((200+state.level*50)*goldMult())}; }
+function claimBoss(){ const wk=weekKey(), board=bossBoard(); state.bossClaimed=state.bossClaimed||{}; if(!board.dead||board.meIdx<0||state.bossClaimed[wk]) return;
+  const r=bossReward(board.meIdx); state.bossClaimed[wk]=true; state.chests=(state.chests||0)+1; state.pog=(state.pog||0)+r.pog; state.gold+=r.gold; save(); render(); sfx('levelup');
+  toast(`Jutalom: Heti láda, +${r.pog} pogácsa, +${fmt(r.gold)} Ft! A ládát a Kocsmában, a Feladatoknál nyithatod ki.`); }
+function bossReady(){ if(!state||state.level<1) return false; const B=bossBoard(); return (!B.dead&&bossFreeLeft()>0)||(B.dead&&B.meIdx>=0&&!(state.bossClaimed||{})[weekKey()]); }
+function renderBoss(){
+  const B=cityBoss(), board=bossBoard(), b=bossDay(), free=BOSS_FREE-b.used, paid=BOSS_PAID-b.paid, wk=weekKey(), claimed=(state.bossClaimed||{})[wk];
+  const pct=Math.max(0,board.hp/board.max*100), me=board.meIdx>=0?board.rows[board.meIdx]:null;
+  let html=arenaBar()+`<section class="card boss-card ${board.dead?'dead':''}"><div class="boss-head">${portrait(ENEMY_ART[B.art],'boss-port')}<div><span class="label">${ic('pin')}A heti városi főgonosz</span><h2>${esc(B.name)}</h2><p class="muted">${esc(B.desc)}</p></div></div>
+    <div class="boss-hp"><i style="width:${pct}%"></i><span class="mono">${board.dead?'LEGYŐZVE!':`${fmt(board.hp)} / ${fmt(board.max)}`}</span></div>
+    <div class="row between note"><span>${ic('user')} ${board.rows.length} hős harcol ellene</span><span>${ic('clock')} még ${fmtLeft(weekLeft())}</span></div></section>`;
+  if(board.dead){
+    if(me&&!claimed){ const r=bossReward(board.meIdx); html+=`<section class="card boss-win"><h3>${ic('trophy')}A város győzött!</h3><p>A ${board.meIdx+1}. lettél a sebzési listán. A jutalmad: <b>Heti láda</b>, <b>+${r.pog} pogácsa</b> és <b>${fmt(r.gold)} Ft</b>.</p><button class="btn primary" data-act="bossclaim" style="width:100%">Jutalom átvétele</button></section>`; }
+    else html+=`<section class="card"><p class="muted" style="margin:0">${me?'Átvetted a jutalmad. Hétfőn új főgonosz érkezik.':'Ezen a héten lemaradtál. Hétfőn új főgonosz érkezik, akkor szállj be te is!'}</p></section>`;
+  } else {
+    html+=`<section class="card row between"><div><div class="label">${ic('fight')}Csapások ma</div><div class="note">${free>0?`${free}/${BOSS_FREE} ingyen`:`ingyen elfogyott · pogácsáért még ${paid}/${BOSS_PAID}`}</div></div>
+      ${free>0?`<button class="btn primary" data-act="bosshit">${ic('fight')}Lecsapok</button>`:`<button class="btn pog-btn" data-act="bosshit" data-pog="1" ${paid<=0||(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Lecsapok</button>`}</section>`;
+  }
+  html+=`<section class="card"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('trophy')}Sebzési lista</span>${me?`<span class="note">te: ${board.meIdx+1}. · ${fmt(me.dmg)}</span>`:''}</div><div class="ladder">`;
+  const show=new Set(board.rows.slice(0,10).map((_,i)=>i)); if(board.meIdx>=10) show.add(board.meIdx); let prev=-1;
+  [...show].sort((a,b)=>a-b).forEach(i=>{ const r=board.rows[i]; if(i>prev+1) html+=`<div class="lad-gap">···</div>`; prev=i;
+    html+=`<div class="lad-row ${r.me?'me':''}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(CLASS_ART[r.cls]||CLASS_ART.kidobo,'lad-port')}<span class="lad-name">${esc(r.name)}${r.me?' <em>te</em>':''}</span><span class="lad-lvl mono">${fmt(r.dmg)}</span></div>`; });
+  if(!board.rows.length) html+=`<p class="muted">Még senki nem csapott le rá. Legyél te az első!</p>`;
+  html+=`</div></section><section class="card"><span class="label">${ic('box')}Ha a város legyőzi</span><p class="note" style="margin:6px 0 0">Mindenki, aki legalább egyszer lecsapott, kap egy <b>Heti ládát</b> és forintot. Pogácsa a helyezés szerint: 1. hely +10, 2–3. hely +5, 4–10. hely +3, mindenki más +1. Minden csapás után azonnal kapsz egy kis forintot és XP-t is. A jutalmat a hét végéig vedd át!</p></section>`;
+  return html;
+}
+
 let arenaTab='arena';
-function arenaBar(){ return `<div class="mg-bar" role="tablist">${[['arena','Aréna','fight'],['rang','Ranglétra','trophy']].map(([k,l,i])=>`<button class="mg-chip ${arenaTab===k?'on':''}" role="tab" data-act="arenatab" data-t="${k}" aria-selected="${arenaTab===k}"><span class="mg-ic">${ic(i)}</span>${l}</button>`).join('')}</div>`; }
+function arenaBar(){ return `<div class="mg-bar" role="tablist">${[['arena','Aréna','fight'],['rang','Ranglétra','trophy'],['boss','Főgonosz','fame']].map(([k,l,i])=>`<button class="mg-chip ${arenaTab===k?'on':''}" role="tab" data-act="arenatab" data-t="${k}" aria-selected="${arenaTab===k}"><span class="mg-ic">${ic(i)}</span>${l}${k==='boss'&&bossReady()?'<span class="mg-dot"></span>':''}</button>`).join('')}</div>`; }
 /* real players only: offline these are your own heroes on this device (the online build replaces this) */
 function realPlayers(){
   if(!ONLINE.playersAt||now()-ONLINE.playersAt>20000) setTimeout(loadPlayers,0);
@@ -2188,6 +2271,7 @@ function onlinePlayersCard(left){
 }
 function renderArena(){
   if(arenaTab==='rang') return arenaBar()+renderRealLadder();
+  if(arenaTab==='boss') return renderBoss();
   syncLadder();
   const left=Math.max(0,state.arenaReadyAt-now()), myI=state.ladder.findIndex(e=>e.me), mv=state.rankMove&&state.rankMove.fresh?state.rankMove:null;
   if(mv&&!battle) setTimeout(()=>{ if(state.rankMove) state.rankMove.fresh=false; },6000);
@@ -2606,6 +2690,11 @@ function setHp(hA,hB){ const B=battle; $('#ha').style.width=hA/B.a.hp*100+'%'; $
 function endBattle(){
   const B=battle; if(!B||B.ended) return; B.ended=true; clearTimeout(B.timer);
   const L=B.res.log[B.res.log.length-1]; if(L) setHp(L.hA,L.hB);
+  if(B.res.boss){ if(B.i<B.res.log.length){ $('#blog').insertAdjacentHTML('beforeend','<div class="muted">…</div>'); B.i=B.res.log.length; }
+    const ko=L&&L.hA<=0; if(ko){ $('#fa .port').classList.add('ko'); $('#fa .pw').insertAdjacentHTML('beforeend','<span class="ko-stamp">K.O.</span>'); }
+    sfx(B.res.dead?'win':'hit');
+    $('#bend').innerHTML=`<div class="result win">${B.res.dead?'Ledőlt a főgonosz!':`${fmt(B.res.dealt)} sebzés`}</div><p class="note" style="text-align:center;margin:0">${ko?'Kiütött, de a csapásod beleszámít.':'Kifulladtál, de jól odavertél.'} Minden sebzés a közös listára kerül.</p><div class="rewards">${B.rewardsHtml}</div><button class="btn primary" data-act="closebattle">Tovább</button>`;
+    return; }
   if(B.i<B.res.log.length){ $('#blog').insertAdjacentHTML('beforeend','<div class="muted">…</div>'); $('#blog').scrollTop=1e6; B.i=B.res.log.length; }
   const winEl=$(B.res.win?'#fa':'#fb'), loseEl=$(B.res.win?'#fb':'#fa');
   loseEl.querySelector('.port').classList.add('ko');
@@ -2829,6 +2918,8 @@ document.addEventListener('click',e=>{
     case 'start': { if(listChars().length>=MAX_CHARS) return; const n=($('#nm').value||'').trim(); if(n.length<3){ $('#nm').focus(); toast('A névnek legalább 3 betűsnek kell lennie.'); return; } newPlayer(n,pickedClass); view='terkep'; save(); render(); window.scrollTo(0,0); } break;
     case 'view': view=el.dataset.v; render(); window.scrollTo(0,0); break;
     case 'inspect': hideTip(); openInspect(id); return;
+    case 'bosshit': bossAttack(el.dataset.pog); return;
+    case 'bossclaim': claimBoss(); return;
     case 'arenatab': arenaTab=el.dataset.t; render(); window.scrollTo(0,0); return;
     case 'openwheel': openWheel(); return;
     case 'opentasks': openTasks(); return;
@@ -2926,7 +3017,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 22:39';
+const BUILD='2026.11.01 22:49';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -3053,6 +3144,22 @@ function installCard(){
   if(IS_IOS) return `<details class="card install-card ios"><summary><img src="icon-192.png" alt="" width="48" height="48"><div><b>Telepítsd appként</b><div class="note">Koppints ide, és megmutatom, hogyan.</div></div></summary><ol class="note"><li>Nyisd meg ezt az oldalt <b>Safariban</b>.</li><li>Koppints lent a <b>Megosztás</b> gombra (négyzet felfelé nyíllal).</li><li>Válaszd a <b>Főképernyőhöz adás</b> lehetőséget, majd a <b>Hozzáadás</b>t.</li><li>Ezután a főképernyőn lévő ikonnal indítsd, teljes képernyőn fut.</li></ol></details>`;
   return `<details class="card install-card"><summary><img src="icon-192.png" alt="" width="48" height="48"><div><b>Telepítsd appként</b><div class="note">Koppints ide, és megmutatom, hogyan.</div></div></summary><ol class="note"><li>Androidon nyisd meg <b>Chrome</b>-ban.</li><li>Koppints a jobb felső <b>⋮</b> menüre.</li><li>Válaszd az <b>Alkalmazás telepítése</b> vagy <b>Hozzáadás a kezdőképernyőhöz</b> pontot.</li></ol></details>`;
 }
+/* ---------- city boss: every hit lands in world_boss_hits, the board is summed here ---------- */
+const BB={wk:null,rows:[],at:0,busy:false};
+async function loadBoss(){ if(!SB||!ONLINE.user||!state||BB.busy) return; BB.busy=true;
+  try{ const wk=weekKey(); const {data,error}=await SB.from('world_boss_hits').select('char_id,name,cls,level,dmg').eq('week',wk).limit(20000); BB.at=now(); if(error){ console.warn(error); return; }
+    const m={}; for(const h of data){ const r=m[h.char_id]||(m[h.char_id]={key:'p-'+h.char_id,cid:h.char_id,name:h.name,cls:h.cls,level:h.level,dmg:0}); r.dmg+=h.dmg; r.level=Math.max(r.level,h.level); }
+    BB.rows=Object.values(m); BB.wk=wk; if(view==='arena'&&arenaTab==='boss'&&!battle) render(); }
+  finally{ BB.busy=false; } }
+function bossBoard(){ const wk=weekKey(); if(BB.wk!==wk||now()-BB.at>20000) setTimeout(loadBoss,0);
+  const rows=(BB.wk===wk?BB.rows:[]).map(r=>({...r,me:r.cid===state.cid})), local=(state.bossDmg&&state.bossDmg[wk])||0, mine=rows.find(r=>r.me);
+  if(mine) mine.dmg=Math.max(mine.dmg,local); else if(local) rows.push({key:'me',cid:state.cid,name:state.name,cls:state.cls,level:state.level,dmg:local,me:true});
+  return bossBoardOf(rows); }
+async function recordBossHit(dealt){ const wk=weekKey(); state.bossDmg=state.bossDmg||{}; state.bossDmg[wk]=(state.bossDmg[wk]||0)+dealt; save();
+  await flushCloud();
+  const {error}=await SB.from('world_boss_hits').insert({week:wk,char_id:state.cid,user_id:ONLINE.user.id,name:state.name,cls:state.cls,level:state.level,dmg:dealt});
+  if(error){ console.warn(error); toast(/relation|does not exist|schema cache|world_boss/i.test(error.message||'')?'A városi főgonoszhoz frissíteni kell az adatbázist (world_boss_hits tábla).':'A sebzést most nem sikerült elküldeni.'); }
+  BB.at=0; loadBoss(); }
 function renderNoConfig(){
   return `<div class="create wrap">${banner('skyline')}<div class="logo">Éjjeli<br><span>Járat</span></div>
     <section class="card stack"><h3>A szerver még nincs beállítva</h3><p class="muted" style="margin:0">Töltsd ki a <b>config.js</b> fájlban a Supabase projekt címét és az anon kulcsot, aztán töltsd újra az oldalt.</p></section></div>`;

@@ -142,3 +142,24 @@ create policy "gd insert" on public.guild_donations for insert to authenticated 
   from_user = auth.uid() and exists (select 1 from public.characters c where c.id = from_char and c.user_id = auth.uid()));
 create policy "gd delete" on public.guild_donations for delete to authenticated using (leader_user = auth.uid());
 grant select, insert, delete on public.guild_donations to authenticated;
+
+-- ===== Városi főgonosz: minden csapás egy sor, a heti összeg a közös életerőből fogy =====
+create table if not exists public.world_boss_hits (
+  id         bigint generated always as identity primary key,
+  week       text not null,
+  char_id    text not null references public.characters(id) on delete cascade,
+  user_id    uuid not null default auth.uid(),
+  name       text,
+  cls        text,
+  level      int,
+  dmg        int not null check (dmg >= 0 and dmg <= 1000000),
+  created_at timestamptz not null default now()
+);
+create index if not exists world_boss_week_idx on public.world_boss_hits(week);
+alter table public.world_boss_hits enable row level security;
+drop policy if exists "wb read"   on public.world_boss_hits;
+drop policy if exists "wb insert" on public.world_boss_hits;
+create policy "wb read"   on public.world_boss_hits for select to authenticated using (true);
+create policy "wb insert" on public.world_boss_hits for insert to authenticated with check (
+  user_id = auth.uid() and exists (select 1 from public.characters c where c.id = char_id and c.user_id = auth.uid()));
+grant select, insert on public.world_boss_hits to authenticated;
