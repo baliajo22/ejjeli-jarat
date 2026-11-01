@@ -512,7 +512,7 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .crw.r4{box-shadow:0 0 0 2px var(--r-special),0 0 18px rgba(255,180,84,.4)}
 .crw.r3{box-shadow:0 0 0 2px var(--r-epic)}
 @media (prefers-reduced-motion:reduce){.chest-big.shake,.chest-rays,.chest-banner{animation:none}}
-.mg-bar3 .mg-chip{min-width:0;padding:0 8px;gap:5px;font-size:13.5px}
+.mg-bar+.mg-bar{margin-top:-8px}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
 .install-card>div{flex:1;min-width:0}
@@ -1891,9 +1891,9 @@ function openChest(){ if(!(state.chests>0)) return; state.chests--; const rw=CHE
 
 function minigameBar(){
   dayReset();
-  return `<div class="mg-bar mg-bar3"><button class="mg-chip" data-act="opentasks"><span class="mg-ic">${chestIc()}</span>Feladatok${tasksClaimable()?'<span class="mg-dot" aria-label="átvehető jutalom"></span>':''}</button>
-    <button class="mg-chip" data-act="openwheel"><span class="mg-ic">${svg(`<circle cx="32" cy="34" r="24" fill="${OR}"/><path d="M32 34L32 10M32 34L52 22M32 34L52 46M32 34L32 58M32 34L12 46M32 34L12 22" stroke-width="2"/><circle cx="32" cy="34" r="5" fill="${Y}"/>`)}</span>Kerék${state.wheelFree?'<span class="mg-dot" aria-label="ingyen pörgetés"></span>':''}</button>
-    <button class="mg-chip" data-act="openpoker"><span class="mg-ic">${svg(`<rect x="8" y="14" width="36" height="36" rx="7" fill="${WH}"/><circle cx="18" cy="24" r="3.5" fill="${K}" stroke="none"/><circle cx="26" cy="32" r="3.5" fill="${K}" stroke="none"/><circle cx="34" cy="40" r="3.5" fill="${K}" stroke="none"/>`)}</span>Póker</button></div>`;
+  return `<div class="mg-bar"><button class="mg-chip mg-wide" data-act="opentasks"><span class="mg-ic">${chestIc()}</span>Feladatok${tasksClaimable()?'<span class="mg-dot" aria-label="átvehető jutalom"></span>':''}</button></div>
+    <div class="mg-bar"><button class="mg-chip" data-act="openwheel"><span class="mg-ic">${svg(`<circle cx="32" cy="34" r="24" fill="${OR}"/><path d="M32 34L32 10M32 34L52 22M32 34L52 46M32 34L32 58M32 34L12 46M32 34L12 22" stroke-width="2"/><circle cx="32" cy="34" r="5" fill="${Y}"/>`)}</span>Szerencsekerék${state.wheelFree?'<span class="mg-dot" aria-label="ingyen pörgetés"></span>':''}</button>
+    <button class="mg-chip" data-act="openpoker"><span class="mg-ic">${svg(`<rect x="8" y="14" width="36" height="36" rx="7" fill="${WH}"/><circle cx="18" cy="24" r="3.5" fill="${K}" stroke="none"/><circle cx="26" cy="32" r="3.5" fill="${K}" stroke="none"/><circle cx="34" cy="40" r="3.5" fill="${K}" stroke="none"/>`)}</span>Kockapóker</button></div>`;
 }
 function minigameCard(){
   dayReset();
@@ -2916,7 +2916,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 22:25';
+const BUILD='2026.11.01 22:33';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
