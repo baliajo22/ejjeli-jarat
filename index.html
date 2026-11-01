@@ -513,6 +513,9 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .crw.r3{box-shadow:0 0 0 2px var(--r-epic)}
 @media (prefers-reduced-motion:reduce){.chest-big.shake,.chest-rays,.chest-banner{animation:none}}
 .mg-bar+.mg-bar{margin-top:-8px}
+.item-type{font-size:12px;color:var(--muted);margin:1px 0 3px}
+.prem-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gold);background:rgba(242,194,48,.14);border-radius:4px;padding:0 5px;margin-left:4px}
+.buy-pog{display:flex;flex-direction:column;align-items:center;line-height:1.15;gap:1px}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
 .install-card>div{flex:1;min-width:0}
@@ -1500,7 +1503,17 @@ let SHOP_FX=false;
 // new stock: make sure every item is actually new, show it with a short shuffle animation
 function reshop(){ const old=new Set((state.shop||[]).map(x=>x.name)); let n=genShop(), tries=0; while(tries++<5&&n.filter(x=>old.has(x.name)).length>2) n=genShop();
   state.shop=n; save(); SHOP_FX=true; render(); SHOP_FX=false; const c=$('#shoplist'); if(c&&c.getBoundingClientRect().top<0) c.scrollIntoView({behavior:'smooth',block:'start'}); }
-function genShop(){ const l=state.level, others=SLOTS.map(s=>s[0]).filter(k=>k!=='fegyver').sort(()=>Math.random()-.5).slice(0,6); return [genItem(l,'fegyver'),genItem(l,'fegyver'),...others.map(k=>genItem(l,k))]; }
+function genShop(){ const l=state.level, others=SLOTS.map(s=>s[0]).filter(k=>k!=='fegyver').sort(()=>Math.random()-.5).slice(0,6); return [genItem(l,'fegyver'),genItem(l,'fegyver'),...others.map(k=>genItem(l,k))].map(shopPremium); }
+/* blue and purple stock sometimes asks for pogácsa too: the more pogácsa, the less forint and the better the piece */
+function shopPremium(it){
+  if(it.rar<2||it.rar>3) return it;
+  const v=Math.random(); if(v<.4) return it;
+  const p=v<.75?rand(1,4):rand(6,10);
+  it.pog=p; it.premium=true; it.price=Math.max(5,Math.round(it.price*(1-p*.06)));
+  const k=1+p*.025; for(const s of Object.keys(it.bonus)) it.bonus[s]=Math.round(it.bonus[s]*k);
+  const have=Object.keys(it.bonus); if(have.length<3){ const free=STATS.map(x=>x[0]).filter(x=>!have.includes(x)); const ns=pick(free); it.bonus[ns]=Math.max(1,Math.round(Object.values(it.bonus)[0]*.6)); }
+  if(it.slot==='fegyver'){ it.min=Math.round(it.min*k); it.max=Math.round(it.max*k); } else if(it.armor) it.armor=Math.round(it.armor*k);
+  return it; }
 function genArena(){
   syncLadder();
   const L=state.ladder, i=L.findIndex(e=>e.me); let idx=[];
@@ -2084,8 +2097,8 @@ function renderBolt(){
   let si=0;
   for(const it of state.shop){
     const better=itemScore(it)>itemScore(state.equip[it.slot]);
-    html+=`<div class="item ${SHOP_FX?'shop-new':''}" style="${SHOP_FX?`animation-delay:${si++*60}ms`:''}" data-tip="shop:${it.id}">${itemTile(it)}<div><div class="item-name r${it.rar}">${esc(it.name)} ${cmpMark(it)}</div><div class="item-stats"><span>${SLOT_NAME[it.slot]} · ${RAR_NAME[it.rar]}</span>${itemStats(it)}</div></div>
-      <button class="btn small ${better?'primary':''}" data-act="buy" data-id="${it.id}" ${state.gold<it.price||state.inv.length>=INV_MAX?'disabled':''}>${fmt(it.price)} Ft</button></div>`;
+    html+=`<div class="item ${SHOP_FX?'shop-new':''}" style="${SHOP_FX?`animation-delay:${si++*60}ms`:''}" data-tip="shop:${it.id}">${itemTile(it)}<div><div class="item-name r${it.rar}">${esc(it.name)} ${cmpMark(it)}</div><div class="item-type">${SLOT_NAME[it.slot]} · ${RAR_NAME[it.rar]}${it.premium?' <span class="prem-tag">prémium</span>':''}</div><div class="item-stats">${itemStats(it)}</div></div>
+      <button class="btn small ${better?'primary':''} ${it.pog?'buy-pog':''}" data-act="buy" data-id="${it.id}" ${state.gold<it.price||(state.pog||0)<(it.pog||0)||state.inv.length>=INV_MAX?'disabled':''}>${fmt(it.price)} Ft${it.pog?`<span class="pog-line">+ ${it.pog} ${pogIc()}</span>`:''}</button></div>`;
   }
   if(!state.shop.length) html+=`<p class="muted">Feri kifogyott. Kérj új kínálatot.</p>`;
   html+=`</section><p class="note">▲ jobb, ▼ gyengébb, mint ami most rajtad van. ${HOVER?'Vidd az egeret':'Koppints'} egy tárgyra, és látod, pontosan mit ad. A vett tárgy a hátizsákba kerül.</p>`;
@@ -2876,7 +2889,7 @@ document.addEventListener('click',e=>{
     case 'cstat': { const k=el.dataset.k, n=craftStatN(); if(CRAFT.stats.includes(k)) CRAFT.stats=CRAFT.stats.filter(x=>x!==k); else { CRAFT.stats.push(k); if(CRAFT.stats.length>n) CRAFT.stats.shift(); } const y=window.scrollY; render(); window.scrollTo(0,y); } return;
     case 'craft': { const y=window.scrollY; doCraft(); window.scrollTo(0,y); } break;
     case 'sell': { const i=state.inv.findIndex(x=>x.id===id); if(i<0) return; state.gold+=Math.round(state.inv[i].price*.4); state.inv.splice(i,1); save(); render(); } break;
-    case 'buy': { const i=state.shop.findIndex(x=>x.id===id); if(i<0) return; const it=state.shop[i]; if(state.gold<it.price||state.inv.length>=INV_MAX) return; state.gold-=it.price; state.inv.push(it); state.shop.splice(i,1); save(); render(); toast(`${it.name} a hátizsákban. Vedd fel a Karakter fülön.`); } break;
+    case 'buy': { const i=state.shop.findIndex(x=>x.id===id); if(i<0) return; const it=state.shop[i]; if(state.gold<it.price||(state.pog||0)<(it.pog||0)||state.inv.length>=INV_MAX) return; state.gold-=it.price; state.pog-=(it.pog||0); state.inv.push(it); state.shop.splice(i,1); save(); render(); toast(`${it.name} a hátizsákban. Vedd fel a Karakter fülön.`); } break;
     case 'rushquest': if(state.active&&state.active.endsAt>now()&&spendPog(1)){ state.active.endsAt=now(); save(); render(); } break;
     case 'reshoppog': if(spendPog(1)){ reshop(); toast('Feri kipakolt egy új adagot.'); } break;
     case 'reshop': { if(state.freeReshop){ state.freeReshop=false; reshop(); toast('Ingyenes új kínálat a szintlépésért!'); break; }
@@ -2916,7 +2929,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 22:33';
+const BUILD='2026.11.01 22:37';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
