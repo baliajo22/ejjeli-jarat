@@ -2202,7 +2202,7 @@ function bossAttack(pay){
     for(let h=0;h<hits&&hA>0;h++){ const r=strike(att,t?me:bdef,h>0); if(!t) r.dmg=Math.round(r.dmg*cf); if(t) hA=Math.max(0,hA-r.dmg); else dealt+=r.dmg; log.push({...r,side:t,hA,hB:Math.max(0,pool-dealt),extra:h>0}); }
     t=1-t; }
   dealt=Math.min(dealt,pool);
-  const g=Math.round((10+state.level*6)*goldMult()), x=Math.max(10,Math.round(xpNeed(state.level)*.03*xpMult()));
+  const g=Math.round((5+state.level*3)*goldMult()), x=Math.max(5,Math.round(xpNeed(state.level)*.015*xpMult()));
   state.gold+=g; gainXp(x); recordBossHit(dealt); track('boss',1);
   const disp={...boss,hp:Math.max(1,pool)};
   openBattle(me,disp,{log,win:true,boss:true,dealt,dead:dealt>=pool},`<span class="chip">${ic('coin','ic-gold')}+${fmt(g)} Ft</span><span class="chip">${ic('xp','ic-xp')}+${fmt(x)} XP</span>`);
@@ -3017,7 +3017,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 22:58';
+const BUILD='2026.11.01 23:01';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
