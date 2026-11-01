@@ -528,6 +528,9 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .boss-card.dead .boss-port{filter:grayscale(.8)}
 .boss-win{border-color:var(--gold);background:linear-gradient(180deg,rgba(242,194,48,.12),transparent),var(--concrete)}
 .boss-win h3{display:flex;gap:8px;align-items:center;margin:0 0 6px;color:var(--gold)}
+.tip.sticky{pointer-events:auto}
+.tip-act{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tip-act span{font-size:12px}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
 .install-card>div{flex:1;min-width:0}
@@ -1427,7 +1430,7 @@ function statEffects(k){
   return out.join('');
 }
 /* ---- item tooltip: what it gives and how it compares to what you wear ---- */
-let tipEl=null, tipKey=null;
+let tipEl=null, tipKey=null, TIP_STICKY=false;
 const HOVER=matchMedia('(hover: hover) and (pointer: fine)').matches;
 const sgn=v=>v>0?'+'+v:v<0?'−'+Math.abs(v):'±0';
 function derive(equip){
@@ -1480,10 +1483,10 @@ function wornTipHtml(it){
   STATS.forEach(([k,n])=>{ if(it.bonus[k]) rows+=r(ic(k,'ic-'+k),n,'+'+it.bonus[k]); });
   return `<div class="tip-head">${itemTile(it)}<div><div class="item-name r${it.rar}">${esc(it.name)}</div><div class="note">${RAR_NAME[it.rar]} · ${SLOT_NAME[it.slot]} · ${it.lvl}. szint</div></div></div>
     <div class="tip-sec"><div class="label">Amit ad</div>${rows||'<div class="note">Nincs extra bónusza.</div>'}</div>
-    <div class="tip-sec tip-foot">Rajtad van. Cseréhez vegyél fel mást a hátizsákból.</div>`;
+    <div class="tip-sec tip-foot">${TIP_STICKY?`<div class="tip-act"><span>Leveheted, ekkor a hátizsákba kerül.</span><button class="btn small primary" data-act="unequip" data-k="${it.slot}">${ic('bag')}Leveszem</button></div>`:'Rajtad van. Kattints rá, ha le szeretnéd venni.'}</div>`;
 }
-function hideTip(){ tipEl?.remove(); tipEl=null; tipKey=null; }
-document.addEventListener('mouseover',e=>{ if(!HOVER||(drag&&drag.started)) return; const r=e.target.closest('[data-tip]'); if(r){ if(tipKey!==r.dataset.tip) showTip(r); } else if(tipEl) hideTip(); });
+function hideTip(){ tipEl?.remove(); tipEl=null; tipKey=null; TIP_STICKY=false; }
+document.addEventListener('mouseover',e=>{ if(!HOVER||(drag&&drag.started)) return; if(TIP_STICKY&&(e.target.closest('.tip')||e.target.closest('[data-tip]')?.dataset.tip===tipKey)) return; if(TIP_STICKY&&!e.target.closest('[data-tip]')) return; const r=e.target.closest('[data-tip]'); if(r){ if(tipKey!==r.dataset.tip) showTip(r); } else if(tipEl) hideTip(); });
 window.addEventListener('scroll',()=>{ if(tipEl) hideTip(); },{passive:true});
 function armorRed(f){return Math.min(CLASSES[f.cls].maxArmor, f.armor/Math.max(1,f.level*10))}
 function playerFighter(){
@@ -2909,6 +2912,8 @@ function gwFinal(){
 document.addEventListener('click',e=>{
   if(suppressClick){ suppressClick=false; return; }
   const el=e.target.closest('[data-act]'), tr=e.target.closest('[data-tip]');
+  if(!el&&tr&&tr.dataset.tip.startsWith('eq:')){ if(TIP_STICKY&&tipKey===tr.dataset.tip){ hideTip(); return; } hideTip(); showTip(tr); TIP_STICKY=true; if(tipEl){ tipEl.innerHTML=wornTipHtml(state.equip[tr.dataset.tip.split(':')[1]]); tipEl.classList.add('sticky'); placeTip(tr); } return; }
+  if(!el&&e.target.closest('.tip.sticky')) return;
   if(!el){ if(tr&&!HOVER){ tipKey===tr.dataset.tip?hideTip():showTip(tr); } else if(!tr) hideTip(); return; }
   if(el.disabled) return;
   const a=el.dataset.act, id=el.dataset.id, sig0=stateSig(), view0=view, btab0=boltTab;
@@ -2976,6 +2981,8 @@ document.addEventListener('click',e=>{
     case 'crar': CRAFT.rar=+el.dataset.r; CRAFT.made=null; { const y=window.scrollY; render(); window.scrollTo(0,y); } return;
     case 'cstat': { const k=el.dataset.k, n=craftStatN(); if(CRAFT.stats.includes(k)) CRAFT.stats=CRAFT.stats.filter(x=>x!==k); else { CRAFT.stats.push(k); if(CRAFT.stats.length>n) CRAFT.stats.shift(); } const y=window.scrollY; render(); window.scrollTo(0,y); } return;
     case 'craft': { const y=window.scrollY; doCraft(); window.scrollTo(0,y); } break;
+    case 'unequip': { const k=el.dataset.k, it=state.equip[k]; if(!it) return; if(state.inv.length>=INV_MAX){ toast('Tele a hátizsák. Adj el vagy szedj szét valamit előbb.'); return; }
+      state.inv.push(it); state.equip[k]=null; hideTip(); save(); render(); sfx('cloth'); toast(`${it.name} a hátizsákban.`); } break;
     case 'sell': { const i=state.inv.findIndex(x=>x.id===id); if(i<0) return; state.gold+=Math.round(state.inv[i].price*.4); state.inv.splice(i,1); save(); render(); } break;
     case 'buy': { const i=state.shop.findIndex(x=>x.id===id); if(i<0) return; const it=state.shop[i]; if(state.gold<it.price||(state.pog||0)<(it.pog||0)||state.inv.length>=INV_MAX) return; state.gold-=it.price; state.pog-=(it.pog||0); state.inv.push(it); state.shop.splice(i,1); save(); render(); toast(`${it.name} a hátizsákban. Vedd fel a Karakter fülön.`); } break;
     case 'rushquest': if(state.active&&state.active.endsAt>now()&&spendPog(1)){ state.active.endsAt=now(); save(); render(); } break;
@@ -3017,7 +3024,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 23:02';
+const BUILD='2026.11.01 23:07';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
