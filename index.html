@@ -1417,14 +1417,14 @@ function renderCreate(){
     ${renderRoster()}
     ${chars.length?`<span class="label" style="margin-top:6px">${ic('xp')}Új hős</span>`:''}
     ${full?`<p class="note">Elérted a ${MAX_CHARS} mentett hőst. Törölj egyet, ha újat szeretnél.</p>`:''}
-    <div class="field"><label class="label" for="nm">${ic('user')}A hősöd neve</label><input id="nm" maxlength="20" placeholder="pl. Éjféli Ernő" autocomplete="off"></div>
+    <div class="field"><label class="label" for="nm">${ic('user')}A hősöd neve</label><input id="nm" maxlength="20" placeholder="Írd be a hősöd nevét" autocomplete="off" required aria-describedby="nmhint"><div class="note" id="nmhint">Legalább 2 betű. Név nélkül nem indulhatsz.</div></div>
     <div class="field"><span class="label">${ic('fight')}Kaszt</span>
       <div class="classes">${Object.entries(CLASSES).map(([k,c])=>`
         <button class="cls" data-act="pickcls" data-cls="${k}" aria-pressed="${k===pickedClass}">
           ${portrait(CLASS_ART[k])}<h3>${c.name}</h3><p>${c.desc}</p><span class="perk">${c.perk}</span>
         </button>`).join('')}</div>
     </div>
-    <button class="btn primary" data-act="start" style="padding:14px;font-size:16px" ${full?'disabled':''}>Indulás az éjszakába</button>
+    <button class="btn primary" data-act="start" id="startbtn" style="padding:14px;font-size:16px" disabled data-full="${full?1:''}">Indulás az éjszakába</button>
     <div class="row between acct"><span class="note">${ic('user')} ${esc(ONLINE.user.email||'')}</span><button class="btn small" data-act="logout">Kijelentkezés</button></div>
     <p class="note">Tesztverzió: a küldetések idejét másodpercekre gyorsítottuk. A hőseid a fiókodban mentődnek, bármelyik eszközről eléred őket.</p>
     <p class="note" style="text-align:center;opacity:.6">Verzió: ${BUILD}</p>
@@ -2219,8 +2219,8 @@ document.addEventListener('click',e=>{
   const a=el.dataset.act, id=el.dataset.id, sig0=stateSig(), view0=view, btab0=boltTab;
   switch(a){
     case 'sound': SFX.toggle(); render(); return;
-    case 'pickcls': { pickedClass=el.dataset.cls; const v=$('#nm')?.value||''; render(); $('#nm').value=v; } break;
-    case 'start': { if(listChars().length>=MAX_CHARS) return; const n=($('#nm').value||'').trim()||'Éjféli Ernő'; newPlayer(n,pickedClass); view='terkep'; save(); render(); window.scrollTo(0,0); } break;
+    case 'pickcls': { pickedClass=el.dataset.cls; const v=$('#nm')?.value||''; render(); $('#nm').value=v; nameCheck(); } break;
+    case 'start': { if(listChars().length>=MAX_CHARS) return; const n=($('#nm').value||'').trim(); if(n.length<2){ $('#nm').focus(); toast('Adj nevet a hősödnek.'); return; } newPlayer(n,pickedClass); view='terkep'; save(); render(); window.scrollTo(0,0); } break;
     case 'view': view=el.dataset.v; render(); window.scrollTo(0,0); break;
     case 'inspect': hideTip(); openInspect(id); return;
     case 'closeinsp': INSPECT=null; hideTip(); $('#overlay-root').innerHTML=''; return;
@@ -2286,9 +2286,12 @@ document.addEventListener('click',e=>{
   else if(ACT_SFX[a] && (stateSig()!==sig0 || ['pickcls','pickemb','gtab','start','enterchar','switchchar','closelvl','ginvite','gcand'].includes(a))) sfx(ACT_SFX[a]);
 });
 
+function nameCheck(){ const b=$('#startbtn'), i=$('#nm'); if(!b||!i) return; b.disabled=!!b.dataset.full||i.value.trim().length<2; }
+document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 14:55';
+const BUILD='2026.11.01 15:00';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
