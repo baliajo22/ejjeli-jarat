@@ -404,7 +404,7 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .mg-go{padding:14px;font-size:16px}
 .wheel-wrap{position:relative;width:min(280px,78vw);aspect-ratio:1;margin:4px auto 0}
 .wheel{width:100%;height:100%;border-radius:50%;box-shadow:0 0 0 6px rgba(242,163,58,.25),0 10px 30px rgba(0,0,0,.5)}
-.wheel.spinning{transition:transform 4s cubic-bezier(.12,.7,.16,1)}
+.wheel.spinning{transition:transform 4s cubic-bezier(.15,.6,.12,1)}
 .wheel-svg{width:100%;height:100%;display:block}
 .wheel-ptr{position:absolute;left:50%;top:-10px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:26px solid var(--bad);z-index:2;filter:drop-shadow(0 2px 2px rgba(0,0,0,.6))}
 .wh-ic{width:30px;height:30px;display:grid;place-items:center;color:#fff}
@@ -426,7 +426,7 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .dz.ph{display:block;background:rgba(255,255,255,.05);border:2px dashed var(--line)}
 .dz.rolling{animation:diceroll .5s ease-out}
 @keyframes diceroll{0%{transform:rotate(-200deg) scale(.4);opacity:.2}70%{transform:rotate(15deg) scale(1.08)}100%{transform:none;opacity:1}}
-@media (prefers-reduced-motion:reduce){.wheel.spinning{transition-duration:.6s}.dz.rolling{animation:none}}
+@media (prefers-reduced-motion:reduce){.wheel.spinning{transition-duration:1.2s}.dz.rolling{animation:none}}
 .seg.seg3{grid-template-columns:repeat(3,1fr)}
 .seg.seg3 button{padding:9px 4px;font-size:13px}
 .emb-pick{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
@@ -1503,7 +1503,7 @@ const WHEEL=[
   {k:'cof2',w:6,  c:'#6b3a2a', lab:()=>'+40 kávé', icon:()=>ic('coffee','ic-coffee'), give(){ state.energy=Math.min(ENERGY_MAX,state.energy+40); return '+40 kávé'; }},
   {k:'jack',w:2,  c:'#8a6a12', lab:()=>'5 pogi!', icon:()=>pogIc(), give(){ state.pog=(state.pog||0)+5; return 'FŐNYEREMÉNY: +5 pogácsa!'; }}
 ];
-let WHEEL_ROT=0, WHEEL_BUSY=false, WHEEL_MSG='';
+let WHEEL_ROT=0, WHEEL_ROT_SHOW=null, WHEEL_BUSY=false, WHEEL_MSG='';
 function wheelSvg(){
   const n=WHEEL.length, R=100, seg=360/n; let g='';
   WHEEL.forEach((p,i)=>{ const a0=(i*seg-90-seg/2)*Math.PI/180, a1=((i+1)*seg-90-seg/2)*Math.PI/180;
@@ -1517,7 +1517,7 @@ function renderWheel(){
   $('#overlay-root').innerHTML=`<div class="overlay" data-act="closemg"><div class="mg-card" data-act="noop" role="dialog" aria-label="Szerencsekerék">
     <button class="ins-x" data-act="closemg" aria-label="Bezárás">×</button>
     <span class="label">${ic('pin')}Ica asztala</span><h2>Szerencsekerék</h2>
-    <div class="wheel-wrap"><div class="wheel-ptr"></div><div class="wheel" id="wheel" style="transform:rotate(${WHEEL_ROT}deg)">${wheelSvg()}</div></div>
+    <div class="wheel-wrap"><div class="wheel-ptr"></div><div class="wheel" id="wheel" style="transform:rotate(${WHEEL_ROT_SHOW??WHEEL_ROT}deg)">${wheelSvg()}</div></div>
     <div class="mg-msg" id="wmsg">${WHEEL_MSG||(free?'Ma még egyszer ingyen pörgethetsz!':`Pörgetés 1 pogácsáért · ma még ${paidLeft}/${WHEEL_PAID_DAILY}`)}</div>
     ${free?`<button class="btn primary mg-go" data-act="spin" ${WHEEL_BUSY?'disabled':''}>${ic('refresh')}Ingyen pörgetés</button>`
       :`<button class="btn pog-btn mg-go" data-act="spin" data-pog="1" ${WHEEL_BUSY||paidLeft<=0||(state.pog||0)<1?'disabled':''}>${paidLeft>0?`${pogIc()}Pörgetés · 1 pogácsa`:'Holnap újra'}</button>`}
@@ -1529,9 +1529,10 @@ function spinWheel(){
   if(state.wheelFree) state.wheelFree=false;
   else { if(state.wheelPaid>=WHEEL_PAID_DAILY||!spendPog(1)) return; state.wheelPaid++; }
   const tot=WHEEL.reduce((a,p)=>a+p.w,0); let r=Math.random()*tot, i=0; while(r>=WHEEL[i].w){ r-=WHEEL[i].w; i++; }
-  const seg=360/WHEEL.length, target=360-i*seg+(Math.random()-.5)*seg*.7, base=WHEEL_ROT-WHEEL_ROT%360;
-  WHEEL_ROT=base+360*5+target; WHEEL_BUSY=true; save(); renderWheel();
-  const w=$('#wheel'); w.getBoundingClientRect(); w.classList.add('spinning'); w.style.transform=`rotate(${WHEEL_ROT}deg)`;
+  const seg=360/WHEEL.length, target=(360-i*seg+(Math.random()-.5)*seg*.7)%360;
+  const from=WHEEL_ROT%360; WHEEL_ROT=from+360*6+((target-from)%360+360)%360; WHEEL_BUSY=true; save();
+  WHEEL_ROT_SHOW=from; renderWheel(); WHEEL_ROT_SHOW=null;
+  const w=$('#wheel'); w.getBoundingClientRect(); requestAnimationFrame(()=>{ w.classList.add('spinning'); w.style.transform=`rotate(${WHEEL_ROT}deg)`; });
   let ticks=0; const tk=setInterval(()=>{ if(++ticks>14) return clearInterval(tk); sfx('tick'); },160+ticks*15);
   setTimeout(()=>{ clearInterval(tk); WHEEL_BUSY=false; const txt=WHEEL[i].give(); WHEEL_MSG=`<b class="${WHEEL[i].k==='jack'?'jack':''}">${esc(txt)}</b>`; sfx(WHEEL[i].k==='jack'||WHEEL[i].k==='pog'?'levelup':'coins'); save();
     const lv=lvlFx; lvlFx=false; render(); if(lv){ lvlFx=lv; render(); } else renderWheel(); }, 4200);
@@ -2465,7 +2466,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 15:14';
+const BUILD='2026.11.01 15:18';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
