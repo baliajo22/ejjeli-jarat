@@ -349,6 +349,19 @@ main{flex:1;padding-block:16px calc(110px + env(safe-area-inset-bottom,0px));dis
 .ros>div{min-width:0}
 .ros-acts{display:flex;flex-direction:column;gap:6px;align-items:stretch}
 .btn.danger{background:var(--bad);color:#fff}
+.dung-done-list summary{cursor:pointer;display:flex;align-items:center;gap:8px;font-weight:700}
+.dung-mini{display:flex;align-items:center;gap:10px;margin-top:10px}
+.dung-mini .port{width:40px;height:40px;flex:none}
+.story p{margin:8px 0;font-size:14px;color:var(--muted)}
+.story .pips{margin-top:6px}
+.story.dawn{background:linear-gradient(180deg,rgba(242,194,48,.14),transparent 70%),var(--concrete);border-color:rgba(242,194,48,.5)}
+.dung.dawn{border-color:rgba(242,194,48,.45);background:linear-gradient(180deg,rgba(242,194,48,.07),transparent 50%),var(--concrete)}
+.port.dawn{background:radial-gradient(circle at 50% 35%,#7a6a3a,#2a2618 78%)}
+.port.dawn svg{filter:sepia(.35) saturate(1.3) brightness(1.12)}
+.dawn-title{font-size:15px;display:flex;align-items:center;gap:8px;margin:6px 0 -6px;color:var(--gold)}
+.dawn-title.night{color:var(--muted)}
+.dawn-card{border-color:var(--gold)}
+.title-chip{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;font-weight:700;color:var(--sodium-ink);background:var(--gold);border-radius:999px;padding:2px 10px}
 .seg.seg3{grid-template-columns:repeat(3,1fr)}
 .seg.seg3 button{padding:9px 4px;font-size:13px}
 .emb-pick{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
@@ -637,6 +650,12 @@ Object.assign(ENEMY_ART,{
  boss_barlang:`${[[6,0,10],[18,0,16],[44,0,14],[56,0,9]].map(([x,y,h])=>`<path d="M${x-4} ${y}h8l-4 ${h}z" fill="${GY}" stroke-width="1.5"/>`).join('')}<path d="M32 16l14 16-14 30-14-30z" fill="${PU}"/><path d="M32 16l-6 16 6 30 6-30z" fill="#b9acff" stroke-width="1.2"/><path d="M18 32h28" stroke-width="1.5"/><circle cx="27" cy="34" r="2" fill="${WH}" stroke="none"/><circle cx="37" cy="34" r="2" fill="${WH}" stroke="none"/>${star4(12,40,4,PU)}${star4(52,46,3,PU)}${star4(48,26,3,TL)}`,
  boss_opera:`<path d="M2 4h60v8H2z" fill="${RD2}"/><path d="M2 12c4 20 6 40 4 52H2zM62 12c-4 20-6 40-4 52h4z" fill="${RD}"/><path d="M14 22c0-6 8-10 18-10s18 4 18 10c0 16-8 30-18 30S14 38 14 22z" fill="${WH}"/><path d="M20 26c2-3 6-3 8 0M36 26c2-3 6-3 8 0" stroke-width="2.5"/><path d="M22 38c6 6 14 6 20 0" fill="${K}"/><path d="M32 12v40" stroke="${GL}" stroke-width="1"/><path d="M32 12c10 0 18 4 18 10 0 16-8 30-18 30" fill="${K}" fill-opacity=".15" stroke="none"/>`,
  boss_ejfel:`<circle cx="32" cy="32" r="26" fill="${NV}"/><circle cx="32" cy="32" r="20" fill="${PU}" fill-opacity=".35" stroke="${PU}"/>${Array.from({length:12},(_,i)=>{const a=i*Math.PI/6,x=32+Math.sin(a)*23,y=32-Math.cos(a)*23;return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.4" fill="${Y}" stroke="none"/>`;}).join('')}<path d="M32 32V12M32 32V14" stroke="${Y}" stroke-width="3"/><path d="M26 22a10 10 0 1012 14 7.5 7.5 0 11-12-14z" fill="${Y}"/><circle cx="25" cy="38" r="2" fill="${WH}" stroke="none"/><circle cx="39" cy="38" r="2" fill="${WH}" stroke="none"/>${star4(12,12,4,WH)}${star4(52,52,3,WH)}`,
+ boss_hid:`<path d="M8 66c0-12 6-20 24-20s24 8 24 20z" fill="${CN}"/><path d="M12 30c0-12 9-20 20-20s20 8 20 20c0 6-4 10-8 12H20c-4-2-8-6-8-12z" fill="#b5a77f"/>${[[16,18],[22,12],[32,10],[42,12],[48,18],[12,28],[52,28]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="5" fill="#a09068" stroke-width="1.5"/>`).join('')}<ellipse cx="32" cy="32" rx="12" ry="12" fill="#c9bb92"/><circle cx="27" cy="29" r="2" fill="${K}" stroke="none"/><circle cx="37" cy="29" r="2" fill="${K}" stroke="none"/><path d="M28 36h8l-4 4z" fill="${K}"/><path d="M26 41c4 2 8 2 12 0" fill="none"/>`,
+ boss_gellert:`<path d="M8 66c0-16 10-24 24-24s24 8 24 24z" fill="#3a2f5a"/><ellipse cx="32" cy="32" rx="10" ry="11" fill="#9fd19a"/><path d="M10 26h44" stroke-width="3"/><path d="M18 26L32 0l14 26z" fill="#3a2f5a"/><path d="M24 14h16" stroke="${PU}" stroke-width="2.5"/><circle cx="28" cy="31" r="1.8" fill="${Y}" stroke="none"/><circle cx="36" cy="31" r="1.8" fill="${Y}" stroke="none"/><path d="M31 34l1 5 2-1" fill="none"/><path d="M27 40c3 2 7 2 10 0" fill="none"/>${star4(54,40,4,PU)}${star4(8,46,3,PU)}`,
+ boss_sirkert:`<path d="M14 64V26c0-10 8-18 18-18s18 8 18 18v38z" fill="${GL}"/><path d="M32 16v16M25 22h14" stroke-width="3"/><ellipse cx="32" cy="44" rx="9" ry="10" fill="${PL}"/><circle cx="28" cy="42" r="2.5" fill="${K}"/><circle cx="36" cy="42" r="2.5" fill="${K}"/><path d="M29 50h6" stroke-width="2"/><path d="M8 62h48" stroke-width="3"/><circle cx="10" cy="50" r="3" fill="${OR}" stroke-width="1.2"/><circle cx="54" cy="50" r="3" fill="${OR}" stroke-width="1.2"/>`,
+ boss_muzeum:`<path d="M8 66c0-16 10-24 24-24s24 8 24 24z" fill="${GY}"/><path d="M18 42V24c0-9 6-16 14-16s14 7 14 16v18z" fill="${GL}"/><path d="M22 26h20v6H22z" fill="${K}"/><path d="M32 8V2M28 4h8" stroke-width="2"/><path d="M32 2c4 0 8 2 10 6" fill="none" stroke="${RD}" stroke-width="3"/><circle cx="27" cy="29" r="1.5" fill="${Y}" stroke="none"/><circle cx="37" cy="29" r="1.5" fill="${Y}" stroke="none"/><rect x="22" y="48" width="20" height="12" rx="2" fill="${Y}"/><path d="M26 54h12" stroke-width="1.5"/>`,
+ boss_bunker:`<path d="M8 66c0-16 10-24 24-24s24 8 24 24z" fill="${WH}"/><path d="M28 42h8v22h-8z" fill="${RD}" stroke="none"/><path d="M24 50h16" stroke="${RD}" stroke-width="5"/><ellipse cx="32" cy="28" rx="12" ry="14" fill="${GD}"/><circle cx="26" cy="26" r="5" fill="${NV}"/><circle cx="38" cy="26" r="5" fill="${NV}"/><circle cx="26" cy="26" r="2" fill="${RD}" stroke="none"/><circle cx="38" cy="26" r="2" fill="${RD}" stroke="none"/><path d="M28 36h8v8h-8z" fill="${GY}"/><path d="M32 44v6" stroke-width="3"/><circle cx="32" cy="52" r="3" fill="${GY}"/>`,
+ boss_kapu:`<path d="M8 64V28a24 24 0 0148 0v36z" fill="${NV}"/><path d="M16 64V30a16 16 0 0132 0v34z" fill="${K}"/><circle cx="32" cy="34" r="10" fill="${PU}" fill-opacity=".5" stroke="${PU}"/><circle cx="28" cy="33" r="2" fill="${Y}" stroke="none"/><circle cx="36" cy="33" r="2" fill="${Y}" stroke="none"/>${key(42,52,-90,Y)}${star4(32,14,5,Y)}<path d="M8 64h48" stroke-width="3"/>`,
  boss_csatorna:`<rect x="4" y="44" width="56" height="20" fill="${GY}"/><path d="M4 50h56M4 56h56M14 44v20M26 44v20M38 44v20M50 44v20" stroke="${K}" stroke-width="1.5"/><path d="M8 50c0-18 10-30 24-30s24 12 24 30c0 6-4 10-10 10H18c-6 0-10-4-10-10z" fill="${GD}"/><path d="M14 46c6 3 30 3 36 0" fill="none" stroke="${K}" stroke-width="2"/><path d="M16 46l3 4 3-4 3 4 3-4 3 4 3-4 3 4 3-4 3 4 3-4" fill="${WH}" stroke-width="1.2"/><circle cx="22" cy="30" r="5" fill="${Y}"/><circle cx="42" cy="30" r="5" fill="${Y}"/><path d="M22 27v6M42 27v6" stroke-width="2"/><path d="M18 22l2-14 6 7 6-10 6 10 6-7 2 14z" fill="${Y}"/><circle cx="32" cy="14" r="1.8" fill="${RD}" stroke="none"/><path d="M28 38h2M34 38h2" stroke-width="2"/>`,
  boss_szobor:`<rect x="10" y="54" width="44" height="10" fill="${CN}"/><path d="M10 58h44" stroke-width="1.2"/><path d="M14 56c0-14 8-22 18-22s18 8 18 22z" fill="#8a6a3a"/><path d="M20 44l-8-6M44 44l8-6" stroke="#8a6a3a" stroke-width="7"/><path d="M20 44l-8-6M44 44l8-6" fill="none"/><ellipse cx="32" cy="24" rx="11" ry="12" fill="#a07a44"/><path d="M21 20c0-9 5-13 11-13s11 4 11 13c-3-3-6-4-11-4s-8 1-11 4z" fill="#7a5a2e"/><path d="M25 24h5M34 24h5" stroke="${TL}" stroke-width="3"/><path d="M27 31c3 1.5 7 1.5 10 0" fill="none"/><path d="M24 34c2 4 14 4 16 0" fill="none" stroke="#5e8f6a" stroke-width="1.5"/><path d="M40 38l3 5M44 30l4 2" stroke="#5e8f6a" stroke-width="1.5"/><circle cx="27.5" cy="24" r="1" fill="${WH}" stroke="none"/><circle cx="36.5" cy="24" r="1" fill="${WH}" stroke="none"/>`,
  boss_furdo:`<path d="M10 66c0-20 9-30 22-30s22 10 22 30" fill="#bfe8e0"/><path d="M8 52c4-6 2-12 6-16M56 52c-4-6-2-12-6-16M20 62c-2-6 2-8 0-12M44 62c2-6-2-8 0-12" fill="none" stroke="${PL}" stroke-width="2.5"/><ellipse cx="32" cy="32" rx="10" ry="12" fill="${PL}"/><path d="M20 27c0-10 6-17 12-17s12 7 12 17c-3-3-7-4-12-4s-9 1-12 4z" fill="${WH}"/><path d="M24 14c4 4 12 4 16 0" fill="none" stroke="${GL}"/><path d="M27 31c1 1 3 1 4 0M33 31c1 1 3 1 4 0"/><path d="M28 38c3 2 5 2 8 0" fill="none"/><circle cx="32" cy="21" r="2" fill="${TL}" stroke-width="1"/>${star4(12,16,4,TL)}${star4(52,14,3,TL)}`
@@ -673,6 +692,15 @@ function dollArt(st){
     out+=`<g class="worn worn-${k}" transform="translate(${x} ${y}) scale(${sc})${r?` rotate(${r} 32 32)`:''}">${art}</g>`; }
   return out;
 }
+function sunBoss(c1,c2,face){ return `<g>${Array.from({length:12},(_,i)=>{const a=i*Math.PI/6,x1=32+Math.cos(a)*20,y1=32+Math.sin(a)*20,x2=32+Math.cos(a)*30,y2=32+Math.sin(a)*30;return `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}" stroke="${c2}" stroke-width="4"/>`;}).join('')}</g><circle cx="32" cy="32" r="20" fill="${c1}"/>${face}`; }
+Object.assign(ENEMY_ART,{
+  boss_h_piac:sunBoss(Y,OR,`<circle cx="25" cy="29" r="2.5" fill="${K}" stroke="none"/><circle cx="39" cy="29" r="2.5" fill="${K}" stroke="none"/><path d="M24 38c4 4 12 4 16 0" fill="none" stroke-width="2.5"/><path d="M20 18h24l-4-6-4 4-4-6-4 6-4-4z" fill="${RD}"/>`),
+  boss_h_liget:sunBoss(WH,Y,`<path d="M22 40c0-8 4-14 10-14s10 6 10 14" fill="${WH}"/><path d="M32 26c0-6 2-10 6-10" fill="none" stroke-width="3"/><path d="M38 16l5 1-5 2z" fill="${OR}"/><circle cx="36" cy="18" r="1.3" fill="${K}" stroke="none"/><path d="M20 16l4-6 4 4 4-6 4 6 4-4 4 6z" fill="${Y}"/>`),
+  boss_h_uveg:sunBoss('#cfefff',TL,`<path d="M32 16l12 16-12 16-12-16z" fill="#e8f8ff"/><path d="M20 32h24M32 16v32" stroke-width="1.2"/><circle cx="27" cy="30" r="1.8" fill="${BU}" stroke="none"/><circle cx="37" cy="30" r="1.8" fill="${BU}" stroke="none"/>`),
+  boss_h_napora:sunBoss(Y,BR,`<path d="M32 32L46 22" stroke-width="4"/><path d="M32 32V14" stroke-width="2"/><circle cx="32" cy="32" r="3" fill="${K}"/><circle cx="24" cy="38" r="2" fill="${K}" stroke="none"/><circle cx="40" cy="38" r="2" fill="${K}" stroke="none"/>`),
+  boss_h_szivarvany:sunBoss(WH,PU,`${[RD,OR,Y,GR,BU].map((c,i)=>`<path d="M${16+i*2} 40a${16-i*2} ${16-i*2} 0 01${32-i*4} 0" fill="none" stroke="${c}" stroke-width="2.5"/>`).join('')}<circle cx="27" cy="30" r="2" fill="${K}" stroke="none"/><circle cx="37" cy="30" r="2" fill="${K}" stroke="none"/>`),
+  boss_h_hajnal:sunBoss(OR,Y,`<circle cx="32" cy="32" r="14" fill="${Y}"/><circle cx="27" cy="30" r="2.2" fill="${K}" stroke="none"/><circle cx="37" cy="30" r="2.2" fill="${K}" stroke="none"/><path d="M26 37c4 3 8 3 12 0" fill="none" stroke-width="2.5"/><path d="M18 14l5-8 5 6 4-8 4 8 5-6 5 8z" fill="${WH}"/>`)
+});
 const portrait=(art,cls='')=>`<div class="port ${cls}">${svg(art||CLASS_ART.kidobo)}</div>`;
 const itemTile=it=>it?`<div class="itile t${it.rar}" title="${esc(it.name)}">${svg(ITEM_ART[it.base]||ITEM_DEFAULT)}</div>`:'';
 
@@ -944,6 +972,52 @@ const DUNGEONS=[
    floors:['Óraműgólem','Harangszellem','Holdlidérc','Éjféli futár-árny','Csillagkígyó','Időtolvaj','Tükördémon','Álomfaló','Éjféli Őrző','Éjfél Maga'],
    art:['Parkolóőr-gólem','Kopogószellem','Hivatali lidérc','Kísértetfutár','Liftakna-sárkány','Jegyellenőr-árny','Tetőtéri vámpír','Galambraj-szellem','Villamosdémon','boss_ejfel']}
 ];
+/* story order: a new dungeon every 5 levels up to 100, the Heart of Midnight is the finale */
+const NIGHT_EXTRA=[
+  {id:'hid',name:'A Lánchíd pillérei alatt',unlock:0,base:0,desc:'A kőoroszlánok éjjel lemásznak a talapzatról, és nem a turistákra várnak.',
+   floors:['Kőoroszlán-kölyök','Pillértroll','Láncszem-gólem','Ködsirály','Hídvámos-árny','Dunai hableány','Jégtábla-szellem','Pillérmanó','Oroszlánőr','A Nyelvtelen Oroszlán'],
+   art:['Aluljárói troll','Parkolóőr-gólem','Parkolóőr-gólem','Galambraj-szellem','Jegyellenőr-árny','Csatornanimfa','Kopogószellem','Lépcsőházi kobold','Aluljárói troll','boss_hid']},
+  {id:'gellert',name:'Boszorkányszombat a Gellért-hegyen',unlock:0,base:0,desc:'A legenda szerint itt gyűlnek a boszorkányok. A legenda téved: nem csak szombaton.',
+   floors:['Seprűs boszorkány','Fekete macska','Károgó varjú','Üstszellem','Gyógyfűmanó','Sziklalidérc','Holdfény-nimfa','Átokvető','Szombati táncos','A Boszorkányok Anyja'],
+   art:['Hivatali lidérc','Lépcsőházi kobold','Galambraj-szellem','Kopogószellem','Lépcsőházi kobold','Aluljárói troll','Csatornanimfa','Hivatali lidérc','Kísértetfutár','boss_gellert']},
+  {id:'sirkert',name:'Az éjféli sírkert',unlock:0,base:0,desc:'A mécsesek maguktól gyúlnak ki, és valaki minden éjjel átrendezi a koszorúkat.',
+   floors:['Sírkőmanó','Mécsesszellem','Kriptaőr','Csontzenész','Koszorúlidérc','Gyászhuszár','Varjúraj','Kőangyal','Temetőkapus','A Kripta Ura'],
+   art:['Lépcsőházi kobold','Kopogószellem','Parkolóőr-gólem','Kísértetfutár','Hivatali lidérc','Jegyellenőr-árny','Galambraj-szellem','Parkolóőr-gólem','Jegyellenőr-árny','boss_sirkert']},
+  {id:'muzeum',name:'Az éjszakai múzeum',unlock:0,base:0,desc:'Zárás után a kiállítás életre kel, és a teremőr már évek óta nem ment haza.',
+   floors:['Páncélos lovag','Múmia','Dínócsontváz','Festményszellem','Teremőr-árny','Kőkori vadász','Vitrinlidérc','Porcelánbaba','Kristályló','A Kiállítás Őre'],
+   art:['Parkolóőr-gólem','Kopogószellem','Liftakna-sárkány','Hivatali lidérc','Jegyellenőr-árny','Aluljárói troll','Kísértetfutár','Kopogószellem','Csatornanimfa','boss_muzeum']},
+  {id:'bunker',name:'A Sziklakórház bunkere',unlock:0,base:0,desc:'A vár alatti kórházban még mindig szól a riasztó, pedig a háborúnak régen vége.',
+   floors:['Gázálarcos árny','Ápolókísértet','Hordágygólem','Szirénalidérc','Bunkerpatkány','Fénycsőmanó','Folyosóőr','Riadólidérc','Ügyeletes árny','A Főorvos'],
+   art:['Jegyellenőr-árny','Kopogószellem','Parkolóőr-gólem','Hivatali lidérc','Patkánykirály','Lépcsőházi kobold','Parkolóőr-gólem','Villamosdémon','Kísértetfutár','boss_bunker']},
+  {id:'kapu',name:'Az Éjfél Kapuja',unlock:0,base:0,desc:'Az utolsó villamos ide jár ki. A kalauz nem kér jegyet, csak egy választ.',
+   floors:['Lámpaoltó','Ködvándor','Holdtükör','Óraharang-gólem','Árnyfutár','Csillagtolvaj','Az utolsó villamos','Kulcsőr','Kapuőr-árny','A Kapu Őrzője'],
+   art:['Kopogószellem','Kísértetfutár','Csatornanimfa','Parkolóőr-gólem','Jegyellenőr-árny','Galambraj-szellem','Villamosdémon','Lépcsőházi kobold','Jegyellenőr-árny','boss_kapu']}
+];
+const DAWN_DUNGEONS=[
+  {id:'h_piac',name:'A Hajnali Piac',unlock:0,base:0,desc:'Az első napsugárral megérkeznek a fénylények is, és mindent meg akarnak venni.',dawn:true,
+   floors:['Napfénykofa','Aranyalma-manó','Ragyogó galamb','Fényhentes','Hajnali árus','Mézgólem','Fényes vásárló','Napraforgó-szellem','Piaci fénylovag','A Piac Napja'],
+   art:['Galambraj-szellem','Lépcsőházi kobold','Galambraj-szellem','Aluljárói troll','Kísértetfutár','Parkolóőr-gólem','Hivatali lidérc','Csatornanimfa','Parkolóőr-gólem','boss_h_piac']},
+  {id:'h_liget',name:'A Napfényes Városliget',unlock:0,base:0,desc:'A tó vize aranyszínű, a csónakok maguktól eveznek, és mindenki mosolyog. Gyanúsan.',dawn:true,
+   floors:['Aranyhattyú','Napvirág-nimfa','Fényes jégkorcsolyázó','Ragyogó kacsa','Csónakos szellem','Fénybokor-manó','Arany gesztenye-gólem','Délibáb','Napozó óriás','A Ragyogó Hattyúkirály'],
+   art:['Galambraj-szellem','Csatornanimfa','Kísértetfutár','Galambraj-szellem','Kopogószellem','Lépcsőházi kobold','Parkolóőr-gólem','Hivatali lidérc','Aluljárói troll','boss_h_liget']},
+  {id:'h_uveg',name:'Az Üvegpalota',unlock:0,base:0,desc:'A napfény itt ezerfelé törik meg, és minden tükörképnek saját akarata van.',dawn:true,
+   floors:['Tükörlovag','Prizmamanó','Fénytörő gólem','Üvegszellem','Csillámlidérc','Napsugár-íjász','Kristálykígyó','Tükördáma','Fényőr','A Ezerarcú Tükör'],
+   art:['Parkolóőr-gólem','Lépcsőházi kobold','Parkolóőr-gólem','Hivatali lidérc','Kopogószellem','Kísértetfutár','Liftakna-sárkány','Csatornanimfa','Jegyellenőr-árny','boss_h_uveg']},
+  {id:'h_napora',name:'A Napóra tér',unlock:0,base:0,desc:'Itt áll a város új órája. Az árnyéka nem a nap járását mutatja, hanem a tiédet.',dawn:true,
+   floors:['Árnyékvető','Délidő-gólem','Napmutató-szellem','Fényperc-manó','Óraárnyék','Délibáb-lovag','Ragyogó órás','Napfogyatkozás-lidérc','Zenit-őr','Az Örök Dél'],
+   art:['Jegyellenőr-árny','Parkolóőr-gólem','Hivatali lidérc','Lépcsőházi kobold','Kopogószellem','Kísértetfutár','Villamosdémon','Tetőtéri vámpír','Parkolóőr-gólem','boss_h_napora']},
+  {id:'h_szivarvany',name:'A Szivárványhíd',unlock:0,base:0,desc:'Esők után megjelenik egy híd, ami nem vezet sehova. Aki átmegy rajta, nem ugyanoda ér vissza.',dawn:true,
+   floors:['Színszellem','Esőcsepp-nimfa','Szivárványkígyó','Felhőgólem','Ködfény-manó','Villámfogó','Napzápor-lidérc','Aranykincs-őr','Égi vándor','A Hét Szín Ura'],
+   art:['Csatornanimfa','Csatornanimfa','Liftakna-sárkány','Parkolóőr-gólem','Lépcsőházi kobold','Villamosdémon','Hivatali lidérc','Aluljárói troll','Kísértetfutár','boss_h_szivarvany']},
+  {id:'h_hajnal',name:'A Hajnal Szíve',unlock:0,base:0,desc:'Ahol a fény születik. Kiderül, hogy a sötétséget nem lehet teljesen elűzni, csak megérteni.',dawn:true,
+   floors:['Fényőrző','Ragyogó árny','Napkorona-lovag','Hajnalcsillag','Aranyharang-gólem','Fénytolvaj','Délibáb-király','Első sugár','A Fény Kapuja','Hajnal Maga'],
+   art:['Parkolóőr-gólem','Kísértetfutár','Jegyellenőr-árny','Galambraj-szellem','Parkolóőr-gólem','Hivatali lidérc','Liftakna-sárkány','Villamosdémon','Jegyellenőr-árny','boss_h_hajnal']}
+];
+(()=>{ const last=DUNGEONS.find(d=>d.id==='ejfel'); DUNGEONS.splice(DUNGEONS.indexOf(last),1); DUNGEONS.push(...NIGHT_EXTRA,last);
+  DUNGEONS.forEach((d,i)=>{ d.unlock=d.base=5*(i+1); });
+  DAWN_DUNGEONS.forEach((d,i)=>{ d.unlock=d.base=100+5*i; }); DUNGEONS.push(...DAWN_DUNGEONS); })();
+const NIGHT=DUNGEONS.filter(d=>!d.dawn), FINAL_ID='ejfel';
+function dungLocked(d){ return state.level<d.unlock || (d.dawn&&!state.dawn); }
 const DUNGEON_UNLOCK=DUNGEONS[0].unlock;
 // dungeon foes pay roughly 1.6× a quest of the same level, always drop an item (20% special), the boss always drops a special one
 // a newer dungeon never starts easier than the previous one's 8th floor
@@ -955,7 +1029,9 @@ function floorPower(d,fl){
 }
 // dungeons are a real step up from tavern quests: tougher foes, bigger pay
 const DUNG_HARD=1.3, DUNG_PAY=1.6;
-function dungeonFoe(d,fl){ const boss=fl===9, p=floorPower(d,fl), lvl=p.lvl, mult=p.mult*DUNG_HARD; return {level:lvl, boss, cls:Object.keys(CLASSES)[(fl+d.unlock)%Object.keys(CLASSES).length], mult, gold:Math.round((20+lvl*14)*(boss?3:1)*DUNG_PAY*goldMult()), xp:Math.round((40+lvl*22)*(boss?2:1)*DUNG_PAY*xpMult())}; }
+// high-level enemies outscale players faster, so later dungeons ease off a little to keep the same curve; dawn stays steeper
+function dungTune(d){ const l=d.unlock; return d.dawn?.93:(l<=15?1:Math.max(.9,1-(l-15)*.1/30)); }
+function dungeonFoe(d,fl){ const boss=fl===9, p=floorPower(d,fl), lvl=p.lvl, mult=p.mult*DUNG_HARD*dungTune(d); return {level:lvl, boss, cls:Object.keys(CLASSES)[(fl+d.unlock)%Object.keys(CLASSES).length], mult, gold:Math.round((20+lvl*14)*(boss?3:1)*DUNG_PAY*goldMult()), xp:Math.round((40+lvl*22)*(boss?2:1)*DUNG_PAY*xpMult())}; }
 
 /* arena ladder */
 const LADDER_N=50;
@@ -1026,7 +1102,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
 let mapSig=null, selQuest=null; const LOOT={};
 let pickedEmblem='hold', guildTab='tagok', lastGuildReady=null;
 let state=null, view='terkep', battle=null, lastReady=null, lastArenaReady=null, lvlFx=false, lastDungReady=null, boltTab='kisbolt';
-function xpNeed(l){return Math.round(60*Math.pow(l,1.6))}
+function xpNeed(l){return Math.round(60*Math.pow(l,1.45))}
 function statCost(n){return Math.round(4+n*1.6+n*n*.08)}
 
 /* ================= items ================= */
@@ -1390,7 +1466,7 @@ function renderKarakter(){
       <div class="doll-col">${DOLL_LEFT.map(dslot).join('')}</div>
       <div class="doll-center">
         ${portrait(CLASS_ART[state.cls],'doll-port')}
-        <div><h2>${esc(state.name)}</h2><div class="muted" style="font-size:13px">${state.level}. szintű ${c.name.toLowerCase()} · <span class="with-ic">${ic('fame','ic-fame')}${state.fame} hírnév</span></div></div>
+        <div><h2>${esc(state.name)}</h2><div class="muted" style="font-size:13px">${state.level}. szintű ${c.name.toLowerCase()} · <span class="with-ic">${ic('fame','ic-fame')}${state.fame} hírnév</span></div>${(state.titles||[]).length?`<div class="title-chip">${ic('trophy')}${esc(state.titles[state.titles.length-1])}</div>`:''}</div>
         <div class="wslot" data-drop="slot:fegyver" ${w?'data-tip="eq:fegyver"':''}><div class="drag-h" ${w?'data-drag="eq:fegyver"':''}>${w?itemTile(w):emptyTile('fegyver')}</div><div><div class="label">Fegyver</div>${w?`<div class="item-name r${w.rar}">${esc(w.name)}</div><div class="item-stats">${itemStats(w)}</div>`:'<div class="muted">Üres</div>'}</div></div>
       </div>
       <div class="doll-col">${DOLL_RIGHT.map(dslot).join('')}</div>
@@ -1628,28 +1704,40 @@ function renderTerkep(){
   return `<section class="scene"><span class="label">${ic('pin')}Budapest · éjszakai járat</span><h2>${greet}, ${esc(state.name)}!</h2><p>Merre indulsz? Koppints egy helyszínre a térképen.</p></section>
    <section class="map">${mapSvg()}${spots}</section>`;
 }
+function dungCard(d,left){
+  const fl=state.dungeons[d.id]||0, locked=dungLocked(d), done=fl>=10;
+  const pips=Array.from({length:10},(_,i)=>`<i class="${i<fl?'done':(i===fl&&!locked?'cur':'')}${i===9?' boss':''}"></i>`).join('');
+  let html=`<section class="card dung ${locked?'locked':''} ${d.dawn?'dawn':''}"><div class="dung-head">${portrait(ENEMY_ART['boss_'+d.id],d.dawn?'dawn':'')}<div><h3>${d.name}</h3><p class="muted">${d.desc}</p><div class="pips" aria-label="${fl}/10 emelet">${pips}</div><div class="note mono">${done?'Teljesítve':`${fl}/10 emelet`}${d.id===FINAL_ID?' · a történet vége':''}</div></div></div>`;
+  if(locked) html+=`<div class="dung-lock">${ic('lock')}${d.unlock}. szinttől nyílik</div>`;
+  else if(done) html+=`<div class="dung-done">${ic('trophy')}${d.dawn?'Legyőzted, a hajnal itt is győzött.':`A főgonosz legyőzve, megszerezted az óra egy darabját.`}</div>`;
+  else {
+    const f=dungeonFoe(d,fl);
+    html+=`<div class="dung-next">${portrait(ENEMY_ART[d.art[fl]],d.dawn?'dawn':'')}<div><div class="label">${fl+1}. emelet${fl===9?' · főgonosz':''}</div><div class="item-name">${esc(d.floors[fl])}</div>
+      <div class="item-stats"><span>${f.level}. szint · ${CLASSES[f.cls].name}</span></div></div></div><div class="q-rewards"><span class="rw rw-gold">${ic('coin')}<b>+${fmt(f.gold)}</b> Ft</span><span class="rw rw-xp">${ic('xp')}<b>+${fmt(f.xp)}</b> XP</span>${f.boss?`<span class="rw rw-spec">${ic('box')}<b>Különleges</b> tárgy</span><span class="rw rw-pog">${pogIc()}<b>+${POG_BOSS}</b></span>`:`<span class="rw rw-item">${ic('box')}<b>${Math.round(FLOOR_DROP*100)}%</b> tárgy</span><span class="rw rw-spec"><b>${Math.round(SPECIAL_CHANCE*100)}%</b> különleges</span><span class="rw rw-pog">${pogIc()}<b>${Math.round(POG_RATE.floor*100)}%</b></span>`}</div>
+      ${left?`<button class="btn dung-btn pog-btn" data-act="dungeon" data-pog="1" data-id="${d.id}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}Lemerülök most · 1 pogácsa</button>`:`<button class="btn primary dung-btn" data-act="dungeon" data-id="${d.id}">${ic('down')}Lemerülök</button>`}`;
+  }
+  return html+`</section>`;
+}
+function dungList(list,left){
+  const firstLocked=list.findIndex(d=>dungLocked(d)); let html='';
+  const done=list.filter(d=>(state.dungeons[d.id]||0)>=10);
+  if(done.length>1) html+=`<details class="card dung-done-list"><summary>${ic('trophy')}Teljesített kazamaták · ${done.length}</summary>${done.map(d=>`<div class="dung-mini">${portrait(ENEMY_ART['boss_'+d.id],d.dawn?'dawn':'')}<div><b>${d.name}</b><div class="note">${d.unlock}. szint · ${esc(d.floors[9])} legyőzve</div></div></div>`).join('')}</details>`;
+  list.forEach((d,i)=>{ if((firstLocked<0||i<=firstLocked)&&!(done.length>1&&done.includes(d))) html+=dungCard(d,left); });
+  if(firstLocked>=0&&firstLocked<list.length-1) html+=`<p class="note" style="text-align:center">${ic('lock')} További ${list.length-1-firstLocked} kazamata vár rád a ${list[list.length-1].unlock}. szintig.</p>`;
+  return html;
+}
 function renderKazamata(){
   const left=Math.max(0,(state.dungeonReadyAt||0)-now()), open=state.level>=DUNGEON_UNLOCK;
-  let html=`${banner('kazamata')}<section class="scene"><span class="label">${ic('pin')}A város alatt</span><h2>Ahová a metró sem jár</h2><p>Emeletről emeletre egyre mélyebbre. Minden lejutás után pihenned kell, a tizedik emeleten pedig egy főgonosz vár.</p></section>`;
+  const frags=NIGHT.filter(d=>(state.dungeons[d.id]||0)>=10).length;
+  let html=`${banner('kazamata')}<section class="scene"><span class="label">${ic('pin')}A város alatt</span><h2>${state.dawn?'A város kivilágosodott':'Ahová a metró sem jár'}</h2><p>Emeletről emeletre egyre mélyebbre. Minden lejutás után pihenned kell, a tizedik emeleten pedig egy főgonosz vár.</p></section>`;
+  html+=`<section class="card story ${state.dawn?'dawn':''}"><div class="row between"><span class="label">${ic('clock')}${state.dawn?'Hajnal':'Az éjféli óra'}</span><span class="mono note">${frags}/${NIGHT.length} darab</span></div>
+    <p>${state.dawn?'Éjfél legyőzve, az óra újra jár, és a városra hajnal virradt. A fény azonban új lényeket is felébresztett: a Hajnal kazamatái még nehezebb ellenfeleket rejtenek.':'Valaki összetörte a város nagy óráját, és azóta minden éjszaka éjfélkor ragad meg. Minden kazamata főgonosza őriz belőle egy darabot. Gyűjtsd össze mindet, és a 100. szinten szállj szembe magával Éjféllel.'}</p>
+    <div class="pips">${NIGHT.map((d,i)=>`<i class="${(state.dungeons[d.id]||0)>=10?'done':''}${d.id===FINAL_ID?' boss':''}"></i>`).join('')}</div></section>`;
   if(!open) html+=`<section class="card lock-card">${ic('lock')}<div><h3>Az ${DUNGEON_UNLOCK}. szinten nyílik meg</h3><p class="muted">Még ${DUNGEON_UNLOCK-state.level} szintet kell lépned. Addig járd a kerületeket és az arénát.</p></div></section>`;
   else html+=`<section class="card row between"><span class="label">${ic('clock')}Következő lejutás</span><span class="mono" id="dcd" style="font-size:16px">${left?fmtTime(left):'Most'}</span></section>`;
-  const firstLocked=DUNGEONS.findIndex(d=>state.level<d.unlock);
-  for(const [di,d] of DUNGEONS.entries()){
-    if(firstLocked>=0&&di>firstLocked) continue;
-    const fl=state.dungeons[d.id]||0, locked=state.level<d.unlock, done=fl>=10;
-    const pips=Array.from({length:10},(_,i)=>`<i class="${i<fl?'done':(i===fl&&!locked?'cur':'')}${i===9?' boss':''}"></i>`).join('');
-    html+=`<section class="card dung ${locked?'locked':''}"><div class="dung-head">${portrait(ENEMY_ART['boss_'+d.id])}<div><h3>${d.name}</h3><p class="muted">${d.desc}</p><div class="pips" aria-label="${fl}/10 emelet">${pips}</div><div class="note mono">${done?'Teljesítve':`${fl}/10 emelet`}</div></div></div>`;
-    if(locked) html+=`<div class="dung-lock">${ic('lock')}${d.unlock}. szinttől nyílik</div>`;
-    else if(done) html+=`<div class="dung-done">${ic('trophy')}A főgonosz legyőzve, a kazamata a tiéd.</div>`;
-    else {
-      const f=dungeonFoe(d,fl);
-      html+=`<div class="dung-next">${portrait(ENEMY_ART[d.art[fl]])}<div><div class="label">${fl+1}. emelet${fl===9?' · főgonosz':''}</div><div class="item-name">${esc(d.floors[fl])}</div>
-        <div class="item-stats"><span>${f.level}. szint · ${CLASSES[f.cls].name}</span></div></div><div class="q-rewards"><span class="rw rw-gold">${ic('coin')}<b>+${fmt(f.gold)}</b> Ft</span><span class="rw rw-xp">${ic('xp')}<b>+${fmt(f.xp)}</b> XP</span>${f.boss?`<span class="rw rw-spec">${ic('box')}<b>Különleges</b> tárgy</span><span class="rw rw-pog">${pogIc()}<b>+${POG_BOSS}</b></span>`:`<span class="rw rw-item">${ic('box')}<b>${Math.round(FLOOR_DROP*100)}%</b> tárgy</span><span class="rw rw-spec"><b>${Math.round(SPECIAL_CHANCE*100)}%</b> különleges</span><span class="rw rw-pog">${pogIc()}<b>${Math.round(POG_RATE.floor*100)}%</b></span>`}</div>
-        ${left?`<button class="btn dung-btn pog-btn" data-act="dungeon" data-pog="1" data-id="${d.id}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}Lemerülök most · 1 pogácsa</button>`:`<button class="btn primary dung-btn" data-act="dungeon" data-id="${d.id}">${ic('down')}Lemerülök</button>`}</div>`;
-    }
-    html+=`</section>`;
-  }
-  if(firstLocked>=0&&firstLocked<DUNGEONS.length-1){ const rest=DUNGEONS.length-1-firstLocked; html+=`<p class="note" style="text-align:center">${ic('lock')} További ${rest} kazamata vár rád a ${DUNGEONS[DUNGEONS.length-1].unlock}. szintig.</p>`; }
+  if(state.dawn){ html+=`<h3 class="dawn-title">${ic('xp')}A Hajnal kazamatái</h3>`+dungList(DAWN_DUNGEONS,left)+`<h3 class="dawn-title night">${ic('clock')}Az éjszaka kazamatái</h3>`; }
+  html+=dungList(NIGHT,left);
+  if(!state.dawn) html+=`<p class="note" style="text-align:center">${ic('xp')} Éjfél legyőzése után megnyílnak a Hajnal kazamatái.</p>`;
   return html;
 }
 
@@ -1765,8 +1853,8 @@ function shieldFx(pw){
 }
 function boltFx(fromPw,toPw,cls='bolt'){
   return new Promise(res=>{
-    if(RM) return res();
-    const v=$('.versus'), vr=v.getBoundingClientRect(), a=fromPw.getBoundingClientRect(), b=toPw.getBoundingClientRect();
+    const v=$('.versus'); if(RM||!v||!fromPw.isConnected||!toPw.isConnected) return res();
+    const vr=v.getBoundingClientRect(), a=fromPw.getBoundingClientRect(), b=toPw.getBoundingClientRect();
     const d=document.createElement('div'); d.className=cls; v.appendChild(d);
     const x0=a.left+a.width/2-vr.left-11, y0=a.top+a.height/2-vr.top-11, x1=b.left+b.width/2-vr.left-11, y1=b.top+b.height/2-vr.top-11;
     d.animate([{transform:`translate(${x0}px,${y0}px) scale(.5)`},{transform:`translate(${(x0+x1)/2}px,${Math.min(y0,y1)-34}px) scale(1.3)`},{transform:`translate(${x1}px,${y1}px) scale(1)`}],{duration:280,easing:'ease-in'}).onfinish=()=>{ d.remove(); res(); };
@@ -1845,7 +1933,7 @@ function showLevelUp(L){
       <div class="lv-row">${ic('refresh','ic-item')}<span>Ingyenes boltfrissítés</span><b></b><span class="eff-next">1×</span></div>
     </div>
     ${L.from<GUILD_UNLOCK&&L.to>=GUILD_UNLOCK?`<div class="lv-unlock"><div class="port">${svg(emblemSvg('hold'))}</div><div><div class="label">${ic('user')}Új funkció</div><div class="lv-unlock-name">Megnyílt a Céh</div><div class="note">Alapíts céhet, hívj be tagokat, és harcoljatok más céhek ellen.</div></div><button class="btn small primary" data-act="golvlceh">Megnézem</button></div>`:''}
-    ${DUNGEONS.filter(d=>d.unlock>L.from&&d.unlock<=L.to).map(d=>`<div class="lv-unlock">${portrait(ENEMY_ART['boss_'+d.id])}<div><div class="label">${ic('down')}Új kazamata nyílt meg</div><div class="lv-unlock-name">${d.name}</div><div class="note">10 emelet, a végén ${esc(d.floors[9])} vár.</div></div><button class="btn small primary" data-act="golvlkaz">Megnézem</button></div>`).join('')}
+    ${DUNGEONS.filter(d=>d.unlock>L.from&&d.unlock<=L.to&&(!d.dawn||state.dawn)).map(d=>`<div class="lv-unlock">${portrait(ENEMY_ART['boss_'+d.id])}<div><div class="label">${ic('down')}Új kazamata nyílt meg</div><div class="lv-unlock-name">${d.name}</div><div class="note">10 emelet, a végén ${esc(d.floors[9])} vár.</div></div><button class="btn small primary" data-act="golvlkaz">Megnézem</button></div>`).join('')}
     <div class="lv-tip">${ic('cart')}<span><b>Tipp:</b> az ellenfelek is erősödtek. Nézz be a boltba egy jobb fegyverért, és edzd ${({str:'az erődet',dex:'az ügyességedet',int:'az eszedet'})[CLASSES[state.cls].main]}.</span></div>
     <button class="btn primary lv-btn" data-act="closelvl">Szuper!</button>
   </div></div>`;
@@ -1878,7 +1966,19 @@ function endBattle(){
   $('#bend').innerHTML=`<div class="result ${B.res.win?'win':'lose'}">${B.res.win?'Győzelem!':'Vereség'}</div><div class="rewards">${B.rewardsHtml}</div><button class="btn primary" data-act="closebattle">Tovább</button>`;
   if(B.res.win) setTimeout(()=>coinBurst($('#bend .result')),120);
 }
-function closeBattle(){ if(battle){ clearTimeout(battle.timer); battle=null; $('#overlay-root').innerHTML=''; } render(); }
+function closeBattle(){ if(battle){ clearTimeout(battle.timer); battle=null; $('#overlay-root').innerHTML=''; } render(); if(state&&state.pendingDawn){ state.pendingDawn=false; save(); showDawn(); } }
+function showDawn(){
+  sfx('levelup');
+  $('#overlay-root').innerHTML=`<div class="overlay lv-overlay" role="dialog" aria-label="Hajnal"><div class="lv-card dawn-card">
+    <div class="lv-burst"><div class="lv-rays"></div><div class="port" style="width:110px;height:110px;position:relative">${svg(ENEMY_ART.boss_h_hajnal)}</div></div>
+    <h2 class="lv-title">Hajnalodik</h2>
+    <p class="lv-sub">Éjfél elesett. Az óra mutatói újra mozognak, és Budapest fölött hosszú idő után először felkel a nap.</p>
+    <div class="lv-list"><div class="lv-row">${ic('trophy','ic-fame')}<span>Új cím</span><b></b><span class="eff-next">Éjfél Legyőzője</span></div>
+      <div class="lv-row">${ic('xp','ic-xp')}<span>Megnyíltak a Hajnal kazamatái</span><b></b><span class="eff-next">${DAWN_DUNGEONS.length} új</span></div></div>
+    <p class="note lv-note">A fény azonban új lényeket is felébresztett. A Hajnal kazamatái erősebb ellenfeleket rejtenek, és a 100. szinttől ötszintenként nyílnak.</p>
+    <button class="btn primary lv-btn" data-act="golvlkaz">Irány a Hajnal</button>
+  </div></div>`;
+}
 
 /* ================= actions ================= */
 function doFight(){
@@ -1924,13 +2024,15 @@ function doDuel(id,pay){
 }
 function doDungeon(id,pay){
   sfx('down');
-  const d=DUNGEONS.find(x=>x.id===id); if(!d||state.level<d.unlock) return;
+  const d=DUNGEONS.find(x=>x.id===id); if(!d||dungLocked(d)) return;
   const fl=state.dungeons[d.id]||0; if(fl>=10) return;
   if((state.dungeonReadyAt||0)>now()&&!(pay&&spendPog(1))) return;
   const f=dungeonFoe(d,fl), foe=genFighter(d.floors[fl],f.level,f.mult,f.cls); foe.art=ENEMY_ART[d.art[fl]];
   const me=playerFighter(), res=simulate(me,foe); let rw='';
   if(res.win){
     state.dungeons[d.id]=fl+1; state.gold+=f.gold;
+    if(d.id===FINAL_ID&&fl===9&&!state.dawn){ state.dawn=true; state.titles=Array.from(new Set([...(state.titles||[]),'Éjfél Legyőzője'])); state.pendingDawn=true; }
+    if(d.id==='h_hajnal'&&fl===9){ state.titles=Array.from(new Set([...(state.titles||[]),'A Hajnal Hőse'])); }
     const pg=f.boss?POG_BOSS:(Math.random()<POG_RATE.floor?1:0); state.pog+=pg;
     rw=`<span class="chip">${ic('coin','ic-gold')}+${f.gold} Ft</span><span class="chip">${ic('xp','ic-xp')}+${f.xp} XP</span>`;
     if(f.boss||Math.random()<FLOOR_DROP){ const sp=f.boss||Math.random()<SPECIAL_CHANCE, it=genItem(Math.max(state.level,f.level),null,null,sp?SPECIAL_RAR:undefined), ok=addItem(it); if(sp) rw+=`<span class="chip r4" style="font-weight:700">${ic('xp')}Különleges zsákmány!</span>`; rw+=`<span class="chip loot" data-tip="loot:${(LOOT[it.id]=it).id}" style="padding:3px 10px 3px 3px">${itemTile(it).replace('class="itile','style="width:30px;height:30px;border-radius:999px" class="itile')}<span class="r${it.rar}">${esc(it.name)}</span>${ok?'':' (eladva, tele a hátizsák)'}</span>`; }
@@ -2093,7 +2195,7 @@ document.addEventListener('click',e=>{
 
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.10.31 01:10';
+const BUILD='2026.11.01 14:11';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
