@@ -2174,7 +2174,7 @@ const CITY_BOSSES=[
   {id:'paprika', name:'A Vásárcsarnok Paprikagólemje', art:'boss_csarnok', desc:'Kalocsai fűszerpaprikából gyúrták. Csíp, ég, és a turisták fotózzák, amíg széttapos mindent.'},
   {id:'patkany', name:'A Nagykörúti Patkánykirály', art:'boss_csatorna', desc:'A csatornahálózat ura feljött a felszínre, mert a hatos villamos megint nem jött.'}
 ];
-const BOSS_FREE=3, BOSS_PAID=5, BOSS_HP_BASE=20000, BOSS_HP_PER_LVL=2000;
+const BOSS_FREE=3, BOSS_PAID=5, BOSS_HP_BASE=10000, BOSS_HP_PER_LVL=3400; // sized so one player alone needs about a week of free hits
 // every class should matter about the same against the city boss
 const BOSS_CLS={kidobo:1.4,magus:1.3,futar:.72,zsebmetszo:.7};
 function weekIndex(){ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-((d.getDay()+6)%7)); return Math.round(d.getTime()/604800000); }
@@ -3017,7 +3017,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 22:49';
+const BUILD='2026.11.01 22:58';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
