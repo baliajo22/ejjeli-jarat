@@ -163,3 +163,30 @@ create policy "wb read"   on public.world_boss_hits for select to authenticated 
 create policy "wb insert" on public.world_boss_hits for insert to authenticated with check (
   user_id = auth.uid() and exists (select 1 from public.characters c where c.id = char_id and c.user_id = auth.uid()));
 grant select, insert on public.world_boss_hits to authenticated;
+
+-- ===== Üzenetek: privát üzenet, barátjelölés, céhes chat =====
+create table if not exists public.messages (
+  id         bigint generated always as identity primary key,
+  kind       text not null check (kind in ('dm','friend','guild')),
+  channel    text,
+  from_char  text not null references public.characters(id) on delete cascade,
+  from_user  uuid not null default auth.uid(),
+  from_name  text,
+  from_cls   text,
+  to_char    text references public.characters(id) on delete cascade,
+  to_user    uuid,
+  to_name    text,
+  body       text not null check (char_length(body) between 1 and 500),
+  created_at timestamptz not null default now()
+);
+create index if not exists messages_to_idx      on public.messages(to_user, created_at desc);
+create index if not exists messages_channel_idx on public.messages(channel, created_at desc);
+alter table public.messages enable row level security;
+drop policy if exists "msg read"   on public.messages;
+drop policy if exists "msg insert" on public.messages;
+drop policy if exists "msg delete" on public.messages;
+create policy "msg read"   on public.messages for select to authenticated using (kind = 'guild' or from_user = auth.uid() or to_user = auth.uid());
+create policy "msg insert" on public.messages for insert to authenticated with check (
+  from_user = auth.uid() and exists (select 1 from public.characters c where c.id = from_char and c.user_id = auth.uid()));
+create policy "msg delete" on public.messages for delete to authenticated using (from_user = auth.uid() or to_user = auth.uid());
+grant select, insert, delete on public.messages to authenticated;

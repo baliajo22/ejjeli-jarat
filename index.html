@@ -531,6 +531,29 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .tip.sticky{pointer-events:auto}
 .tip-act{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .tip-act span{font-size:12px}
+.mail-btn{position:relative}
+.mail-badge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px;box-shadow:0 0 0 2px var(--night)}
+.seg.seg4{grid-template-columns:repeat(4,1fr)}
+.seg.seg4 button{font-size:12.5px;padding-inline:4px}
+.gchat-list,.mthread{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;background:var(--night);border-radius:10px;padding:10px}
+.cmsg{display:flex;gap:8px;align-items:flex-start}
+.cmsg-p{width:30px;height:30px;flex:none;border-radius:8px}
+.cmsg-h{display:flex;gap:8px;align-items:baseline;font-size:13px}
+.cmsg-b{font-size:14px;line-height:1.35;word-break:break-word}
+.cmsg.me .cmsg-h b{color:var(--sodium)}
+.chat-in{display:flex;gap:8px;margin-top:8px}
+.chat-in input{flex:1;min-width:0;background:var(--night);border:1px solid var(--line);border-radius:10px;color:inherit;font:inherit;padding:10px 12px}
+.chat-in input:focus{outline:none;border-color:var(--sodium)}
+.bub{max-width:80%;align-self:flex-start;background:var(--panel);border-radius:14px 14px 14px 4px;padding:8px 12px;font-size:14px;word-break:break-word}
+.bub.me{align-self:flex-end;background:rgba(242,163,58,.18);border-radius:14px 14px 4px 14px}
+.bub .note{display:block;font-size:10px;margin-top:2px}
+.mrow{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:10px;background:var(--panel);cursor:pointer}
+.mrow-ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--night);flex:none}
+.mrow.arena .mrow-ic{color:var(--ok)} .mrow.arena.lost .mrow-ic{color:var(--bad)} .mrow.dm .mrow-ic{color:var(--sodium)} .mrow.friend .mrow-ic{color:var(--hex)} .mrow.invite .mrow-ic{color:var(--gold)}
+.mrow>div{flex:1;min-width:0}
+.mrow-h{display:flex;justify-content:space-between;gap:8px;font-size:13.5px}
+.mrow-b{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mail-card{gap:10px}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
 .install-card>div{flex:1;min-width:0}
@@ -1024,6 +1047,10 @@ const BANNERS={}; const banner=k=>`<figure class="banner">${BANNERS[k]||(BANNERS
 
 /* ================= UI icons ================= */
 const I={
+ mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+ send:'<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>',
+ chat:'<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',
+ friend:'<circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M19 8v6M16 11h6"/>',
  coin:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/><path d="M12 9.5v5"/>',
  coffee:'<path d="M4 9h12v5a5 5 0 01-5 5H9a5 5 0 01-5-5z"/><path d="M16 11h2a2 2 0 010 4h-2M8 3c0 2 2 2 2 4M12 3c0 2 2 2 2 4"/>',
  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
@@ -1313,7 +1340,7 @@ function contribList(g){ const c=Object.entries(g.contrib||{}).sort((a,b)=>b[1]-
 function memberPending(){ return false; }
 function renderMemberGuild(){
   const mg=memberGuild(), mo=state.memberOf;
-  if(!mg) return `<section class="card stack"><span class="label">${ic('clock')}Csatlakozás folyamatban</span><p class="muted" style="margin:0">Elfogadtad a(z) <b>${esc(mo.name)}</b> meghívását. Amint ${esc(mo.leader||'a vezető')} legközelebb belép, felvesz a tagok közé.</p><button class="btn small" data-act="gleave">Mégsem lépek be</button></section>`;
+  if(!mg) return `<section class="card stack"><span class="label">${ic('clock')}Csatlakozás folyamatban</span><p class="muted" style="margin:0">Elfogadtad a(z) <b>${esc(mo.name)}</b> meghívását. Amint ${esc(mo.leader||'a vezető')} legközelebb belép, felvesz a tagok közé.</p><button class="btn small" data-act="gleave">Mégsem lépek be</button></section>${chatBox()}`;
   const {g,leader}=mg, L=leader.guildLadder||[], rank=L.findIndex(e=>e.me)+1, lvl=1+Object.values(g.upg).reduce((a,b)=>a+b,0);
   const row=(n,cls,l,role,me)=>`<div class="opp">${portrait(CLASS_ART[cls]||CLASS_ART.kidobo)}<div><div class="item-name">${esc(n)} <span class="role-tag ${role==='Vezető'?'lead':''}">${role}</span>${me?' <em class="me-tag">te</em>':''}</div><div class="item-stats"><span>${l}. szint · ${CLASSES[cls]?CLASSES[cls].name:''}</span></div></div></div>`;
   return `<section class="card g-head"><div class="g-emb">${svg(emblemSvg(g.emblem))}</div><div class="g-info"><div class="label">Céhszint ${lvl} · tag vagy</div><h3>${esc(g.name)}</h3><div class="g-stats">${rank?`<span class="with-ic">${ic('trophy','ic-fame')}#${rank} / ${L.length}</span>`:''}<span class="with-ic">${ic('user')}${g.members.length+1} fő</span><span class="with-ic">${ic('fame','ic-fame')}${g.honor} becsület</span><span class="with-ic">${ic('coin','ic-gold')}${fmt(g.treasury+pendingDonations())} Ft kassza</span></div></div></section>
@@ -1322,6 +1349,7 @@ function renderMemberGuild(){
      <p class="note" style="margin:6px 0 0">A befizetésedből ${esc(leader.name)} fejleszt, a fejlesztések minden tagnak szólnak.${pendingDonations()?` ${fmt(pendingDonations())} Ft a vezető következő belépésekor kerül a kasszába.`:''}</p>${contribList(g)}
      <div class="upg-mini">${GUILD_UPG.map(u=>`<div>${ic(u.icon)}<span>${u.name}</span><b class="mono">${g.upg[u.id]||0}/10</b><small>${u.fx(g.upg[u.id]||0)}</small></div>`).join('')}</div></section>
    <p class="note">A céh fejlesztései neked is szólnak. A céhharcot a vezető indítja, és te is harcolsz benne a jelenlegi felszereléseddel.</p>
+   ${chatBox()}
    <section class="card row between"><span class="note">Ha kilépsz, alapíthatsz saját céhet, vagy más meghívását is elfogadhatod.</span><button class="btn small" data-act="gleave">Kilépés</button></section>`;
 }
 function guildLevel(){ return 1+Object.values(state.guild.upg).reduce((a,b)=>a+b,0); }
@@ -1665,7 +1693,7 @@ function renderHud(){
     ${portrait(CLASS_ART[state.cls],'hud-port')}
     <div class="hud-name"><b>${esc(state.name)}</b><span class="muted with-ic" style="font-size:12px">${ic('xp','ic-xp')}<span class="mono">${fmt(state.xp)}/${fmt(xpNeed(state.level))} XP</span></span>
       <div class="bar"><i style="width:${state.xp/xpNeed(state.level)*100}%"></i></div></div>
-    <div class="chips"><div class="chip-row"><span class="chip" title="Forint">${ic('coin','ic-gold')}${fmt(state.gold)} Ft</span><span class="chip pog-chip" title="Bűvös pogácsa: időt spórol, azonnal harcolhatsz vele">${pogIc()}${state.pog||0}</span></div><div class="chip-row"><button class="chip snd" data-act="sound" title="${SFX.on?'Hang kikapcsolása':'Hang bekapcsolása'}" aria-label="${SFX.on?'Hang kikapcsolása':'Hang bekapcsolása'}">${ic(SFX.on?'snd':'mute')}</button><span class="chip" title="Kávé: ebből telik a küldetésekre">${ic('coffee','ic-coffee')}<span id="en">${state.energy}</span>/${ENERGY_MAX}</span></div></div>
+    <div class="chips"><div class="chip-row"><span class="chip" title="Forint">${ic('coin','ic-gold')}${fmt(state.gold)} Ft</span><span class="chip pog-chip" title="Bűvös pogácsa: időt spórol, azonnal harcolhatsz vele">${pogIc()}${state.pog||0}</span></div><div class="chip-row">${mailBtn()}<button class="chip snd" data-act="sound" title="${SFX.on?'Hang kikapcsolása':'Hang bekapcsolása'}" aria-label="${SFX.on?'Hang kikapcsolása':'Hang bekapcsolása'}">${ic(SFX.on?'snd':'mute')}</button><span class="chip" title="Kávé: ebből telik a küldetésekre">${ic('coffee','ic-coffee')}<span id="en">${state.energy}</span>/${ENERGY_MAX}</span></div></div>
   </div></header>`;
 }
 function renderTabs(){
@@ -2161,6 +2189,7 @@ function renderInspect(){
     </div>
     <div class="ins-stats">${STATS.map(([k,n])=>`<div class="${c.main===k?'main':''}">${ic(k,'ic-'+k)}<span>${n}</span><b>${f.stats[k]}</b>${x.me?'':`<small class="muted">te: ${me.stats[k]}</small>`}</div>`).join('')}</div>
     ${verdict?`<div class="ins-verdict ${verdict[1]}">${ic('fight')}${verdict[0]}</div>`:''}
+    ${!x.me&&!x.npc&&/^[cp]-/.test(x.key||'')?`<div class="row" style="justify-content:center;gap:8px">${isFriend(x.key.slice(2))?`<span class="note with-ic">${ic('friend')}Barátod</span>`:`<button class="btn small" data-act="addfriend" data-k="${x.key}">${ic('friend')}Barátnak jelölöm</button>`}<button class="btn small" data-act="mailthread" data-k="${x.key}" data-n="${esc(x.name)}">${ic('mail')}Üzenet</button></div>`:''}
     <div class="row" style="justify-content:center;gap:8px">${x.duel||x.pduel?(()=>{ const left=state.arenaReadyAt>now(), act=x.pduel?'pduel':'duel', id=x.pduel||x.duel; return left?`<button class="btn pog-btn" data-act="${act}" data-pog="1" data-id="${id}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Kihív most</button>`:`<button class="btn primary" data-act="${act}" data-id="${id}">${ic('fight')}Kihív</button>`; })():''}<button class="btn" data-act="closeinsp">Bezár</button></div>
   </div></div>`;
 }
@@ -2238,6 +2267,68 @@ function renderBoss(){
   html+=`</div></section><section class="card"><span class="label">${ic('box')}Ha a város legyőzi</span><p class="note" style="margin:6px 0 0">Mindenki, aki legalább egyszer lecsapott, kap egy <b>Heti ládát</b> és forintot. Pogácsa a helyezés szerint: 1. hely +10, 2–3. hely +5, 4–10. hely +3, mindenki más +1. Minden csapás után azonnal kapsz egy kis forintot és XP-t is. A jutalmat a hét végéig vedd át!</p></section>`;
   return html;
 }
+
+
+/* ================= mailbox, friends and guild chat =================
+   offline these travel between the heroes saved on this device; the online build swaps in the server */
+function sendMsg(toKey,body,kind='dm'){ body=String(body||'').trim().slice(0,500); if(!body) return false; const cid=toKey.replace(/^[cp]-/,''), h=realData(cid); if(!h) return false;
+  const m={id:uid(),at:now(),kind,fromKey:'c-'+state.cid,from:state.name,fromCls:state.cls,toKey:'c-'+cid,to:h.name,body};
+  h.inbox=(h.inbox||[]).concat(m).slice(-100); writeOther(h); if(kind==='dm'){ state.outbox=(state.outbox||[]).concat(m).slice(-100); save(); } return true; }
+function mailItems(){
+  const out=(state.inbox||[]).map(m=>({...m,k:m.kind}));
+  (state.arenaLog||[]).forEach(l=>out.push({id:'a'+l.at,at:l.at,k:'arena',from:l.by,body:l.won?'megtámadott az arénában, de visszavertél.':'legyőzött az arénában.',won:l.won}));
+  return out.sort((a,b)=>b.at-a.at); }
+function threadWith(key){ return [...(state.inbox||[]).filter(m=>m.kind==='dm'&&m.fromKey===key),...(state.outbox||[]).filter(m=>m.toKey===key)].sort((a,b)=>a.at-b.at); }
+function mailUnread(){ if(!state) return 0; const seen=state.mailSeen||0; return mailItems().filter(m=>m.at>seen).length; }
+function friendInfo(f){ const d=realData(f.cid); return d?{...f,name:d.name,cls:d.cls,level:d.level}:f; }
+function isFriend(cid){ return (state.friends||[]).some(f=>f.cid===cid); }
+function addFriend(key,name,cls){ const cid=key.replace(/^[cp]-/,''); if(cid===state.cid||isFriend(cid)) return; state.friends=(state.friends||[]).concat({cid,key,name,cls}); save(); Promise.resolve(sendMsg(key,`${state.name} felvett a barátai közé.`,'friend')); toast(`${name} a barátaid között.`); }
+function removeFriend(cid){ state.friends=(state.friends||[]).filter(f=>f.cid!==cid); save(); }
+function guildChannel(){ return state.guild?state.cid:state.memberOf?state.memberOf.leaderCid:null; }
+function guildChat(){ const ch=guildChannel(); if(!ch) return []; const L=ch===state.cid?state:realData(ch); return (L&&L.guild&&L.guild.chat)||[]; }
+function sendGuildMsg(body){ body=String(body||'').trim().slice(0,300); const ch=guildChannel(); if(!body||!ch) return false; const m={id:uid(),at:now(),from:state.name,fromCls:state.cls,fromKey:'c-'+state.cid,body};
+  if(ch===state.cid){ state.guild.chat=(state.guild.chat||[]).concat(m).slice(-60); save(); } else { const L=realData(ch); if(!L||!L.guild) return false; L.guild.chat=(L.guild.chat||[]).concat(m).slice(-60); writeOther(L); } return true; }
+const MAIL_NOTE='Itt látod, ha írt valaki, ha megtámadtak az arénában, vagy ha meghívtak egy céhbe.';
+const tAgo=t=>{ const m=Math.round((now()-t)/60000); return m<1?'most':m<60?`${m} perce`:m<1440?`${Math.round(m/60)} órája`:new Date(t).toLocaleDateString('hu-HU',{month:'short',day:'numeric'}); };
+/* ---- guild chat ---- */
+function chatMsgs(){ const L=guildChat(); if(!L.length) return `<p class="muted" style="margin:6px 0">Még csend van. Köszönj a céhnek!</p>`;
+  return L.slice(-40).map(m=>`<div class="cmsg ${m.fromKey==='c-'+state.cid?'me':''}">${portrait(CLASS_ART[m.fromCls]||CLASS_ART.kidobo,'cmsg-p')}<div><div class="cmsg-h"><b>${esc(m.from)}</b><span class="note">${tAgo(m.at)}</span></div><div class="cmsg-b">${esc(m.body)}</div></div></div>`).join(''); }
+function chatBox(){ setTimeout(()=>{ const el=$('#gchat'); if(el) el.scrollTop=1e6; },0);
+  return `<section class="card gchat"><div class="row between" style="margin-bottom:6px"><span class="label">${ic('chat')}Céhes chat</span></div><div class="gchat-list" id="gchat">${chatMsgs()}</div>
+    <div class="chat-in"><input id="gmsg" maxlength="300" placeholder="Írj a céhnek…" autocomplete="off"><button class="btn small primary" data-act="gsend" aria-label="Küldés">${ic('send')}</button></div></section>`; }
+function refreshChat(){ const el=$('#gchat'); if(el){ const atEnd=el.scrollHeight-el.scrollTop-el.clientHeight<40; el.innerHTML=chatMsgs(); if(atEnd) el.scrollTop=1e6; } const th=$('#mthread'); if(th&&MAIL.tab==='thread'){ th.innerHTML=threadHtml(); th.scrollTop=1e6; } }
+async function doGuildSend(){ const i=$('#gmsg'); if(!i||!i.value.trim()) return; const v=i.value; i.value=''; const ok=await sendGuildMsg(v); if(ok===false){ i.value=v; return toast('Nem sikerült elküldeni.'); } refreshChat(); const el=$('#gchat'); if(el) el.scrollTop=1e6; i.focus(); }
+/* ---- mailbox ---- */
+let MAIL={tab:'posta'};
+function mailBtn(){ const n=mailUnread(); return `<button class="chip snd mail-btn" data-act="openmail" title="Postaláda" aria-label="Postaláda${n?`, ${n} új`:''}">${ic('mail')}${n?`<span class="mail-badge" id="mailbadge">${n>9?'9+':n}</span>`:''}</button>`; }
+function openMail(tab,key,name){ MAIL={tab:tab||'posta',key,name}; if(MAIL.tab==='posta'){ state.mailSeen=now(); save(); } renderMail(); }
+function threadHtml(){ const T=threadWith(MAIL.key); if(!T.length) return `<p class="muted" style="text-align:center;margin:20px 0">Még nem írtatok egymásnak.</p>`;
+  return T.map(m=>`<div class="bub ${m.fromKey==='c-'+state.cid?'me':''}"><div>${esc(m.body)}</div><span class="note">${tAgo(m.at)}</span></div>`).join(''); }
+function renderMail(){
+  const tabs=`<div class="seg" role="tablist"><button role="tab" data-act="mailtab" data-t="posta" aria-selected="${MAIL.tab==='posta'}">${ic('mail')}Posta</button><button role="tab" data-act="mailtab" data-t="baratok" aria-selected="${MAIL.tab==='baratok'}">${ic('friend')}Barátok</button></div>`;
+  let body='';
+  if(MAIL.tab==='thread'){
+    body=`<button class="btn small" data-act="mailtab" data-t="posta" style="align-self:flex-start">${ic('back')}Vissza</button><div class="row" style="gap:10px"><b style="font-size:16px">${esc(MAIL.name||'')}</b></div>
+      <div class="mthread" id="mthread">${threadHtml()}</div>
+      <div class="chat-in"><input id="mmsg" maxlength="500" placeholder="Üzenet ${esc(MAIL.name||'')} számára…" autocomplete="off"><button class="btn small primary" data-act="mailsend" aria-label="Küldés">${ic('send')}</button></div>`;
+    setTimeout(()=>{ const t=$('#mthread'); if(t) t.scrollTop=1e6; },0);
+  } else if(MAIL.tab==='baratok'){
+    const F=(state.friends||[]).map(friendInfo), left=state.arenaReadyAt>now();
+    body=tabs+(F.length?F.map(f=>`<div class="opp">${portrait(CLASS_ART[f.cls]||CLASS_ART.kidobo).replace('<div','<div data-act="inspect" data-id="'+f.key+'"')}<div data-act="inspect" data-id="${f.key}" class="insp"><div class="item-name">${esc(f.name)}</div><div class="item-stats"><span>${f.level?f.level+'. szint · ':''}${CLASSES[f.cls]?CLASSES[f.cls].name:''}</span></div></div>
+        <div class="row" style="gap:6px"><button class="btn small primary" data-act="mailthread" data-k="${f.key}" data-n="${esc(f.name)}" aria-label="Üzenet">${ic('mail')}</button><button class="btn small" data-act="unfriend" data-id="${f.cid}" aria-label="Törlés a barátok közül">×</button></div></div>`).join('')
+      :`<p class="muted">Még nincsenek barátaid. Az Arénában a Ranglétrán koppints egy játékosra, és jelöld barátnak.</p>`);
+  } else {
+    const M=mailItems(), seen=MAIL.seenBefore||0;
+    body=tabs+(M.length?M.slice(0,40).map(m=>{
+      const icon=m.k==='arena'?ic('fight'):m.k==='friend'?ic('friend'):m.k==='invite'?ic('user'):ic('mail');
+      const click=m.k==='dm'?`data-act="mailthread" data-k="${m.fromKey}" data-n="${esc(m.from)}"`:m.k==='invite'?`data-act="mailgo" data-v="ceh"`:m.k==='arena'?`data-act="mailgo" data-v="arena"`:'';
+      return `<div class="mrow ${m.k} ${m.won===false?'lost':''}" ${click} role="${click?'button':'listitem'}" tabindex="0"><span class="mrow-ic">${icon}</span><div><div class="mrow-h"><b>${esc(m.from||'')}</b><span class="note">${tAgo(m.at)}</span></div><div class="mrow-b">${esc(m.k==='dm'?m.body:m.body)}</div></div></div>`; }).join('')
+      :`<p class="muted">Üres a postaládád.</p>`);
+  }
+  $('#overlay-root').innerHTML=`<div class="overlay" data-act="closemg"><div class="mg-card mail-card" data-act="noop" role="dialog" aria-label="Postaláda"><button class="ins-x" data-act="closemg" aria-label="Bezárás">×</button>
+    <span class="label">${ic('mail')}Postaláda</span><h2>${MAIL.tab==='thread'?'Üzenetek':MAIL.tab==='baratok'?'Barátok':'Posta'}</h2>${body}${MAIL.tab!=='thread'?`<p class="note" style="margin:0">${MAIL_NOTE}</p>`:''}</div></div>`;
+}
+async function doMailSend(){ const i=$('#mmsg'); if(!i||!i.value.trim()) return; const v=i.value; i.value=''; const ok=await sendMsg(MAIL.key,v,'dm'); if(ok===false){ i.value=v; return toast('Nem sikerült elküldeni.'); } refreshChat(); i.focus(); }
 
 let arenaTab='arena';
 function arenaBar(){ return `<div class="mg-bar" role="tablist">${[['arena','Aréna','fight'],['rang','Ranglétra','trophy'],['boss','Főgonosz','fame']].map(([k,l,i])=>`<button class="mg-chip ${arenaTab===k?'on':''}" role="tab" data-act="arenatab" data-t="${k}" aria-selected="${arenaTab===k}"><span class="mg-ic">${ic(i)}</span>${l}${k==='boss'&&bossReady()?'<span class="mg-dot"></span>':''}</button>`).join('')}</div>`; }
@@ -2320,8 +2411,8 @@ function renderCeh(){
   if(!g) return html+invitesCard()+renderGuildCreate();
   const rank=state.guildLadder.findIndex(e=>e.me)+1;
   html+=`<section class="card g-head"><div class="g-emb">${svg(emblemSvg(g.emblem))}</div><div class="g-info"><div class="label">Céhszint ${guildLevel()}</div><h3>${esc(g.name)}</h3><div class="g-stats"><span class="with-ic">${ic('trophy','ic-fame')}#${rank} / ${state.guildLadder.length}</span><span class="with-ic">${ic('user')}${g.members.length+1}/${guildCap()} fő</span><span class="with-ic">${ic('fame','ic-fame')}${g.honor} becsület</span><span class="with-ic">${ic('coin','ic-gold')}${fmt(g.treasury)} Ft kassza</span></div></div></section>`;
-  html+=`<div class="seg seg3" role="tablist">${[['tagok','Tagok','user'],['fejlesztes','Fejlesztés','refresh'],['harc','Céhharc','fight']].map(([k,l,i])=>`<button role="tab" data-act="gtab" data-t="${k}" aria-selected="${guildTab===k}">${ic(i)}${l}</button>`).join('')}</div>`;
-  return html+(guildTab==='tagok'?renderGuildMembers():guildTab==='fejlesztes'?renderGuildUpg():renderGuildWar());
+  html+=`<div class="seg seg4" role="tablist">${[['tagok','Tagok','user'],['fejlesztes','Fejlesztés','refresh'],['harc','Harc','fight'],['chat','Chat','chat']].map(([k,l,i])=>`<button role="tab" data-act="gtab" data-t="${k}" aria-selected="${guildTab===k}">${ic(i)}${l}</button>`).join('')}</div>`;
+  return html+(guildTab==='tagok'?renderGuildMembers():guildTab==='fejlesztes'?renderGuildUpg():guildTab==='chat'?chatBox():renderGuildWar());
 }
 function renderGuildCreate(){
   const can=state.gold>=GUILD_COST;
@@ -2930,6 +3021,14 @@ document.addEventListener('click',e=>{
     case 'arenatab': arenaTab=el.dataset.t; render(); window.scrollTo(0,0); return;
     case 'openwheel': openWheel(); return;
     case 'opentasks': openTasks(); return;
+    case 'openmail': hideTip(); openMail('posta'); render(); return;
+    case 'mailtab': if(el.dataset.t==='posta'){ state.mailSeen=now(); save(); } MAIL={tab:el.dataset.t}; renderMail(); return;
+    case 'mailthread': INSPECT=null; MAIL={tab:'thread',key:el.dataset.k,name:el.dataset.n}; renderMail(); setTimeout(()=>$('#mmsg')?.focus(),50); return;
+    case 'mailsend': doMailSend(); return;
+    case 'mailgo': $('#overlay-root').innerHTML=''; view=el.dataset.v; if(view==='arena') arenaTab='arena'; render(); window.scrollTo(0,0); return;
+    case 'unfriend': removeFriend(id); renderMail(); return;
+    case 'addfriend': { const x=INSPECT; if(x) addFriend(el.dataset.k,x.name,x.cls); if(INSPECT) renderInspect(); } return;
+    case 'gsend': doGuildSend(); return;
     case 'taskclaim': claimTask(el.dataset.i); render(); renderTasks(); return;
     case 'openchest': openChest(); return;
     case 'chestdone': render(); renderTasks(); return;
@@ -3023,10 +3122,11 @@ document.addEventListener('click',e=>{
 
 function nameCheck(){ const b=$('#startbtn'), i=$('#nm'); if(!b||!i) return; b.disabled=!!b.dataset.full||i.value.trim().length<3; }
 document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.target.id==='gmsg'){ e.preventDefault(); doGuildSend(); } else if(e.target.id==='mmsg'){ e.preventDefault(); doMailSend(); } } });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 23:14';
+const BUILD='2026.11.01 23:21';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -3169,6 +3269,41 @@ async function recordBossHit(dealt){ const wk=weekKey(); state.bossDmg=state.bos
   const {error}=await SB.from('world_boss_hits').insert({week:wk,char_id:state.cid,user_id:ONLINE.user.id,name:state.name,cls:state.cls,level:state.level,dmg:dealt});
   if(error){ console.warn(error); toast(/relation|does not exist|schema cache|world_boss/i.test(error.message||'')?'A városi főgonoszhoz frissíteni kell az adatbázist (world_boss_hits tábla).':'A sebzést most nem sikerült elküldeni.'); }
   BB.at=0; loadBoss(); }
+/* ---------- mailbox, friends and guild chat on the server: messages table ---------- */
+const MB={items:[],sent:[],at:0,busy:false,gc:[],gcAt:0,gcCh:null,gcSig:'',seenIds:null};
+function msgErr(error){ console.warn(error); toast(/relation|does not exist|schema cache|messages/i.test(error.message||'')?'Az üzenetekhez frissíteni kell az adatbázist (messages tábla).':'Nem sikerült elküldeni, próbáld újra.'); }
+const mapMsg=r=>({id:r.id,at:Date.parse(r.created_at),kind:r.kind,k:r.kind,fromCid:r.from_char,fromKey:(r.from_user===ONLINE.user.id?'c-':'p-')+r.from_char,from:r.from_name,fromCls:r.from_cls,toCid:r.to_char,toKey:'p-'+r.to_char,to:r.to_name,body:r.body});
+function updateMailBadge(){ const b=$('.mail-btn'); if(b) b.outerHTML=mailBtn(); }
+async function loadMail(){ if(!SB||!ONLINE.user||!state||MB.busy) return; MB.busy=true;
+  try{ const a=await SB.from('messages').select('*').eq('to_user',ONLINE.user.id).order('created_at',{ascending:false}).limit(100);
+    const b=await SB.from('messages').select('*').eq('from_user',ONLINE.user.id).eq('kind','dm').order('created_at',{ascending:false}).limit(100);
+    MB.at=now(); if(a.error) return;
+    const before=MB.seenIds; MB.items=(a.data||[]).filter(r=>r.to_char===state.cid&&r.kind!=='guild').map(mapMsg); MB.sent=b.error?[]:(b.data||[]).filter(r=>r.from_char===state.cid).map(mapMsg);
+    const ids=new Set(MB.items.map(m=>m.id)); if(before){ const fresh=MB.items.filter(m=>!before.has(m.id)); if(fresh.length&&!$('#mthread')) toast(fresh.length===1?`Új üzenet: ${fresh[0].from}`:`${fresh.length} új üzeneted jött.`); } MB.seenIds=ids;
+    updateMailBadge(); refreshChat(); if(MAIL&&MAIL.tab!=='thread'&&$('.mail-card')) renderMail(); }
+  finally{ MB.busy=false; } }
+function mailItems(){ if(!MB.at||now()-MB.at>30000) setTimeout(loadMail,0);
+  const out=MB.items.map(m=>({...m}));
+  (state.arenaLog||[]).concat(ONLINE.logs||[]).forEach(l=>out.push({id:'a'+l.at,at:l.at,k:'arena',from:l.by,body:l.won?'megtámadott az arénában, de visszavertél.':'legyőzött az arénában.',won:l.won}));
+  (GI.got||[]).filter(r=>r.to_char===state.cid&&r.status==='pending').forEach(r=>out.push({id:'g'+r.id,at:Date.parse(r.created_at),k:'invite',from:r.leader_name||'Valaki',body:`meghívott a(z) ${r.guild_name} céhbe. A Céh oldalon válaszolhatsz.`}));
+  return out.sort((a,b)=>b.at-a.at); }
+function threadWith(key){ const cid=key.replace(/^[cp]-/,''); return [...MB.items.filter(m=>m.kind==='dm'&&m.fromCid===cid),...MB.sent.filter(m=>m.toCid===cid)].sort((a,b)=>a.at-b.at); }
+async function sendMsg(toKey,body,kind='dm'){ body=String(body||'').trim().slice(0,500); if(!body) return false; const cid=toKey.replace(/^[cp]-/,''), p=(ONLINE.all||[]).find(x=>x.id===cid); if(!p){ toast('Ez a játékos most nem érhető el.'); return false; }
+  await flushCloud();
+  const {error}=await SB.from('messages').insert({kind,from_char:state.cid,from_user:ONLINE.user.id,from_name:state.name,from_cls:state.cls,to_char:cid,to_user:p.user_id,to_name:p.name,body});
+  if(error){ msgErr(error); return false; }
+  if(kind==='dm') MB.sent.push({id:'tmp'+now(),at:now(),kind,toCid:cid,fromKey:'c-'+state.cid,from:state.name,body}); return true; }
+function friendInfo(f){ const d=onlineChar(f.cid); return d?{...f,name:d.name,cls:d.cls,level:d.level}:f; }
+function guildChat(){ const ch=guildChannel(); if(!ch) return []; if(MB.gcCh!==ch||now()-MB.gcAt>8000) setTimeout(()=>loadGuildChat(ch),0); return MB.gcCh===ch?MB.gc:[]; }
+async function loadGuildChat(ch){ if(!ch||MB.gcBusy) return; MB.gcBusy=true;
+  try{ const {data,error}=await SB.from('messages').select('*').eq('kind','guild').eq('channel',ch).order('created_at',{ascending:false}).limit(60); MB.gcAt=now(); if(error) return;
+    MB.gcCh=ch; const sig=data.map(r=>r.id).join(); MB.gc=data.reverse().map(r=>({id:r.id,at:Date.parse(r.created_at),from:r.from_name,fromCls:r.from_cls,fromKey:(r.from_char===state.cid?'c-':'p-')+r.from_char,body:r.body}));
+    if(sig!==MB.gcSig){ MB.gcSig=sig; refreshChat(); } }
+  finally{ MB.gcBusy=false; } }
+async function sendGuildMsg(body){ body=String(body||'').trim().slice(0,300); const ch=guildChannel(); if(!body||!ch) return false; await flushCloud();
+  const {error}=await SB.from('messages').insert({kind:'guild',channel:ch,from_char:state.cid,from_user:ONLINE.user.id,from_name:state.name,from_cls:state.cls,body});
+  if(error){ msgErr(error); return false; } MB.gcAt=0; await loadGuildChat(ch); return true; }
+setInterval(()=>{ if(!state||!ONLINE.user) return; if($('#gchat')) loadGuildChat(guildChannel()); if($('#mthread')||now()-MB.at>30000) loadMail(); },8000);
 function renderNoConfig(){
   return `<div class="create wrap">${banner('skyline')}<div class="logo">Éjjeli<br><span>Járat</span></div>
     <section class="card stack"><h3>A szerver még nincs beállítva</h3><p class="muted" style="margin:0">Töltsd ki a <b>config.js</b> fájlban a Supabase projekt címét és az anon kulcsot, aztán töltsd újra az oldalt.</p></section></div>`;
