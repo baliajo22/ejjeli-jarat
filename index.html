@@ -392,6 +392,8 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .mg-bar{display:flex;gap:8px;margin-bottom:-4px}
 .mg-chip{flex:1;position:relative;display:flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 10px;background:var(--panel);border:1px solid var(--line);border-radius:999px;color:inherit;font:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}
 .mg-chip:hover{border-color:var(--sodium)}
+.mg-chip.on{border-color:var(--sodium);background:linear-gradient(180deg,rgba(242,163,58,.18),rgba(242,163,58,.06)),var(--panel);color:var(--sodium)}
+.mg-chip .mg-ic .ic{width:20px;height:20px;margin:2px}
 .mg-ic{width:24px;height:24px;flex:none}
 .mg-ic svg{width:100%;height:100%;display:block}
 .mg-dot{position:absolute;top:-2px;right:6px;width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 2px var(--night);animation:pulse 1.6s infinite}
@@ -1722,7 +1724,7 @@ function vehicleLine(){
   if(r&&r.id){ const o=VEHICLES.find(x=>x.id===r.id); return `<button class="veh-line none expired" data-act="gogarage">${ic('clock')}Lejárt: ${o?o.name:'jármű'}. Újítsd meg a Garázsban →</button>`; }
   return `<button class="veh-line none" data-act="gogarage">${ic('wheel','ic-time')}Gyalog jársz. Jármű a Garázsban →</button>`;
 }
-function boltTabs(){ return `<div class="seg" role="tablist"><button role="tab" data-act="bolttab" data-t="kisbolt" aria-selected="${boltTab==='kisbolt'}">${ic('cart')}Kisbolt</button><button role="tab" data-act="bolttab" data-t="garazs" aria-selected="${boltTab==='garazs'}">${ic('wheel')}Garázs</button></div>`; }
+function boltTabs(){ return `<div class="mg-bar" role="tablist"><button class="mg-chip ${boltTab==='kisbolt'?'on':''}" role="tab" data-act="bolttab" data-t="kisbolt" aria-selected="${boltTab==='kisbolt'}"><span class="mg-ic">${ic('cart')}</span>Kisbolt</button><button class="mg-chip ${boltTab==='garazs'?'on':''}" role="tab" data-act="bolttab" data-t="garazs" aria-selected="${boltTab==='garazs'}"><span class="mg-ic">${svg(VEH_ART[(activeVeh()||VEHICLES[1]).id])}</span>Garázs${activeVeh()?'':'<span class="mg-dot" aria-label="nincs járműved"></span>'}</button></div>`; }
 function renderGarazs(){
   const cur=activeVeh(), curRed=cur?cur.red:0, left=cur?state.vehicle.until-now():0;
   let html=`${boltTabs()}${banner('garazs')}<section class="scene"><span class="label">${ic('pin')}Garázs · udvari bringatároló</span><h2>Gyuri bácsi mindent megjavít</h2><p>A járműveket 7 napra béreled. Gyorsabb járművel rövidebb az út, a repülő seprűvel ráadásul kevesebb kávé is fogy.</p></section>`;
@@ -2486,7 +2488,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 15:21';
+const BUILD='2026.11.01 15:35';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
