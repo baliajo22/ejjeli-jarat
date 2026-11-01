@@ -602,6 +602,20 @@ body.modal-open{overflow:hidden}
 .ins-guild>div:nth-child(2){flex:1;min-width:0}
 .ins-go{font-size:26px;color:var(--muted);line-height:1;padding-left:4px}
 .gv-card .g-head-wrap{margin:0}
+.login-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.lday{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 4px;text-align:center}
+.lday.big{grid-column:span 2;background:linear-gradient(180deg,rgba(242,194,48,.14),transparent),var(--panel);border-color:rgba(242,194,48,.5)}
+.lday-n{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.lday-ic{height:30px;display:grid;place-items:center}
+.lday-ic .ic{width:24px;height:24px}
+.lday-ic .chest-ic{width:34px;height:34px}
+.lday-t{font-size:12px;font-weight:700;line-height:1.2}
+.lday.got{opacity:.5}
+.lday-ok{position:absolute;top:4px;right:6px;color:var(--ok)}
+.lday-ok .ic{width:16px;height:16px}
+.lday.today{border:2px solid var(--sodium);box-shadow:0 0 18px rgba(242,163,58,.35);animation:pulse 1.8s infinite}
+.login-link{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:inherit;font:inherit;font-size:13.5px;cursor:pointer}
+.login-link>span:nth-child(2){flex:1}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
 .install-card>div{flex:1;min-width:0}
@@ -1787,6 +1801,7 @@ function render(){
   app.innerHTML = renderHud() + `<main class="wrap">${({kocsma:renderKocsma,karakter:renderKarakter,bolt:renderBolt,arena:renderArena,kazamata:renderKazamata,ceh:renderCeh,terkep:renderTerkep})[view]()}</main>` + renderTabs();
   if(lvlFx && !battle){ const L=lvlFx; lvlFx=false; showLevelUp(L); }
   tick(true);
+  maybeShowLogin();
 }
 function renderRoster(){
   const chars=listChars(); if(!chars.length) return '';
@@ -2023,7 +2038,7 @@ function track(ev,n=1,arg){
   state.daily.tasks.forEach(hit); hit(state.weekly.task);
 }
 function taskReward(t){ const L=state.level; return {gold:Math.round((25+L*10)*(t.d===2?1.8:1)*goldMult()), xp:Math.max(t.d===2?25:15,Math.round(xpNeed(L)*(t.d===2?.1:.06)))}; }
-function tasksClaimable(){ if(!state) return false; tasksReset(); return state.daily.tasks.some(t=>t.done&&!t.claimed)||(state.weekly.task.done&&!state.weekly.task.claimed)||(state.chests||0)>0||(!state.daily.bonus&&state.daily.tasks.every(t=>t.claimed)); }
+function tasksClaimable(){ if(!state) return false; tasksReset(); return !loginInfo().claimed||state.daily.tasks.some(t=>t.done&&!t.claimed)||(state.weekly.task.done&&!state.weekly.task.claimed)||(state.chests||0)>0||(!state.daily.bonus&&state.daily.tasks.every(t=>t.claimed)); }
 function claimTask(i){ const t=i==='w'?state.weekly.task:state.daily.tasks[+i]; if(!t||!t.done||t.claimed) return; t.claimed=true;
   if(i==='w'){ state.chests=(state.chests||0)+1; const g=Math.round((100+state.level*40)*goldMult()); state.gold+=g; toast(`Megkaptad a Heti ládát és ${fmt(g)} Ft-ot!`); sfx('levelup'); }
   else { const r=taskReward(t); state.gold+=r.gold; gainXp(r.xp); sfx('coins'); toast(`+${fmt(r.gold)} Ft, +${fmt(r.xp)} XP`);
@@ -2042,6 +2057,7 @@ function renderTasks(){
   $('#overlay-root').innerHTML=`<div class="overlay" data-act="closemg"><div class="mg-card" data-act="noop" role="dialog" aria-label="Feladatok">
     <button class="ins-x" data-act="closemg" aria-label="Bezárás">×</button>
     <span class="label">${ic('pin')}Ica füzete</span><h2>Feladatok</h2>
+    <button class="login-link" data-act="openlogin">${ic('clock')}<span>Napi belépés: ${loginInfo().claimed?`${loginInfo().day}. nap átvéve`:`${loginInfo().day}. napi jutalom vár!`}</span><span class="ins-go">›</span></button>
     ${ch?`<button class="chest-banner" data-act="openchest">${chestIc()}<div><b>${ch} bontatlan Heti láda</b><div class="note">Koppints, és nyisd ki!</div></div><span class="btn small primary">Kinyitom</span></button>`:''}
     <div class="row between"><span class="label">${ic('clock')}Napi feladatok</span><span class="note">éjfélkor újak jönnek</span></div>
     ${D.tasks.map((t,i)=>taskRow(t,i)).join('')}
@@ -2074,6 +2090,36 @@ function openChest(){ if(!(state.chests>0)) return; state.chests--; const rw=CHE
       if(i===rw.length-1) $('#chestend').innerHTML=`<button class="btn primary" data-act="chestdone" style="width:100%;margin-top:8px">Szuper!</button>`; },400+i*450));
   },1300);
 }
+
+
+/* ================= daily login calendar: 7 days in a row, the 7th gives a chest ================= */
+const LOGIN_DAYS=[
+  {k:'gold', t:'Forint',          v:()=>Math.round((60+state.level*25)*goldMult()), ic:()=>ic('coin','ic-gold'), txt:v=>`${fmt(v)} Ft`},
+  {k:'coffee',t:'Kávé',           v:()=>30, ic:()=>ic('coffee','ic-coffee'), txt:v=>`+${v} kávé`},
+  {k:'pog',  t:'Pogácsa',         v:()=>1, ic:()=>pogIc(), txt:v=>`${v} pogácsa`},
+  {k:'mat',  t:'Nyersanyag',      v:()=>2, ic:()=>matIc(2,'sm'), txt:v=>`${v} Holdkristály`},
+  {k:'xp',   t:'Tapasztalat',     v:()=>Math.round(xpNeed(state.level)*.12), ic:()=>ic('xp','ic-xp'), txt:v=>`${fmt(v)} XP`},
+  {k:'pog',  t:'Pogácsa',         v:()=>2, ic:()=>pogIc(), txt:v=>`${v} pogácsa`},
+  {k:'chest',t:'Heti láda',       v:()=>1, ic:()=>chestIc(), txt:()=>'Heti láda'}
+];
+function dayKeyOffset(n){ const d=new Date(); d.setDate(d.getDate()+n); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+function loginInfo(){ const L=state.login||{}; const today=todayKey(), yest=dayKeyOffset(-1);
+  if(L.last===today) return {claimed:true,day:L.streak};             // already taken today
+  const next=L.last===yest?(L.streak%7)+1:1; return {claimed:false,day:next,broke:!!L.last&&L.last!==yest&&L.streak>0}; }
+function claimLogin(){ const I=loginInfo(); if(I.claimed) return; const D=LOGIN_DAYS[I.day-1], v=D.v();
+  if(D.k==='gold') state.gold+=v; else if(D.k==='coffee') state.energy=Math.min(ENERGY_MAX+30,state.energy+v); else if(D.k==='pog') state.pog=(state.pog||0)+v;
+  else if(D.k==='mat'){ const m=mats(); m.kristaly=(m.kristaly||0)+v; } else if(D.k==='xp') gainXp(v); else if(D.k==='chest') state.chests=(state.chests||0)+1;
+  state.login={last:todayKey(),streak:I.day}; save(); sfx(D.k==='chest'?'levelup':'coins');
+  toast(D.k==='chest'?'Megkaptad a Heti ládát! A Kocsmában, a Feladatoknál nyithatod ki.':`Napi jutalom: ${D.txt(v)}`); renderLogin(true); }
+function renderLogin(after){ const I=loginInfo(), cur=I.day;
+  $('#overlay-root').innerHTML=`<div class="overlay" data-act="closemg"><div class="mg-card login-card" data-act="noop" role="dialog" aria-label="Napi jutalom"><button class="ins-x" data-act="closemg" aria-label="Bezárás">×</button>
+    <span class="label">${ic('clock')}Napi belépés</span><h2>${I.claimed?'Holnap is gyere vissza!':'Jó, hogy itt vagy!'}</h2>
+    <p class="muted" style="margin:0">Lépj be minden nap, és egyre jobb jutalmat kapsz. A 7. napon Heti láda vár. Ha kihagysz egy napot, elölről kezdődik.${I.broke?' <b>Most kimaradt egy nap, ezért újraindult a sorozat.</b>':''}</p>
+    <div class="login-grid">${LOGIN_DAYS.map((D,i)=>{ const n=i+1, got=I.claimed?n<=cur:n<cur, today=!I.claimed&&n===cur; return `<div class="lday ${got?'got':''} ${today?'today':''} ${n===7?'big':''}"><span class="lday-n">${n}. nap</span><span class="lday-ic">${D.ic()}</span><span class="lday-t">${D.txt(D.v())}</span>${got?`<span class="lday-ok">${ic('equip')}</span>`:''}</div>`; }).join('')}</div>
+    ${I.claimed?`<button class="btn" data-act="closemg" style="width:100%">Rendben</button>`:`<button class="btn primary" data-act="logclaim" style="width:100%;padding:14px;font-size:16px">${ic('box')}Átveszem a ${cur}. napi jutalmat</button>`}
+  </div></div>`; }
+let LOGIN_SHOWN=null;
+function maybeShowLogin(){ if(!state||battle||$('#overlay-root').firstElementChild||lvlFx) return; const key=state.cid+todayKey(); if(LOGIN_SHOWN===key) return; LOGIN_SHOWN=key; if(!loginInfo().claimed) setTimeout(()=>{ if(!$('#overlay-root').firstElementChild&&!battle) renderLogin(); },400); }
 
 function minigameBar(){
   dayReset();
@@ -3177,6 +3223,8 @@ document.addEventListener('click',e=>{
     case 'arenatab': arenaTab=el.dataset.t; render(); window.scrollTo(0,0); return;
     case 'openwheel': openWheel(); return;
     case 'opentasks': openTasks(); return;
+    case 'openlogin': renderLogin(); return;
+    case 'logclaim': claimLogin(); render(); return;
     case 'openmail': hideTip(); openMail('posta'); render(); return;
     case 'mailtab': if(el.dataset.t==='posta'){ state.mailSeen=now(); save(); } MAIL={tab:el.dataset.t}; renderMail(); return;
     case 'mailthread': INSPECT=null; MAIL={tab:'thread',key:el.dataset.k,name:el.dataset.n}; renderMail(); setTimeout(()=>$('#mmsg')?.focus(),50); return;
@@ -3294,7 +3342,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 00:49';
+const BUILD='2026.11.02 00:53';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
