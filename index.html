@@ -936,10 +936,10 @@ function spendPog(n){ if((state.pog||0)<n){ toast(`Ehhez ${n} pogácsa kell, nek
 
 /* vehicles = the stable: a faster ride shortens every quest (and its coffee cost) */
 const VEHICLES=[
-  {id:'gordeszka',name:'Gördeszka',red:.1,price:60,desc:'Lejtőn gyors, a Gellért-hegyen kevésbé.'},
-  {id:'roller',name:'Elektromos roller',red:.2,price:180,desc:'Nem kölcsönzős, ez tényleg a tiéd.'},
-  {id:'bicikli',name:'Futárbicikli',red:.3,price:450,desc:'Csomagtartóval, csengővel, sárvédő nélkül.'},
-  {id:'robogo',name:'Robogó',red:.4,price:1000,desc:'Kétütemű, füstöl, de átér a Lánchídon.'},
+  {id:'gordeszka',name:'Gördeszka',red:.1,price:30,desc:'Lejtőn gyors, a Gellért-hegyen kevésbé.'},
+  {id:'roller',name:'Elektromos roller',red:.2,price:80,desc:'Nem kölcsönzős, ez tényleg a tiéd.'},
+  {id:'bicikli',name:'Futárbicikli',red:.3,price:200,pog:1,desc:'Csomagtartóval, csengővel, sárvédő nélkül.'},
+  {id:'robogo',name:'Robogó',red:.4,price:0,pog:5,desc:'Kétütemű, füstöl, de átér a Lánchídon.'},
   {id:'sepru',name:'Repülő seprű',red:.5,price:0,pog:15,coffee:true,desc:'A dugó fölött suhan át, és az egyetlen, amivel kevesebb kávé is fogy.'}
 ];
 const RENT_MS=7*24*3600*1000;
@@ -1526,10 +1526,10 @@ function vehicleCard(){
   if(v) return `<button class="veh-card on" data-act="gogarage"><span class="itile t${v.red>=.4?3:v.red>=.2?2:1}">${svg(VEH_ART[v.id])}</span>
     <span class="veh-body"><span class="label">${ic('wheel')}Járműved</span><b class="veh-name">${v.name}</b><span class="veh-pills"><span class="veh-pill">${ic('clock')}−${Math.round(v.red*100)}% útidő</span>${v.coffee?`<span class="veh-pill cof">${ic('coffee')}kevesebb kávé</span>`:''}</span></span>
     <span class="veh-left"><span class="label">Még</span><b class="mono">${fmtLeft(r.until-now())}</b></span></button>`;
-  const best=VEHICLES.filter(x=>!x.pog&&x.price<=state.gold).pop(), cheap=VEHICLES[0], show=best||cheap;
+  const best=VEHICLES.filter(x=>!x.coffee&&x.price<=state.gold&&(x.pog||0)<=(state.pog||0)).pop(), cheap=VEHICLES[0], show=best||cheap;
   const exp=r&&r.id?VEHICLES.find(x=>x.id===r.id):null;
   return `<button class="veh-card ${exp?'expired':'none'}" data-act="gogarage"><span class="itile t1">${svg(VEH_ART[(exp||show).id])}</span>
-    <span class="veh-body"><span class="label">${ic(exp?'clock':'wheel')}${exp?'Lejárt a járműved':'Gyalog jársz'}</span><b class="veh-name">${exp?`${exp.name} · újítsd meg`:`${show.name}: −${Math.round(show.red*100)}% útidő`}</b><span class="note">${exp?'Nélküle minden út hosszabb.':best?'Erre már van pénzed a Garázsban.':`${show.price} Ft-tól bérelhetsz járművet a Garázsban.`}</span></span>
+    <span class="veh-body"><span class="label">${ic(exp?'clock':'wheel')}${exp?'Lejárt a járműved':'Gyalog jársz'}</span><b class="veh-name">${exp?`${exp.name} · újítsd meg`:`${show.name}: −${Math.round(show.red*100)}% útidő`}</b><span class="note">${exp?'Nélküle minden út hosszabb.':best?(best.pog?`${best.price?fmt(best.price)+' Ft + ':''}${best.pog} pogácsa, 7 napra.`:'Erre már van pénzed a Garázsban.'):`${VEHICLES[0].price} Ft-tól bérelhetsz járművet a Garázsban.`}</span></span>
     <span class="veh-go">Garázs →</span></button>`;
 }
 function vehicleLine(){
@@ -2288,7 +2288,7 @@ document.addEventListener('click',e=>{
 
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 14:51';
+const BUILD='2026.11.01 14:55';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
