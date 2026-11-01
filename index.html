@@ -389,6 +389,44 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .ins-stats>div.main{outline:1px solid var(--sodium)}
 .ins-verdict{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:700;border-radius:10px;padding:8px;background:var(--panel)}
 .ins-verdict.up{color:var(--ok)} .ins-verdict.down{color:var(--bad)}
+.mg-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mg-tile{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 8px;color:inherit;font:inherit;cursor:pointer}
+.mg-tile:hover{border-color:var(--sodium)}
+.mg-art{width:56px;height:56px;display:block}
+.mg-art svg{width:100%;height:100%}
+.mg-free{color:var(--ok);font-weight:700}
+.mg-card{position:relative;width:min(440px,100%);max-height:100%;overflow-y:auto;background:radial-gradient(120% 50% at 50% 0%,rgba(242,163,58,.12),transparent 60%),var(--concrete);border:2px solid var(--sodium);border-radius:18px 18px 0 0;padding:18px max(14px,env(safe-area-inset-left,0px)) calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;animation:pop .3s ease-out both}
+@media(min-width:600px){.overlay .mg-card{border-radius:18px;margin:auto}}
+.mg-card h2{margin:-6px 0 0}
+.mg-msg{text-align:center;font-size:15px;min-height:22px}
+.mg-msg .jack,.mg-msg .win{color:var(--gold);font-size:18px}
+.mg-msg .lose{color:var(--bad)}
+.mg-go{padding:14px;font-size:16px}
+.wheel-wrap{position:relative;width:min(280px,78vw);aspect-ratio:1;margin:4px auto 0}
+.wheel{width:100%;height:100%;border-radius:50%;box-shadow:0 0 0 6px rgba(242,163,58,.25),0 10px 30px rgba(0,0,0,.5)}
+.wheel.spinning{transition:transform 4s cubic-bezier(.12,.7,.16,1)}
+.wheel-svg{width:100%;height:100%;display:block}
+.wheel-ptr{position:absolute;left:50%;top:-10px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:26px solid var(--bad);z-index:2;filter:drop-shadow(0 2px 2px rgba(0,0,0,.6))}
+.wh-ic{width:30px;height:30px;display:grid;place-items:center;color:#fff}
+.wh-ic .ic,.wh-ic svg{width:24px;height:24px}
+.wh-t{fill:#fff;font:700 9.5px var(--f-body,sans-serif)}
+.stakes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stakes .btn{padding:12px 4px}
+.pk-rules summary{cursor:pointer;font-size:13px;color:var(--muted)}
+.pk-side{background:var(--panel);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.pk-side.act{outline:1px solid var(--sodium)}
+.pk-hand{color:var(--gold)}
+.dice{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.dz{position:relative;aspect-ratio:1;padding:0;border:0;background:none;border-radius:12px;cursor:pointer;transition:transform .15s}
+.dz svg{width:100%;height:100%;display:block}
+.dz:disabled{cursor:default}
+.dz.held{transform:translateY(-6px)}
+.dz.held svg rect{stroke:var(--sodium);stroke-width:9}
+.dz span{position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);font-size:10px;font-weight:700;color:var(--sodium);text-transform:uppercase}
+.dz.ph{display:block;background:rgba(255,255,255,.05);border:2px dashed var(--line)}
+.dz.rolling{animation:diceroll .5s ease-out}
+@keyframes diceroll{0%{transform:rotate(-200deg) scale(.4);opacity:.2}70%{transform:rotate(15deg) scale(1.08)}100%{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.wheel.spinning{transition-duration:.6s}.dz.rolling{animation:none}}
 .seg.seg3{grid-template-columns:repeat(3,1fr)}
 .seg.seg3 button{padding:9px 4px;font-size:13px}
 .emb-pick{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
@@ -1442,7 +1480,7 @@ function renderHud(){
 function renderTabs(){
   const t=[['terkep','Térkép'],['kocsma','Kocsma'],['karakter','Karakter'],['bolt','Bolt'],['arena','Aréna'],['kazamata','Kazamata'],['ceh','Céh']];
   const ready = state.active && state.active.endsAt<=now();
-  return `<nav class="tabs"><div class="in">${t.map(([k,l])=>`<button class="tab" data-act="view" data-v="${k}" ${view===k?'aria-current="page"':''}>${TAB_ICON[k]}${l}${(k==='kocsma'&&ready&&view!=='kocsma')||(k==='bolt'&&state.freeReshop&&view!=='bolt')?'<span class="dot"></span>':''}${(k==='kazamata'&&state.level<DUNGEON_UNLOCK)||(k==='ceh'&&state.level<GUILD_UNLOCK)?`<span class="lock-mini">${ic('lock')}</span>`:''}</button>`).join('')}</div></nav>`;
+  return `<nav class="tabs"><div class="in">${t.map(([k,l])=>`<button class="tab" data-act="view" data-v="${k}" ${view===k?'aria-current="page"':''}>${TAB_ICON[k]}${l}${(k==='kocsma'&&(ready||wheelFreeReady())&&view!=='kocsma')||(k==='bolt'&&state.freeReshop&&view!=='bolt')?'<span class="dot"></span>':''}${(k==='kazamata'&&state.level<DUNGEON_UNLOCK)||(k==='ceh'&&state.level<GUILD_UNLOCK)?`<span class="lock-mini">${ic('lock')}</span>`:''}</button>`).join('')}</div></nav>`;
 }
 function questCost(q){
   return `<span class="with-ic">${ic('clock','ic-time')}${effDur(q)} mp${mountRed()?` <s class="muted">${q.dur}</s>`:''}</span><span class="with-ic">${ic('coffee','ic-coffee')}−${qCost(q)} kávé</span>`;
@@ -1450,6 +1488,132 @@ function questCost(q){
 function questRewards(q){
   return `<span class="rw rw-gold">${ic('coin')}<b>+${fmt(Math.round(q.gold*goldMult()))}</b> Ft</span><span class="rw rw-xp">${ic('xp')}<b>+${fmt(Math.round(q.xp*xpMult()))}</b> XP</span>${q.drop?`<span class="rw rw-item">${ic('box')}<b>Tárgy</b></span>`:''}${q.pog?`<span class="rw rw-pog">${pogIc()}<b>+1</b></span>`:''}${state.firstQuestDay!==todayKey()?`<span class="rw rw-pog">${pogIc()}<b>+1</b> napi első</span>`:''}`;
 }
+
+/* ================= mini games: wheel of fortune + dice poker ================= */
+const WHEEL_PAID_DAILY=5, POKER_DAILY=12;
+function dayReset(){ const t=todayKey(); if(state.mgDay!==t){ state.mgDay=t; state.wheelFree=true; state.wheelPaid=0; state.pokerCount=0; } }
+function wheelFreeReady(){ return !!state && (state.mgDay!==todayKey() || state.wheelFree); }
+const WHEEL=[
+  {k:'ft',  w:26, c:'#3a3f66', lab:()=>`${fmt(20+state.level*8)} Ft`,  icon:()=>ic('coin','ic-gold'), give(){ const g=Math.round((20+state.level*8)*goldMult()); state.gold+=g; return `+${fmt(g)} Ft`; }},
+  {k:'cof', w:18, c:'#5a3d2a', lab:()=>'+20 kávé', icon:()=>ic('coffee','ic-coffee'), give(){ state.energy=Math.min(ENERGY_MAX,state.energy+20); return '+20 kávé'; }},
+  {k:'xp',  w:16, c:'#3d3170', lab:()=>'XP', icon:()=>ic('xp','ic-xp'), give(){ const x=Math.round(xpNeed(state.level)*.08); gainXp(x); return `+${fmt(x)} XP`; }},
+  {k:'pog', w:12, c:'#6b4a1a', lab:()=>'1 pogi', icon:()=>pogIc(), give(){ state.pog=(state.pog||0)+1; return '+1 pogácsa'; }},
+  {k:'ft2', w:10, c:'#2f5a45', lab:()=>`${fmt(60+state.level*30)} Ft`, icon:()=>ic('coin','ic-gold'), give(){ const g=Math.round((60+state.level*30)*goldMult()); state.gold+=g; return `+${fmt(g)} Ft`; }},
+  {k:'item',w:10, c:'#2a4a6b', lab:()=>'Tárgy', icon:()=>ic('box'), give(){ const it=genItem(state.level,null,null,Math.random()<.3?2:1), ok=addItem(it); return ok?`${it.name} (${RAR_NAME[it.rar]})`:`${it.name}, de tele a hátizsák, eladtad`; }},
+  {k:'cof2',w:6,  c:'#6b3a2a', lab:()=>'+40 kávé', icon:()=>ic('coffee','ic-coffee'), give(){ state.energy=Math.min(ENERGY_MAX,state.energy+40); return '+40 kávé'; }},
+  {k:'jack',w:2,  c:'#8a6a12', lab:()=>'5 pogi!', icon:()=>pogIc(), give(){ state.pog=(state.pog||0)+5; return 'FŐNYEREMÉNY: +5 pogácsa!'; }}
+];
+let WHEEL_ROT=0, WHEEL_BUSY=false, WHEEL_MSG='';
+function wheelSvg(){
+  const n=WHEEL.length, R=100, seg=360/n; let g='';
+  WHEEL.forEach((p,i)=>{ const a0=(i*seg-90-seg/2)*Math.PI/180, a1=((i+1)*seg-90-seg/2)*Math.PI/180;
+    g+=`<path d="M0 0L${(R*Math.cos(a0)).toFixed(2)} ${(R*Math.sin(a0)).toFixed(2)}A${R} ${R} 0 0 1 ${(R*Math.cos(a1)).toFixed(2)} ${(R*Math.sin(a1)).toFixed(2)}z" fill="${p.c}" stroke="#13141f" stroke-width="2"/>`;
+    g+=`<g transform="rotate(${i*seg}) translate(0 -52)"><foreignObject x="-15" y="-15" width="30" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="wh-ic">${p.icon()}</div></foreignObject><text y="-25" text-anchor="middle" class="wh-t">${esc(p.lab())}</text></g>`; });
+  return `<svg viewBox="-104 -104 208 208" class="wheel-svg"><circle r="103" fill="#f2a33a"/>${g}<circle r="14" fill="#f2a33a" stroke="#13141f" stroke-width="3"/></svg>`;
+}
+function openWheel(){ dayReset(); WHEEL_MSG=''; renderWheel(); }
+function renderWheel(){
+  dayReset(); const free=state.wheelFree, paidLeft=WHEEL_PAID_DAILY-state.wheelPaid;
+  $('#overlay-root').innerHTML=`<div class="overlay" data-act="closemg"><div class="mg-card" data-act="noop" role="dialog" aria-label="Szerencsekerék">
+    <button class="ins-x" data-act="closemg" aria-label="Bezárás">×</button>
+    <span class="label">${ic('pin')}Ica asztala</span><h2>Szerencsekerék</h2>
+    <div class="wheel-wrap"><div class="wheel-ptr"></div><div class="wheel" id="wheel" style="transform:rotate(${WHEEL_ROT}deg)">${wheelSvg()}</div></div>
+    <div class="mg-msg" id="wmsg">${WHEEL_MSG||(free?'Ma még egyszer ingyen pörgethetsz!':`Pörgetés 1 pogácsáért · ma még ${paidLeft}/${WHEEL_PAID_DAILY}`)}</div>
+    ${free?`<button class="btn primary mg-go" data-act="spin" ${WHEEL_BUSY?'disabled':''}>${ic('refresh')}Ingyen pörgetés</button>`
+      :`<button class="btn pog-btn mg-go" data-act="spin" data-pog="1" ${WHEEL_BUSY||paidLeft<=0||(state.pog||0)<1?'disabled':''}>${paidLeft>0?`${pogIc()}Pörgetés · 1 pogácsa`:'Holnap újra'}</button>`}
+    <p class="note">Naponta 1 ingyen pörgetés, utána még ${WHEEL_PAID_DAILY} pogácsáért. Éjfélkor újraindul.</p>
+  </div></div>`;
+}
+function spinWheel(){
+  dayReset(); if(WHEEL_BUSY) return;
+  if(state.wheelFree) state.wheelFree=false;
+  else { if(state.wheelPaid>=WHEEL_PAID_DAILY||!spendPog(1)) return; state.wheelPaid++; }
+  const tot=WHEEL.reduce((a,p)=>a+p.w,0); let r=Math.random()*tot, i=0; while(r>=WHEEL[i].w){ r-=WHEEL[i].w; i++; }
+  const seg=360/WHEEL.length, target=360-i*seg+(Math.random()-.5)*seg*.7, base=WHEEL_ROT-WHEEL_ROT%360;
+  WHEEL_ROT=base+360*5+target; WHEEL_BUSY=true; save(); renderWheel();
+  const w=$('#wheel'); w.getBoundingClientRect(); w.classList.add('spinning'); w.style.transform=`rotate(${WHEEL_ROT}deg)`;
+  let ticks=0; const tk=setInterval(()=>{ if(++ticks>14) return clearInterval(tk); sfx('tick'); },160+ticks*15);
+  setTimeout(()=>{ clearInterval(tk); WHEEL_BUSY=false; const txt=WHEEL[i].give(); WHEEL_MSG=`<b class="${WHEEL[i].k==='jack'?'jack':''}">${esc(txt)}</b>`; sfx(WHEEL[i].k==='jack'||WHEEL[i].k==='pog'?'levelup':'coins'); save();
+    const lv=lvlFx; lvlFx=false; render(); if(lv){ lvlFx=lv; render(); } else renderWheel(); }, 4200);
+}
+
+/* dice poker against Ica */
+const HAND_NAME=['Semmi','Pár','Két pár','Drill','Kissor','Nagysor','Full','Póker','Ötös'];
+function handScore(d){
+  const cnt={}; d.forEach(v=>cnt[v]=(cnt[v]||0)+1);
+  const g=Object.entries(cnt).map(([v,c])=>[c,+v]).sort((a,b)=>b[0]-a[0]||b[1]-a[1]), cs=g.map(x=>x[0]).join(''), vals=g.map(x=>x[1]);
+  const srt=[...d].sort().join('');
+  const cat=cs==='5'?8:cs==='41'?7:cs==='32'?6:srt==='23456'?5:srt==='12345'?4:cs==='311'?3:cs==='221'?2:cs==='2111'?1:0;
+  return [cat,...vals];
+}
+function cmpScore(a,b){ for(let i=0;i<Math.max(a.length,b.length);i++){ const x=a[i]||0,y=b[i]||0; if(x!==y) return x>y?1:-1; } return 0; }
+// Ica keeps her best group (or a near-straight) and rerolls the rest
+function icaKeep(d){
+  const sc=handScore(d); if(sc[0]>=4&&sc[0]!==7) return d.map(()=>true);
+  const cnt={}; d.forEach(v=>cnt[v]=(cnt[v]||0)+1);
+  const uniq=[...new Set(d)].sort(); if(Math.max(...Object.values(cnt))===1){ const hi=uniq.includes(6)&&!uniq.includes(1); const keep=new Set(hi?[2,3,4,5,6]:[1,2,3,4,5]); const used=new Set(); return d.map(v=>{ if(keep.has(v)&&!used.has(v)){ used.add(v); return true; } return false; }); }
+  const keepVals=new Set(Object.entries(cnt).filter(([v,c])=>c>=2).map(([v])=>+v));
+  if(sc[0]===2&&Math.random()<.5){ const lo=Math.min(...keepVals); keepVals.delete(lo); }
+  return d.map(v=>keepVals.has(v));
+}
+let PK=null;
+const die=v=>{ const P={1:[[50,50]],2:[[28,28],[72,72]],3:[[26,26],[50,50],[74,74]],4:[[28,28],[72,28],[28,72],[72,72]],5:[[26,26],[74,26],[50,50],[26,74],[74,74]],6:[[28,24],[72,24],[28,50],[72,50],[28,76],[72,76]]}[v]||[];
+  return `<svg viewBox="0 0 100 100"><rect x="4" y="4" width="92" height="92" rx="18" fill="#f4efe6" stroke="#13141f" stroke-width="5"/>${P.map(([x,y])=>`<circle cx="${x}" cy="${y}" r="9" fill="${v===1?'#c0392b':'#13141f'}"/>`).join('')}</svg>`; };
+function pokerStakes(cur){ const L=state.level; return cur==='pog'?[1,3,5]:[Math.round((20+L*10)/5)*5,Math.round((50+L*30)/10)*10,Math.round((100+L*80)/10)*10]; }
+function openPoker(){ dayReset(); PK={phase:'bet',cur:(PK&&PK.cur)||'ft'}; renderPoker(); }
+function renderPoker(){
+  dayReset(); const left=POKER_DAILY-state.pokerCount;
+  const dice=(arr,held,me,roll)=>`<div class="dice">${arr.map((v,i)=>`<button class="dz ${held&&held[i]?'held':''} ${roll&&roll.includes(i)?'rolling':''}" ${me&&PK.phase==='play'&&PK.rolls<3?`data-act="hold" data-i="${i}"`:'disabled'} aria-label="${v}">${die(v)}${held&&held[i]?'<span>tart</span>':''}</button>`).join('')}</div>`;
+  let body='';
+  if(PK.phase==='bet'){
+    const st=pokerStakes(PK.cur);
+    body=`<p class="muted" style="margin:0">Öt kocka, kétszer dobhatsz újra. Akinek erősebb a lapja, viszi a tét kétszeresét. Döntetlennél visszakapod a téted.</p>
+      <div class="seg"><button role="tab" data-act="pkcur" data-c="ft" aria-selected="${PK.cur==='ft'}">${ic('coin')}Forint</button><button role="tab" data-act="pkcur" data-c="pog" aria-selected="${PK.cur==='pog'}">${pogIc()}Pogácsa</button></div>
+      <div class="stakes">${st.map(v=>{ const cant=PK.cur==='pog'?(state.pog||0)<v:state.gold<v; return `<button class="btn ${PK.cur==='pog'?'pog-btn':'primary'}" data-act="pkbet" data-v="${v}" ${cant||left<=0?'disabled':''}>${PK.cur==='pog'?`${v} ${pogIc()}`:`${fmt(v)} Ft`}</button>`; }).join('')}</div>
+      <p class="note">${left>0?`Ma még ${left}/${POKER_DAILY} játszma.`:'Mára elég volt, Ica bezárta a kockás dobozt. Holnap újra.'}</p>
+      <details class="pk-rules"><summary>Lapok erősorrendje</summary><div class="note">${[...HAND_NAME].reverse().join(' › ')}</div></details>`;
+  } else {
+    const ms=handScore(PK.me), stakeTxt=PK.cur==='pog'?`${PK.stake} pogácsa`:`${fmt(PK.stake)} Ft`;
+    body=`<div class="pk-side ${PK.phase==='done'?'':'act'}"><div class="row between"><span class="label">${ic('user')}Te</span><b class="pk-hand">${HAND_NAME[ms[0]]}</b></div>${dice(PK.me,PK.held,true,PK.rolling)}</div>
+      ${PK.phase==='play'?`<div class="row" style="gap:8px;justify-content:center"><button class="btn primary" data-act="pkroll" ${PK.rolls>=3||PK.held.every(Boolean)?'disabled':''}>${ic('refresh')}Újradobás (${3-PK.rolls})</button><button class="btn" data-act="pkstand">Megállok</button></div><p class="note" style="text-align:center;margin:0">Koppints a kockákra, amiket megtartasz.</p>`:''}
+      <div class="pk-side ica"><div class="row between"><span class="label">${ic('pin')}Ica</span><b class="pk-hand">${PK.ica?HAND_NAME[handScore(PK.ica)[0]]:'vár'}</b></div>${PK.ica?dice(PK.ica,null,false,PK.icaRolling):`<div class="dice wait">${'<span class="dz ph"></span>'.repeat(5)}</div>`}</div>
+      <div class="mg-msg">${PK.msg||`Tét: <b>${stakeTxt}</b>`}</div>
+      ${PK.phase==='done'?`<div class="row" style="gap:8px;justify-content:center"><button class="btn primary" data-act="pkagain" ${left<=0?'disabled':''}>Még egy kör</button><button class="btn" data-act="closemg">Kész</button></div>`:''}`;
+  }
+  $('#overlay-root').innerHTML=`<div class="overlay" data-act="${PK.phase==='bet'||PK.phase==='done'?'closemg':'noop'}"><div class="mg-card" data-act="noop" role="dialog" aria-label="Kockapóker">
+    ${PK.phase==='bet'||PK.phase==='done'?'<button class="ins-x" data-act="closemg" aria-label="Bezárás">×</button>':''}
+    <span class="label">${ic('pin')}Ica asztala</span><h2>Kockapóker</h2>${body}</div></div>`;
+}
+const r6=()=>1+Math.floor(Math.random()*6);
+function pokerBet(v){
+  dayReset(); if(state.pokerCount>=POKER_DAILY) return;
+  if(PK.cur==='pog'){ if(!spendPog(v)) return; } else { if(state.gold<v) return toast('Nincs elég forintod.'); state.gold-=v; }
+  state.pokerCount++; save();
+  PK={...PK,phase:'play',stake:v,me:[r6(),r6(),r6(),r6(),r6()],held:[0,0,0,0,0].map(()=>false),rolls:1,rolling:[0,1,2,3,4],ica:null,msg:''};
+  sfx('clink'); renderPoker(); setTimeout(()=>{ if(PK) { PK.rolling=null; } },500);
+}
+function pokerRoll(){ if(PK.rolls>=3) return; const idx=[]; PK.me=PK.me.map((v,i)=>{ if(PK.held[i]) return v; idx.push(i); return r6(); }); PK.rolls++; PK.rolling=idx; sfx('clink'); renderPoker(); PK.rolling=null; if(PK.rolls>=3) setTimeout(pokerStand,700); }
+function pokerStand(){
+  if(!PK||PK.phase!=='play') return; PK.phase='ica'; PK.held=null; const ms=handScore(PK.me);
+  PK.ica=[r6(),r6(),r6(),r6(),r6()]; PK.icaRolling=[0,1,2,3,4]; PK.msg='Ica dob…'; renderPoker(); sfx('clink');
+  let n=1; const step=()=>{
+    if(!PK) return;
+    const beat=cmpScore(handScore(PK.ica),ms)>0;
+    if(n<3&&!beat){ const k=icaKeep(PK.ica), idx=[]; PK.ica=PK.ica.map((v,i)=>{ if(k[i]) return v; idx.push(i); return r6(); }); n++; PK.icaRolling=idx; PK.msg=`Ica újradob (${idx.length} kocka)…`; sfx('clink'); renderPoker(); setTimeout(step,1100); return; }
+    const c=cmpScore(ms,handScore(PK.ica)), pog=PK.cur==='pog';
+    if(c>0){ if(pog) state.pog+=PK.stake*2; else state.gold+=PK.stake*2; PK.msg=`<b class="win">Nyertél! +${pog?PK.stake*2+' pogácsa':fmt(PK.stake*2)+' Ft'}</b>`; sfx('win'); }
+    else if(c===0){ if(pog) state.pog+=PK.stake; else state.gold+=PK.stake; PK.msg='Döntetlen, visszakaptad a téted.'; sfx('pop'); }
+    else { PK.msg=`<b class="lose">Ica nyert.</b> „Legközelebb, drágám.”`; sfx('lose'); }
+    PK.phase='done'; PK.icaRolling=null; save(); render(); renderPoker(); };
+  setTimeout(step,1100);
+}
+function minigameCard(){
+  dayReset();
+  return `<section class="card mg-row"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('pin')}Ica asztala</span><span class="note">Éjfélkor újraindul</span></div>
+    <div class="mg-tiles"><button class="mg-tile" data-act="openwheel"><span class="mg-art">${svg(`<circle cx="32" cy="34" r="24" fill="${OR}"/><path d="M32 34L32 10M32 34L52 22M32 34L52 46M32 34L32 58M32 34L12 46M32 34L12 22" stroke-width="2"/><circle cx="32" cy="34" r="5" fill="${Y}"/><path d="M27 4h10l-5 8z" fill="${RD}"/>`)}</span><b>Szerencsekerék</b><span class="note">${state.wheelFree?'<span class="mg-free">Ingyen pörgetés!</span>':`ma még ${WHEEL_PAID_DAILY-state.wheelPaid} · 1 pogácsa`}</span></button>
+    <button class="mg-tile" data-act="openpoker"><span class="mg-art">${svg(`<rect x="6" y="20" width="26" height="26" rx="5" fill="${WH}"/><circle cx="13" cy="27" r="2.5" fill="${K}" stroke="none"/><circle cx="25" cy="39" r="2.5" fill="${K}" stroke="none"/><circle cx="19" cy="33" r="2.5" fill="${K}" stroke="none"/><rect x="30" y="12" width="26" height="26" rx="5" fill="${WH}" transform="rotate(14 43 25)"/><circle cx="38" cy="20" r="2.5" fill="${RD}" stroke="none"/><circle cx="48" cy="30" r="2.5" fill="${RD}" stroke="none"/>`)}</span><b>Kockapóker</b><span class="note">forintért vagy pogácsáért · ${POKER_DAILY-state.pokerCount} kör</span></button></div></section>`;
+}
+
 function renderKocsma(){
   let html=`${banner('kocsma')}<section class="scene"><span class="label">${ic('pin')}Romkocsma · VII. kerület · 23:47</span><h2>Ica a pult mögül int</h2><p>„Megint gyűlnek a bejelentések, drágám. Válassz egyet, de előtte igyál egy kávét.”</p></section>${vehicleCard()}`;
   if(state.active){
@@ -1481,7 +1645,7 @@ function renderKocsma(){
   }
   html+=`</section>`;
   if(!state.active && state.quests.every(q=>state.energy<qCost(q))) html+=`<div class="card row between"><span class="note">Elfogyott a kávé. Éjfélkor újratöltődik, addig igyál egy duplát.</span><button class="btn small pog-btn" data-act="coffeepog" ${canEspresso()?'':'disabled'}>${ic('coffee')}+${ESPRESSO_GAIN} · ${pogIc()}1</button></div>`;
-  return html;
+  return html+minigameCard();
 }
 function fmtTime(ms){ const s=Math.ceil(ms/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
 
@@ -2223,6 +2387,16 @@ document.addEventListener('click',e=>{
     case 'start': { if(listChars().length>=MAX_CHARS) return; const n=($('#nm').value||'').trim(); if(n.length<3){ $('#nm').focus(); toast('A névnek legalább 3 betűsnek kell lennie.'); return; } newPlayer(n,pickedClass); view='terkep'; save(); render(); window.scrollTo(0,0); } break;
     case 'view': view=el.dataset.v; render(); window.scrollTo(0,0); break;
     case 'inspect': hideTip(); openInspect(id); return;
+    case 'openwheel': openWheel(); return;
+    case 'spin': spinWheel(); return;
+    case 'openpoker': openPoker(); return;
+    case 'pkcur': PK.cur=el.dataset.c; renderPoker(); return;
+    case 'pkbet': pokerBet(+el.dataset.v); return;
+    case 'hold': PK.held[+el.dataset.i]=!PK.held[+el.dataset.i]; renderPoker(); return;
+    case 'pkroll': pokerRoll(); return;
+    case 'pkstand': pokerStand(); return;
+    case 'pkagain': PK={phase:'bet',cur:PK.cur}; renderPoker(); return;
+    case 'closemg': if(WHEEL_BUSY||(PK&&(PK.phase==='play'||PK.phase==='ica'))) return; PK=null; $('#overlay-root').innerHTML=''; render(); return;
     case 'closeinsp': INSPECT=null; hideTip(); $('#overlay-root').innerHTML=''; return;
     case 'noop': if(tr&&!HOVER){ tipKey===tr.dataset.tip?hideTip():showTip(tr); } else if(!tr) hideTip(); return;
     case 'selquest': { const y=window.scrollY; selQuest=selQuest===id?null:id; render(); window.scrollTo(0,y);
@@ -2291,7 +2465,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 15:03';
+const BUILD='2026.11.01 15:14';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
