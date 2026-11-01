@@ -597,6 +597,11 @@ body.modal-open{overflow:hidden}
 .ins-sk{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
 .ins-skc{display:flex;flex-direction:column;background:var(--night);border-radius:8px;padding:6px 8px;font-size:12.5px}
 .ins-skc small{color:var(--ok);font-size:11px;line-height:1.25}
+.ins-guild[role=button]{cursor:pointer;align-items:center}
+.ins-guild[role=button]:hover{outline:1px solid var(--sodium)}
+.ins-guild>div:nth-child(2){flex:1;min-width:0}
+.ins-go{font-size:26px;color:var(--muted);line-height:1;padding-left:4px}
+.gv-card .g-head-wrap{margin:0}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
 .install-card>div{flex:1;min-width:0}
@@ -2292,7 +2297,7 @@ function fDmg(f){ const c=CLASSES[f.cls], b=f.stats[c.main]*STAT_DMG; return `${
 function fAvg(f){ const c=CLASSES[f.cls]; return ((f.wMin+f.wMax)/2+f.stats[c.main]*STAT_DMG)*c.dmg*(c.hits||1); }
 function openInspect(key){ const x=inspectOf(key); if(!x) return; const st=key==='me'?state:key.startsWith('c-')?realData(key.slice(2)):key.startsWith('p-')?realData(key.slice(2)):null;
   if(st){ x.skills=(st.skills||[]).map((c,i)=>c==null?null:(SKILLS[st.cls]||[])[i]&&SKILLS[st.cls][i][c]).filter(Boolean); }
-  if(st){ const G=st.guild||(st.memberOf&&(realData(st.memberOf.leaderCid)||{}).guild)||null; if(G) x.gInfo={name:G.name,emblem:G.emblem,desc:G.desc,lead:!!st.guild}; else if(st.memberOf) x.gInfo={name:st.memberOf.name,emblem:st.memberOf.emblem}; }
+  if(st){ const G=st.guild||(st.memberOf&&(realData(st.memberOf.leaderCid)||{}).guild)||null; const lc=st.guild?(st.cid||(key==='me'?state.cid:key.slice(2))):st.memberOf&&st.memberOf.leaderCid; if(G) x.gInfo={name:G.name,emblem:G.emblem,desc:G.desc,lead:!!st.guild,lc}; else if(st.memberOf) x.gInfo={name:st.memberOf.name,emblem:st.memberOf.emblem,lc}; }
   INSPECT=x; INSPECT.key=key; renderInspect(); }
 function renderInspect(){
   const x=INSPECT; if(!x){ return; }
@@ -2320,7 +2325,7 @@ function renderInspect(){
     </div>
     <div class="ins-stats">${STATS.map(([k,n])=>`<div class="${c.main===k?'main':''}">${ic(k,'ic-'+k)}<span>${n}</span><b>${f.stats[k]}</b>${x.me?'':`<small class="muted">te: ${me.stats[k]}</small>`}</div>`).join('')}</div>
     ${x.skills?`<div class="ins-skills"><div class="label">${ic('xp')}Képességek · ${x.skills.length}</div>${x.skills.length?`<div class="ins-sk">${x.skills.map(k=>`<span class="ins-skc"><b>${esc(k.n)}</b><small>${fxList(k.fx)}</small></span>`).join('')}</div>`:'<p class="note" style="margin:4px 0 0">Még nem választott képességet.</p>'}</div>`:''}
-    ${x.gInfo?`<div class="ins-guild"><div class="port g-mini">${svg(emblemSvg(EMBLEMS[x.gInfo.emblem]?x.gInfo.emblem:Object.keys(EMBLEMS)[0]))}</div><div><div class="label">${x.gInfo.lead?'Céhvezető':'Céhtag'}</div><b>${esc(x.gInfo.name)}</b>${x.gInfo.desc?`<p class="note">${esc(x.gInfo.desc)}</p>`:''}</div></div>`:''}
+    ${x.gInfo?`<div class="ins-guild" role="button" tabindex="0" data-act="viewguild" data-id="${x.gInfo.lc||''}"><div class="port g-mini">${svg(emblemSvg(EMBLEMS[x.gInfo.emblem]?x.gInfo.emblem:Object.keys(EMBLEMS)[0]))}</div><div><div class="label">${x.gInfo.lead?'Céhvezető':'Céhtag'}</div><b>${esc(x.gInfo.name)}</b>${x.gInfo.desc?`<p class="note">${esc(x.gInfo.desc)}</p>`:''}</div><span class="ins-go">›</span></div>`:''}
     ${verdict?`<div class="ins-verdict ${verdict[1]}">${ic('fight')}${verdict[0]}</div>`:''}
     ${!x.me&&!x.npc&&/^[cp]-/.test(x.key||'')?`<div class="row" style="justify-content:center;gap:8px">${isFriend(x.key.slice(2))?`<span class="note with-ic">${ic('friend')}Barátod</span>`:`<button class="btn small" data-act="addfriend" data-k="${x.key}">${ic('friend')}Barátnak jelölöm</button>`}<button class="btn small" data-act="mailthread" data-k="${x.key}" data-n="${esc(x.name)}">${ic('mail')}Üzenet</button></div>`:''}
     <div class="row" style="justify-content:center;gap:8px">${x.duel||x.pduel?(()=>{ const left=state.arenaReadyAt>now(), act=x.pduel?'pduel':'duel', id=x.pduel||x.duel; return left?`<button class="btn pog-btn" data-act="${act}" data-pog="1" data-id="${id}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Kihív most</button>`:`<button class="btn primary" data-act="${act}" data-id="${id}">${ic('fight')}Kihív</button>`; })():''}<button class="btn" data-act="closeinsp">Bezár</button></div>
@@ -2537,11 +2542,21 @@ function ladderRows(myI,mv){
   return out;
 }
 let GDESC_EDIT=false;
+/* someone else's guild, opened from a player card */
+function openGuildView(lc){
+  if(!lc) return; if(lc===guildChannel()){ INSPECT=null; $('#overlay-root').innerHTML=''; view='ceh'; guildTab='tagok'; render(); window.scrollTo(0,0); return; }
+  const L=lc===state.cid?state:realData(lc), g=L&&L.guild; if(!g){ toast('Ennek a céhnek az adatai most nem érhetők el.'); return; }
+  const lad=L.guildLadder||[], rank=lad.findIndex(e=>e.me)+1;
+  const row=(n,cls,l,role)=>`<div class="opp">${portrait(CLASS_ART[cls]||CLASS_ART.kidobo)}<div><div class="item-name">${esc(n)} <span class="role-tag ${role==='Vezető'?'lead':role==='Játékos'?'real':''}">${role}</span></div><div class="item-stats"><span>${l}. szint · ${CLASSES[cls]?CLASSES[cls].name:''}</span></div></div></div>`;
+  $('#overlay-root').innerHTML=`<div class="overlay" data-act="closemg"><div class="mg-card gv-card" data-act="noop" role="dialog" aria-label="${esc(g.name)}"><button class="ins-x" data-act="closemg" aria-label="Bezárás">×</button>
+    <span class="label">${ic('fame')}Céh</span>${gHead(g,{view:true,rank,ladLen:lad.length,treasury:g.treasury})}
+    <section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Tagok</span><span class="note mono">${g.members.length+1} fő</span></div>${row(L.name,L.cls,L.level,'Vezető')}${g.members.map(m=>row(m.name,m.cls,m.real?((realData(m.cid)||{}).level||m.lvl||1):memberLevel(m),m.real?'Játékos':'Tag')).join('')}</section>
+  </div></div>`; }
 function gDescHtml(g,lead){
   if(lead&&GDESC_EDIT) return `<div class="g-desc edit"><textarea id="gdesc" maxlength="300" rows="3" placeholder="pl. Napi 3 küldetés kötelező. Kincstár +15% pénz, Edzőterem +12% XP. Aktív, magyar céh.">${esc(g.desc||'')}</textarea><div class="row between"><span class="note">Ezt látják azok is, akiket meghívsz.</span><span class="row" style="gap:6px"><button class="btn small" data-act="gdesccancel">Mégse</button><button class="btn small primary" data-act="gdescsave">Mentés</button></span></div></div>`;
   return `<div class="g-desc">${g.desc?`<p>${esc(g.desc)}</p>`:`<p class="muted">${lead?'Még nincs leírás. Írd ide, milyen a céhetek, és mit kaptok a fejlesztésekből.':'A vezető még nem írt leírást.'}</p>`}${lead?`<button class="btn small" data-act="gdescedit">${ic('chat')}${g.desc?'Szerkesztés':'Leírás írása'}</button>`:''}</div>`; }
 function gHead(g,o){ return `<section class="card g-head-wrap"><div class="g-head"><div class="g-emb">${svg(emblemSvg(g.emblem))}</div><div class="g-info"><div class="label">Céhszint ${1+Object.values(g.upg).reduce((a,b)=>a+b,0)}${o.member?' · tag vagy':''}</div><h3>${esc(g.name)}</h3><div class="g-stats">${o.rank?`<span class="with-ic">${ic('trophy','ic-fame')}#${o.rank} / ${o.ladLen}</span>`:''}<span class="with-ic">${ic('user')}${g.members.length+1}${o.cap?'/'+o.cap:''} fő</span><span class="with-ic">${ic('fame','ic-fame')}${g.honor} becsület</span><span class="with-ic">${ic('coin','ic-gold')}${fmt(o.treasury)} Ft kassza</span></div></div></div>
-  <div class="g-bonus">${GUILD_UPG.filter(u=>g.upg[u.id]).map(u=>`<span class="chip">${ic(u.icon)}${u.fx(g.upg[u.id])}</span>`).join('')||'<span class="note">Még nincs fejlesztés.</span>'}</div>${gDescHtml(g,!o.member)}</section>`; }
+  <div class="g-bonus">${GUILD_UPG.filter(u=>g.upg[u.id]).map(u=>`<span class="chip">${ic(u.icon)}${u.fx(g.upg[u.id])}</span>`).join('')||'<span class="note">Még nincs fejlesztés.</span>'}</div>${gDescHtml(g,!o.member&&!o.view)}</section>`; }
 const G_TABS=[['tagok','Tagok','user'],['fejlesztes','Fejlesztés','refresh'],['harc','Harc','fight'],['chat','Chat','chat']];
 const gTabs=()=>`<div class="seg seg4" role="tablist">${G_TABS.map(([k,l,i])=>`<button role="tab" data-act="gtab" data-t="${k}" aria-selected="${guildTab===k}">${ic(i)}${l}</button>`).join('')}</div>`;
 function renderCeh(){
@@ -3170,6 +3185,7 @@ document.addEventListener('click',e=>{
     case 'unfriend': removeFriend(id); renderMail(); return;
     case 'addfriend': { const x=INSPECT; if(x) addFriend(el.dataset.k,x.name,x.cls); if(INSPECT) renderInspect(); } return;
     case 'gsend': doGuildSend(); return;
+    case 'viewguild': openGuildView(el.dataset.id); return;
     case 'openskills': openSkills(); return;
     case 'skillpick': { const sc=$('.sk-card')?.scrollTop||0; skillPick(+el.dataset.i,+el.dataset.c); openSkills(); const c=$('.sk-card'); if(c) c.scrollTop=sc; } return;
     case 'skillreset': { skillReset(); openSkills(); } return;
@@ -3278,7 +3294,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 00:46';
+const BUILD='2026.11.02 00:49';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
