@@ -121,3 +121,24 @@ create policy "gi insert" on public.guild_invites for insert to authenticated wi
 create policy "gi update" on public.guild_invites for update to authenticated using (from_user = auth.uid() or to_user = auth.uid());
 create policy "gi delete" on public.guild_invites for delete to authenticated using (from_user = auth.uid() or to_user = auth.uid());
 grant select, insert, update, delete on public.guild_invites to authenticated;
+
+-- ===== Céhtagok befizetései a vezető kasszájába =====
+create table if not exists public.guild_donations (
+  id           bigint generated always as identity primary key,
+  from_char    text not null references public.characters(id) on delete cascade,
+  from_user    uuid not null default auth.uid(),
+  from_name    text,
+  leader_char  text not null references public.characters(id) on delete cascade,
+  leader_user  uuid not null,
+  amount       int  not null check (amount > 0 and amount <= 100000),
+  created_at   timestamptz not null default now()
+);
+alter table public.guild_donations enable row level security;
+drop policy if exists "gd read"   on public.guild_donations;
+drop policy if exists "gd insert" on public.guild_donations;
+drop policy if exists "gd delete" on public.guild_donations;
+create policy "gd read"   on public.guild_donations for select to authenticated using (from_user = auth.uid() or leader_user = auth.uid());
+create policy "gd insert" on public.guild_donations for insert to authenticated with check (
+  from_user = auth.uid() and exists (select 1 from public.characters c where c.id = from_char and c.user_id = auth.uid()));
+create policy "gd delete" on public.guild_donations for delete to authenticated using (leader_user = auth.uid());
+grant select, insert, delete on public.guild_donations to authenticated;
