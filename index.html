@@ -1849,16 +1849,17 @@ const MATS=[
   {id:'szikra',   name:'Lidércszikra',     art:()=>`<path d="M32 4c6 12 18 16 18 32a18 18 0 01-36 0c0-10 6-14 8-22 4 6 4 10 10 12-2-10-2-16 0-22z" fill="${OR}"/><path d="M32 30c4 6 8 8 8 14a8 8 0 01-16 0c0-6 4-8 8-14z" fill="${Y}"/>`}
 ];
 const matIc=(i,sz='')=>`<span class="mat-ic ${sz}">${svg(MATS[i].art())}</span>`;
-// taking an item apart gives its own tier plus some of the tier below
-function disenchantYield(it){ const r=it.rar, out={}; out[MATS[r].id]=[3,2,2,2,1][r]; if(r>0) out[MATS[r-1].id]=2; return out; }
-const CRAFT_COST=[{csavar:4},{neon:4,csavar:4},{kristaly:4,neon:4},{esszencia:4,kristaly:5},{szikra:3,esszencia:5}];
+// taking an item apart gives one material of its own colour
+function disenchantYield(it){ return {[MATS[it.rar].id]:1}; }
+// crafting: 3 of the chosen colour + 2 of the colour below
+const CRAFT_COST=[{csavar:3},{neon:3,csavar:2},{kristaly:3,neon:2},{esszencia:3,kristaly:2},{szikra:3,esszencia:2}];
 const craftFee=r=>Math.round((10+state.level*6)*[1,1.5,2,3,4][r]);
 const CONVERT_N=5;
 function mats(){ return state.mats||(state.mats={csavar:0,neon:0,kristaly:0,esszencia:0,szikra:0}); }
 function canPay(cost){ const m=mats(); return Object.entries(cost).every(([k,v])=>(m[k]||0)>=v); }
 function costHtml(cost){ const m=mats(); return Object.entries(cost).map(([k,v])=>{ const i=MATS.findIndex(x=>x.id===k); return `<span class="mat-cost ${(m[k]||0)>=v?'':'short'}">${matIc(i,'sm')}${v}</span>`; }).join(''); }
 function disenchant(id){ const i=state.inv.findIndex(x=>x.id===id); if(i<0) return; const it=state.inv[i], y=disenchantYield(it), m=mats();
-  for(const [k,v] of Object.entries(y)) m[k]=(m[k]||0)+v+(Math.random()<.35?1:0);
+  for(const [k,v] of Object.entries(y)) m[k]=(m[k]||0)+v;
   state.inv.splice(i,1); save(); render(); sfx('clink'); toast(`${it.name} szétszedve: ${Object.keys(y).map(k=>MATS.find(x=>x.id===k).name).join(', ')}.`); }
 function convertMat(r){ const m=mats(), a=MATS[r].id, b=MATS[r+1].id, fee=craftFee(r); if((m[a]||0)<CONVERT_N||state.gold<fee) return;
   m[a]-=CONVERT_N; m[b]=(m[b]||0)+1; state.gold-=fee; save(); render(); sfx('coins'); toast(`${CONVERT_N} ${MATS[r].name} → 1 ${MATS[r+1].name}`); }
@@ -1893,7 +1894,7 @@ function renderMuhely(){
     ${CRAFT.made&&state.inv.find(x=>x.id===CRAFT.made)?`<div class="crafted-new"><span class="label">Most készült</span><div class="item" data-tip="loot:${CRAFT.made}">${itemTile(LOOT[CRAFT.made])}<div><div class="item-name r${LOOT[CRAFT.made].rar}">${esc(LOOT[CRAFT.made].name)}</div><div class="item-stats">${itemStats(LOOT[CRAFT.made])}</div></div><button class="btn small primary" data-act="equip" data-id="${CRAFT.made}">${ic('equip')}Felvesz</button></div></div>`:''}
   </section>`;
   // taking apart
-  html+=`<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('bag')}Szétszedés</span><span class="note mono">${state.inv.length}/${INV_MAX}</span></div><p class="note" style="margin:0 0 4px">Forint helyett nyersanyagot kapsz érte. A jobb minőségű tárgy értékesebb anyagot ad.</p>`;
+  html+=`<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('bag')}Szétszedés</span><span class="note mono">${state.inv.length}/${INV_MAX}</span></div><p class="note" style="margin:0 0 4px">Forint helyett 1 nyersanyagot kapsz érte, a tárgy színével megegyezőt. Egy saját tárgyhoz 3 kell a választott színből és 2 az eggyel gyengébből.</p>`;
   if(!state.inv.length) html+=`<p class="muted" style="margin:6px 0 0">Üres a hátizsák.</p>`;
   for(const it of state.inv){ const y=disenchantYield(it);
     html+=`<div class="item" data-tip="inv:${it.id}">${itemTile(it)}<div><div class="item-name r${it.rar}">${esc(it.name)} ${cmpMark(it)}</div><div class="item-stats"><span>${SLOT_NAME[it.slot]}</span>${itemStats(it)}</div></div>
@@ -2754,7 +2755,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 21:19';
+const BUILD='2026.11.01 22:06';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
