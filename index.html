@@ -593,6 +593,10 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .ins-card>.ins-x,.mg-card>.ins-x{position:sticky;top:0;align-self:flex-end;flex:none;margin:-8px -6px -40px 0;z-index:6;width:40px;height:40px;font-size:22px;box-shadow:0 2px 10px rgba(0,0,0,.45)}
 body.modal-open{overflow:hidden}
 .ins-card>.ins-x{margin:-8px -6px -4px 0}
+.ins-skills{background:var(--panel);border-radius:12px;padding:10px}
+.ins-sk{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.ins-skc{display:flex;flex-direction:column;background:var(--night);border-radius:8px;padding:6px 8px;font-size:12.5px}
+.ins-skc small{color:var(--ok);font-size:11px;line-height:1.25}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
 .install-card>div{flex:1;min-width:0}
@@ -2287,6 +2291,7 @@ function inspectOf(key){
 function fDmg(f){ const c=CLASSES[f.cls], b=f.stats[c.main]*STAT_DMG; return `${c.hits>1?c.hits+'× ':''}${Math.round((f.wMin+b)*c.dmg)}–${Math.round((f.wMax+b)*c.dmg)}`; }
 function fAvg(f){ const c=CLASSES[f.cls]; return ((f.wMin+f.wMax)/2+f.stats[c.main]*STAT_DMG)*c.dmg*(c.hits||1); }
 function openInspect(key){ const x=inspectOf(key); if(!x) return; const st=key==='me'?state:key.startsWith('c-')?realData(key.slice(2)):key.startsWith('p-')?realData(key.slice(2)):null;
+  if(st){ x.skills=(st.skills||[]).map((c,i)=>c==null?null:(SKILLS[st.cls]||[])[i]&&SKILLS[st.cls][i][c]).filter(Boolean); }
   if(st){ const G=st.guild||(st.memberOf&&(realData(st.memberOf.leaderCid)||{}).guild)||null; if(G) x.gInfo={name:G.name,emblem:G.emblem,desc:G.desc,lead:!!st.guild}; else if(st.memberOf) x.gInfo={name:st.memberOf.name,emblem:st.memberOf.emblem}; }
   INSPECT=x; INSPECT.key=key; renderInspect(); }
 function renderInspect(){
@@ -2314,6 +2319,7 @@ function renderInspect(){
       <div>${ic('target','ic-crit')}<b>${Math.round(critChance(f)*100)}%</b><span>Krit</span>${cmp(critChance(f),critChance(me),v=>Math.round(v*100)+'%')}</div>
     </div>
     <div class="ins-stats">${STATS.map(([k,n])=>`<div class="${c.main===k?'main':''}">${ic(k,'ic-'+k)}<span>${n}</span><b>${f.stats[k]}</b>${x.me?'':`<small class="muted">te: ${me.stats[k]}</small>`}</div>`).join('')}</div>
+    ${x.skills?`<div class="ins-skills"><div class="label">${ic('xp')}Képességek · ${x.skills.length}</div>${x.skills.length?`<div class="ins-sk">${x.skills.map(k=>`<span class="ins-skc"><b>${esc(k.n)}</b><small>${fxList(k.fx)}</small></span>`).join('')}</div>`:'<p class="note" style="margin:4px 0 0">Még nem választott képességet.</p>'}</div>`:''}
     ${x.gInfo?`<div class="ins-guild"><div class="port g-mini">${svg(emblemSvg(EMBLEMS[x.gInfo.emblem]?x.gInfo.emblem:Object.keys(EMBLEMS)[0]))}</div><div><div class="label">${x.gInfo.lead?'Céhvezető':'Céhtag'}</div><b>${esc(x.gInfo.name)}</b>${x.gInfo.desc?`<p class="note">${esc(x.gInfo.desc)}</p>`:''}</div></div>`:''}
     ${verdict?`<div class="ins-verdict ${verdict[1]}">${ic('fight')}${verdict[0]}</div>`:''}
     ${!x.me&&!x.npc&&/^[cp]-/.test(x.key||'')?`<div class="row" style="justify-content:center;gap:8px">${isFriend(x.key.slice(2))?`<span class="note with-ic">${ic('friend')}Barátod</span>`:`<button class="btn small" data-act="addfriend" data-k="${x.key}">${ic('friend')}Barátnak jelölöm</button>`}<button class="btn small" data-act="mailthread" data-k="${x.key}" data-n="${esc(x.name)}">${ic('mail')}Üzenet</button></div>`:''}
@@ -3272,7 +3278,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 00:45';
+const BUILD='2026.11.02 00:46';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
