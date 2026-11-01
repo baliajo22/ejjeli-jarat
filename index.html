@@ -1504,15 +1504,12 @@ let SHOP_FX=false;
 function reshop(){ const old=new Set((state.shop||[]).map(x=>x.name)); let n=genShop(), tries=0; while(tries++<5&&n.filter(x=>old.has(x.name)).length>2) n=genShop();
   state.shop=n; save(); SHOP_FX=true; render(); SHOP_FX=false; const c=$('#shoplist'); if(c&&c.getBoundingClientRect().top<0) c.scrollIntoView({behavior:'smooth',block:'start'}); }
 function genShop(){ const l=state.level, others=SLOTS.map(s=>s[0]).filter(k=>k!=='fegyver').sort(()=>Math.random()-.5).slice(0,6); return [genItem(l,'fegyver'),genItem(l,'fegyver'),...others.map(k=>genItem(l,k))].map(shopPremium); }
-/* blue and purple stock sometimes asks for pogácsa too: the more pogácsa, the less forint and the better the piece */
+/* blue and purple stock sometimes asks for pogácsa too: the more pogácsa, the less forint. The item itself is the same */
 function shopPremium(it){
   if(it.rar<2||it.rar>3) return it;
   const v=Math.random(); if(v<.4) return it;
   const p=v<.75?rand(1,4):rand(6,10);
-  it.pog=p; it.premium=true; it.price=Math.max(5,Math.round(it.price*(1-p*.06)));
-  const k=1+p*.025; for(const s of Object.keys(it.bonus)) it.bonus[s]=Math.round(it.bonus[s]*k);
-  const have=Object.keys(it.bonus); if(have.length<3){ const free=STATS.map(x=>x[0]).filter(x=>!have.includes(x)); const ns=pick(free); it.bonus[ns]=Math.max(1,Math.round(Object.values(it.bonus)[0]*.6)); }
-  if(it.slot==='fegyver'){ it.min=Math.round(it.min*k); it.max=Math.round(it.max*k); } else if(it.armor) it.armor=Math.round(it.armor*k);
+  it.pog=p; it.price=Math.max(5,Math.round(it.price*(1-p*.06)));
   return it; }
 function genArena(){
   syncLadder();
@@ -2097,7 +2094,7 @@ function renderBolt(){
   let si=0;
   for(const it of state.shop){
     const better=itemScore(it)>itemScore(state.equip[it.slot]);
-    html+=`<div class="item ${SHOP_FX?'shop-new':''}" style="${SHOP_FX?`animation-delay:${si++*60}ms`:''}" data-tip="shop:${it.id}">${itemTile(it)}<div><div class="item-name r${it.rar}">${esc(it.name)} ${cmpMark(it)}</div><div class="item-type">${SLOT_NAME[it.slot]} · ${RAR_NAME[it.rar]}${it.premium?' <span class="prem-tag">prémium</span>':''}</div><div class="item-stats">${itemStats(it)}</div></div>
+    html+=`<div class="item ${SHOP_FX?'shop-new':''}" style="${SHOP_FX?`animation-delay:${si++*60}ms`:''}" data-tip="shop:${it.id}">${itemTile(it)}<div><div class="item-name r${it.rar}">${esc(it.name)} ${cmpMark(it)}</div><div class="item-type">${SLOT_NAME[it.slot]} · ${RAR_NAME[it.rar]}</div><div class="item-stats">${itemStats(it)}</div></div>
       <button class="btn small ${better?'primary':''} ${it.pog?'buy-pog':''}" data-act="buy" data-id="${it.id}" ${state.gold<it.price||(state.pog||0)<(it.pog||0)||state.inv.length>=INV_MAX?'disabled':''}>${fmt(it.price)} Ft${it.pog?`<span class="pog-line">+ ${it.pog} ${pogIc()}</span>`:''}</button></div>`;
   }
   if(!state.shop.length) html+=`<p class="muted">Feri kifogyott. Kérj új kínálatot.</p>`;
@@ -2929,7 +2926,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 22:37';
+const BUILD='2026.11.01 22:39';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
