@@ -413,6 +413,14 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .rl-row .lad-name small{font-size:11px}
 .rl-row .lad-lvl small{font-size:10px;color:var(--muted)}
 .rl-row .btn{padding:6px 10px}
+.gw-hp{display:block;position:relative;height:5px;border-radius:3px;background:rgba(255,255,255,.08);margin-top:3px;overflow:hidden}
+.gw-hp b{position:absolute;left:0;top:0;bottom:0;background:var(--ok);border-radius:3px}
+.gw-hp b.was{background:rgba(236,101,82,.55)}
+.gw-n.r .gw-hp b{left:auto;right:0}
+.gw-n small{display:block;font-size:10px;color:var(--muted);margin-top:1px}
+.gw-n{min-width:0}
+.role-tag.real{background:rgba(95,196,139,.18);color:var(--ok)}
+.me-tag{font-style:normal;font-size:11px;color:var(--sodium)}
 .mg-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mg-tile{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 8px;color:inherit;font:inherit;cursor:pointer}
 .mg-tile:hover{border-color:var(--sodium)}
@@ -1164,12 +1172,33 @@ const GUILD_UPG=[
 ];
 function genGuildLadder(){ const n=new Set(); while(n.size<GUILD_N-1) n.add(`${pick(G_A)} ${pick(G_B)}`); return [...n].map((name,i)=>({id:uid(),name,emblem:pick(Object.keys(EMBLEMS)),off:Math.round(6-i*9/(GUILD_N-2)),size:Math.max(4,12-Math.floor(i/2))})).concat([{me:true}]); }
 function genCandidates(){ return Array.from({length:5},()=>({id:uid(),name:`${pick(EPI)} ${pick(FIRST)}`,cls:pick(Object.keys(CLASSES)),off:rand(-3,1)})); }
-function gUpg(k){ return state.guild?state.guild.upg[k]||0:0; }
+function gUpg(k){ const G=state.guild||(memberGuild()||{}).g; return G?G.upg[k]||0:0; }
 function goldMult(){ return 1+.03*gUpg('kincstar'); }
 function xpMult(){ return 1+.03*gUpg('edzo'); }
 function guildCap(){ return 5+2*gUpg('klub'); }
 function upgCost(l){ return Math.round(150*Math.pow(1.6,l)); }
-function memberLevel(m){ return Math.max(1,state.level+m.off); }
+function memberLevel(m){ if(m.real){ const d=realData(m.cid); return d?d.level:(m.lvl||1); } return Math.max(1,state.level+m.off); }
+/* real players in a guild. Offline these are your other heroes on this device; the online build swaps in server data */
+function realData(cid){ if(!cid) return null; return listChars().find(c=>c.cid===cid)||null; }
+function memberFighter(m){ if(m.real){ const d=realData(m.cid); if(d&&d.stats){ const f=heroFighter(d); f.name=d.name; return f; } } const f=genFighter(m.name,memberLevel(m),.95,m.cls); f.art=CLASS_ART[m.cls]; return f; }
+function realCandidates(){ const g=state.guild; return otherHeroes().filter(h=>!g.members.some(m=>m.cid===h.cid)&&!h.guild&&!h.memberOf).map(h=>({cid:h.cid,name:h.name,cls:h.cls,level:h.level,status:''})); }
+function inviteReal(cid){ const h=realData(cid), g=state.guild; if(!h||!g||g.members.length+1>=guildCap()) return;
+  g.members.push({id:uid(),real:true,cid,name:h.name,cls:h.cls,lvl:h.level}); h.memberOf={leaderCid:state.cid,name:g.name,emblem:g.emblem,leader:state.name}; writeOther(h); save(); render(); toast(`${h.name} belépett a céhbe.`); }
+function onKickReal(m){ const h=realData(m.cid); if(h&&h.memberOf&&h.memberOf.leaderCid===state.cid){ delete h.memberOf; writeOther(h); } }
+function leaveGuild(){ const L=realData(state.memberOf.leaderCid); if(L&&L.guild){ L.guild.members=L.guild.members.filter(m=>m.cid!==state.cid); writeOther(L); } state.memberOf=null; save(); render(); toast('Kiléptél a céhből.'); }
+function memberGuild(){ if(!state||!state.memberOf) return null; const L=realData(state.memberOf.leaderCid); return L&&L.guild&&L.guild.members.some(m=>m.cid===state.cid)?{g:L.guild,leader:L}:null; }
+function invitesCard(){ return ''; }
+function memberPending(){ return false; }
+function renderMemberGuild(){
+  const mg=memberGuild(), mo=state.memberOf;
+  if(!mg) return `<section class="card stack"><span class="label">${ic('clock')}Csatlakozás folyamatban</span><p class="muted" style="margin:0">Elfogadtad a(z) <b>${esc(mo.name)}</b> meghívását. Amint ${esc(mo.leader||'a vezető')} legközelebb belép, felvesz a tagok közé.</p><button class="btn small" data-act="gleave">Mégsem lépek be</button></section>`;
+  const {g,leader}=mg, L=leader.guildLadder||[], rank=L.findIndex(e=>e.me)+1, lvl=1+Object.values(g.upg).reduce((a,b)=>a+b,0);
+  const row=(n,cls,l,role,me)=>`<div class="opp">${portrait(CLASS_ART[cls]||CLASS_ART.kidobo)}<div><div class="item-name">${esc(n)} <span class="role-tag ${role==='Vezető'?'lead':''}">${role}</span>${me?' <em class="me-tag">te</em>':''}</div><div class="item-stats"><span>${l}. szint · ${CLASSES[cls]?CLASSES[cls].name:''}</span></div></div></div>`;
+  return `<section class="card g-head"><div class="g-emb">${svg(emblemSvg(g.emblem))}</div><div class="g-info"><div class="label">Céhszint ${lvl} · tag vagy</div><h3>${esc(g.name)}</h3><div class="g-stats">${rank?`<span class="with-ic">${ic('trophy','ic-fame')}#${rank} / ${L.length}</span>`:''}<span class="with-ic">${ic('user')}${g.members.length+1} fő</span><span class="with-ic">${ic('fame','ic-fame')}${g.honor} becsület</span><span class="with-ic">${ic('coin','ic-gold')}${fmt(g.treasury)} Ft kassza</span></div></div></section>
+   <section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Tagok</span><span class="note mono">${g.members.length+1} fő</span></div>${row(leader.name,leader.cls,leader.level,'Vezető',false)}${g.members.map(m=>m.real&&m.cid===state.cid?row(state.name,state.cls,state.level,'Játékos',true):row(m.name,m.cls,memberLevel(m),m.real?'Játékos':'Tag',false)).join('')}</section>
+   <p class="note">A céh fejlesztései neked is szólnak. A céhharcot a vezető indítja, és te is harcolsz benne a jelenlegi felszereléseddel.</p>
+   <section class="card row between"><span class="note">Ha kilépsz, alapíthatsz saját céhet, vagy más meghívását is elfogadhatod.</span><button class="btn small" data-act="gleave">Kilépés</button></section>`;
+}
 function guildLevel(){ return 1+Object.values(state.guild.upg).reduce((a,b)=>a+b,0); }
 
 /* ================= helpers ================= */
@@ -1392,7 +1421,7 @@ function simulate(a,b){
     for(let h=0;h<hits&&hA>0&&hB>0;h++){ const r=strike(att, t?a:b, h>0); if(t) hA=Math.max(0,hA-r.dmg); else hB=Math.max(0,hB-r.dmg); log.push({...r, side:t, hA, hB, extra:h>0}); n++; }
     t=1-t; }
   // a fight always ends with a knockout: if it drags on, the one in worse shape runs out of breath
-  if(hA>0&&hB>0){ const aWins=hA/a.hp>=hB/b.hp; if(aWins){ log.push({dmg:hB,side:0,hA,hB:0,finish:true}); hB=0; } else { log.push({dmg:hA,side:1,hA:0,hB,finish:true}); hA=0; } }
+  if(hA>0&&hB>0){ const aWins=hA/(a.maxHp||a.hp)>=hB/(b.maxHp||b.hp); if(aWins){ log.push({dmg:hB,side:0,hA,hB:0,finish:true}); hB=0; } else { log.push({dmg:hA,side:1,hA:0,hB,finish:true}); hA=0; } }
   return {log, win: hB<=0};
 }
 const VERBS={kidobo:['behúz egyet','meglendíti a fegyverét','vállal nekiront'],magus:['villámot szór','átkot mormol','kicsavarja a valóságot'],futar:['rálő a csúzlival','célzott lövést ad le','messziről eltalálja'],zsebmetszo:['beszúr','villámgyorsan vág','oldalba döfi']};
@@ -1895,9 +1924,10 @@ function ladderRows(myI,mv){
 }
 function renderCeh(){
   const g=state.guild;
-  let html=`${banner('ceh')}<section class="scene"><span class="label">${ic('pin')}Panelház pincéje · klubhelyiség</span><h2>${g?esc(g.name):'Egyedül nem megy'}</h2><p>${g?'Közös kassza, közös fejlesztések és közös harc a város többi céhe ellen.':'Alapíts céhet, hívj be más hősöket, fejlesszétek együtt a klubhelyiséget, és harcoljatok a város többi céhe ellen.'}</p></section>`;
+  let html=`${banner('ceh')}<section class="scene"><span class="label">${ic('pin')}Panelház pincéje · klubhelyiség</span><h2>${g?esc(g.name):state.memberOf?esc(state.memberOf.name):'Egyedül nem megy'}</h2><p>${g?'Közös kassza, közös fejlesztések és közös harc a város többi céhe ellen.':state.memberOf?'Tag vagy. A vezető fejlesztései neked is szólnak, és a céhharcban te is ott vagy.':'Alapíts céhet, hívj be más hősöket, fejlesszétek együtt a klubhelyiséget, és harcoljatok a város többi céhe ellen.'}</p></section>`;
   if(state.level<GUILD_UNLOCK) return html+`<section class="card lock-card">${ic('lock')}<div><h3>A ${GUILD_UNLOCK}. szinten nyílik meg</h3><p class="muted">Még ${GUILD_UNLOCK-state.level} szintet kell lépned. Addig gyűjts forintot az alapításra (${GUILD_COST} Ft).</p></div></section>`;
-  if(!g) return html+renderGuildCreate();
+  if(!g&&state.memberOf) return html+renderMemberGuild();
+  if(!g) return html+invitesCard()+renderGuildCreate();
   const rank=state.guildLadder.findIndex(e=>e.me)+1;
   html+=`<section class="card g-head"><div class="g-emb">${svg(emblemSvg(g.emblem))}</div><div class="g-info"><div class="label">Céhszint ${guildLevel()}</div><h3>${esc(g.name)}</h3><div class="g-stats"><span class="with-ic">${ic('trophy','ic-fame')}#${rank} / ${state.guildLadder.length}</span><span class="with-ic">${ic('user')}${g.members.length+1}/${guildCap()} fő</span><span class="with-ic">${ic('fame','ic-fame')}${g.honor} becsület</span><span class="with-ic">${ic('coin','ic-gold')}${fmt(g.treasury)} Ft kassza</span></div></div></section>`;
   html+=`<div class="seg seg3" role="tablist">${[['tagok','Tagok','user'],['fejlesztes','Fejlesztés','refresh'],['harc','Céhharc','fight']].map(([k,l,i])=>`<button role="tab" data-act="gtab" data-t="${k}" aria-selected="${guildTab===k}">${ic(i)}${l}</button>`).join('')}</div>`;
@@ -1911,10 +1941,19 @@ function renderGuildCreate(){
    <button class="btn primary" data-act="foundguild" ${can?'':'disabled'}>${ic('fame')}Céh alapítása · ${GUILD_COST} Ft</button>
    ${can?'':`<p class="note">Még ${GUILD_COST-state.gold} Ft hiányzik.</p>`}</section>`;
 }
-function memberRow(m,lvl,me){ return `<div class="opp">${portrait(CLASS_ART[m.cls])}<div><div class="item-name">${esc(m.name)} <span class="role-tag ${me?'lead':''}">${me?'Vezető':'Tag'}</span></div><div class="item-stats"><span>${lvl}. szint · ${CLASSES[m.cls].name}</span></div></div>${me?'':`<button class="btn small" data-act="gkick" data-id="${m.id}">Kirúg</button>`}</div>`; }
+function memberRow(m,lvl,me){ return `<div class="opp">${portrait(CLASS_ART[m.cls])}<div><div class="item-name">${esc(m.name)} <span class="role-tag ${me?'lead':m.real?'real':''}">${me?'Vezető':m.real?'Játékos':'Tag'}</span></div><div class="item-stats"><span>${lvl}. szint · ${CLASSES[m.cls].name}</span></div></div>${me?'':`<button class="btn small" data-act="gkick" data-id="${m.id}">Kirúg</button>`}</div>`; }
+function realInviteCard(full){
+  const C=realCandidates();
+  let h=`<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Valódi játékosok</span><span class="note">Ők maguk döntenek</span></div>`;
+  if(!C.length) h+=`<p class="muted" style="margin:6px 0 0">${REAL_INV_EMPTY}</p>`;
+  for(const c of C) h+=`<div class="opp">${portrait(CLASS_ART[c.cls]||CLASS_ART.kidobo).replace('<div','<div data-act="inspect" data-id="'+(c.key||'c-'+c.cid)+'"')}<div><div class="item-name">${esc(c.name)}</div><div class="item-stats"><span>${c.level}. szint · ${CLASSES[c.cls]?CLASSES[c.cls].name:''}</span></div></div>${c.status==='pending'?`<button class="btn small" disabled>Meghívva</button>`:`<button class="btn small primary" data-act="ginvreal" data-id="${c.cid}" ${full?'disabled':''}>Meghív</button>`}</div>`;
+  return h+`</section>`;
+}
+const REAL_INV_EMPTY='Most nincs meghívható játékos. Csak legalább 10. szintű, céh nélküli játékosokat hívhatsz meg.';
 function renderGuildMembers(){
   const g=state.guild, full=g.members.length+1>=guildCap();
   let html=`<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Tagok</span><span class="note mono">${g.members.length+1}/${guildCap()}</span></div>${memberRow({name:state.name,cls:state.cls},state.level,true)}${g.members.map(m=>memberRow(m,memberLevel(m),false)).join('')}</section>
+  ${realInviteCard(full)}
   <section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Meghívható hősök</span><button class="btn small" data-act="gcand">${ic('refresh')}Új jelöltek</button></div>${full?`<p class="note">Megtelt a céh. A Klubhelyiség fejlesztésével bővítheted.</p>`:''}`;
   for(const c of g.candidates) html+=`<div class="opp">${portrait(CLASS_ART[c.cls])}<div><div class="item-name">${esc(c.name)}</div><div class="item-stats"><span>${memberLevel(c)}. szint · ${CLASSES[c.cls].name}</span></div></div><button class="btn small primary" data-act="ginvite" data-id="${c.id}" ${full?'disabled':''}>Meghív</button></div>`;
   if(!g.candidates.length) html+=`<p class="muted">Nincs több jelölt. Kérj újakat.</p>`;
@@ -1938,7 +1977,7 @@ function renderGuildWar(){
   for(const j of tg){ const e=L[j];
     html+=`<div class="opp"><div class="port g-mini">${svg(emblemSvg(e.emblem))}</div><div><div class="item-name"><span class="rank-tag">#${j+1}</span> ${esc(e.name)}</div><div class="item-stats"><span>${e.size} tag · kb. ${Math.max(1,state.level+e.off)}. szint</span><span>ti: ${g.members.length+1} fő</span></div></div>
       ${left?`<button class="btn small pog-btn" data-act="gwar" data-pog="1" data-id="${e.id}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Most</button>`:`<button class="btn small primary" data-act="gwar" data-id="${e.id}">${ic('fight')}Támadás</button>`}</div>`; }
-  html+=`</section><p class="note">A céhharcban a két céh tagjai erősség szerint párban küzdenek. Akinek nincs párja, az ingyen győz, ezért számít a létszám.</p>
+  html+=`</section><p class="note">Váltóharc: a gyengébbek kezdenek, a győztes a megmaradt életével küzd tovább a következő ellenféllel, amíg el nem esik. Az a céh nyer, amelyiknek utoljára marad talpon harcosa.</p>
   <section class="card"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('trophy')}Céhek ranglétrája</span><span class="note">${L.length} céh a városban</span></div><div class="ladder">${guildLadderRows(myI)}</div></section>`;
   return html;
 }
@@ -2396,11 +2435,16 @@ function doGuildWar(id,pay){
   const g=state.guild; if(!g) return; const L=state.guildLadder, ti=L.findIndex(e=>e.id===id); if(ti<0) return;
   if(g.readyAt>now()&&!(pay&&spendPog(1))) return;
   const e=L[ti], boost=1+.05*gUpg('fegyver'), buff=f=>{ f.wMin=Math.round(f.wMin*boost); f.wMax=Math.round(f.wMax*boost); return f; };
-  const mine=[buff({...playerFighter()}),...g.members.map(m=>{ const f=genFighter(m.name,memberLevel(m),.95,m.cls); f.art=CLASS_ART[m.cls]; return buff(f); })].sort((a,b)=>b.level-a.level);
-  const theirs=Array.from({length:e.size},()=>{ const c=pick(Object.keys(CLASSES)), f=genFighter(`${pick(EPI)} ${pick(FIRST)}`,Math.max(1,state.level+e.off+rand(-2,1)),.95,c); f.art=CLASS_ART[c]; return f; }).sort((a,b)=>b.level-a.level);
-  const duels=[]; let w=0,l=0;
-  for(let i=0;i<Math.max(mine.length,theirs.length);i++){ const a=mine[i], b=theirs[i], win=!a?false:!b?true:simulate(a,b).win; win?w++:l++; duels.push({a,b,win}); }
-  const won=w>l, myI=L.findIndex(x=>x.me); let to=myI, rw='';
+  const mine=[buff({...playerFighter()}),...g.members.map(m=>buff(memberFighter(m)))].sort((a,b)=>a.level-b.level);
+  const theirs=Array.from({length:e.size},()=>{ const c=pick(Object.keys(CLASSES)), f=genFighter(`${pick(EPI)} ${pick(FIRST)}`,Math.max(1,state.level+e.off+rand(-2,1)),.95,c); f.art=CLASS_ART[c]; return f; }).sort((a,b)=>a.level-b.level);
+  // relay: the winner fights on with whatever life is left, until someone knocks them out
+  const duels=[]; let i=0,j=0,ha=mine[0].hp,hb=theirs[0]?theirs[0].hp:0;
+  while(i<mine.length&&j<theirs.length){ const a=mine[i], b=theirs[j], r=simulate({...a,hp:ha,maxHp:a.hp},{...b,hp:hb,maxHp:b.hp}), last=r.log[r.log.length-1]||{hA:ha,hB:hb};
+    const ea=r.win?Math.max(1,last.hA):0, eb=r.win?0:Math.max(1,last.hB);
+    duels.push({a,b,win:r.win,aFrom:ha,aTo:ea,bFrom:hb,bTo:eb});
+    if(r.win){ ha=ea; j++; hb=theirs[j]?theirs[j].hp:0; } else { hb=eb; i++; ha=mine[i]?mine[i].hp:0; } }
+  const w=j, l=i;
+  const won=j>=theirs.length, myI=L.findIndex(x=>x.me); let to=myI, rw='';
   if(won){
     if(ti<myI){ const [m]=L.splice(myI,1); L.splice(ti,0,m); to=ti; }
     const tg=Math.round((30+state.level*12+g.members.length*6)*goldMult()), x=Math.round(state.level*15*xpMult());
@@ -2410,18 +2454,19 @@ function doGuildWar(id,pay){
   } else { const [m]=L.splice(myI,1); to=Math.min(L.length,myI+1); L.splice(to,0,m); g.honor=Math.max(0,g.honor-5); rw=`<span class="chip">${ic('fame','ic-fame')}−5 becsület</span>`; }
   if(to!==myI) rw+=`<span class="chip rank-chip ${to<myI?'up':'down'}">${ic('trophy')}#${myI+1} → #${to+1}</span>`;
   g.readyAt=now()+GUILD_CD; save();
-  openGuildBattle(e,duels,won,rw);
+  openGuildBattle(e,duels,won,rw,mine.length,theirs.length);
 }
-function openGuildBattle(e,duels,won,rw){
+function openGuildBattle(e,duels,won,rw,nA,nB){
   battle={guild:true,ended:false,timer:null};
-  const g=state.guild, W=[0,0]; let i=0;
+  const g=state.guild, W=[nA,nB]; let i=0;
   $('#overlay-root').innerHTML=`<div class="overlay" role="dialog" aria-label="Céhharc"><div class="sheet wrap">
-    <div class="gw-head"><div class="g-emb sm">${svg(emblemSvg(g.emblem))}</div><div class="gw-score"><span id="gw-w">0</span><i>:</i><span id="gw-l">0</span></div><div class="g-emb sm">${svg(emblemSvg(e.emblem))}</div></div>
-    <div class="gw-names"><b>${esc(g.name)}</b><b>${esc(e.name)}</b></div>
+    <div class="gw-head"><div class="g-emb sm">${svg(emblemSvg(g.emblem))}</div><div class="gw-score"><span id="gw-w">${nA}</span><i>:</i><span id="gw-l">${nB}</span></div><div class="g-emb sm">${svg(emblemSvg(e.emblem))}</div></div>
+    <div class="gw-names"><b>${esc(g.name)}</b><span class="note">talpon maradt</span><b>${esc(e.name)}</b></div>
     <div class="gw-list" id="gw-list" aria-live="polite"></div>
     <div id="gw-end" class="stack"><button class="btn" data-act="gwskip">${ic('skip')}Átugrás</button></div></div></div>`;
-  const add=d=>{ d.win?W[0]++:W[1]++; sfx(d.win?'hit':'block');
-    $('#gw-list').insertAdjacentHTML('beforeend',`<div class="gw-duel ${d.win?'win':'lose'}">${d.a?portrait(d.a.art,'gw-p'):'<div class="port gw-p gw-empty"></div>'}<span class="gw-n">${d.a?esc(d.a.name):'nincs ellenfél'}</span><span class="gw-r">${d.win?'Győz':'Kikap'}</span><span class="gw-n r">${d.b?esc(d.b.name):'nincs ellenfél'}</span>${d.b?portrait(d.b.art,'gw-p'):'<div class="port gw-p gw-empty"></div>'}</div>`);
+  const hpb=(from,to,max)=>`<i class="gw-hp"><b class="was" style="width:${Math.round(from/max*100)}%"></b><b style="width:${Math.round(to/max*100)}%"></b></i><small class="mono">${to?fmt(to)+' / '+fmt(max):'kiütve'}</small>`;
+  const add=d=>{ d.win?W[1]--:W[0]--; sfx(d.win?'hit':'block');
+    $('#gw-list').insertAdjacentHTML('beforeend',`<div class="gw-duel ${d.win?'win':'lose'}">${portrait(d.a.art,'gw-p')}<span class="gw-n">${esc(d.a.name)}${hpb(d.aFrom,d.aTo,d.a.hp)}</span><span class="gw-r">${d.win?'Győz':'Kikap'}</span><span class="gw-n r">${esc(d.b.name)}${hpb(d.bFrom,d.bTo,d.b.hp)}</span>${portrait(d.b.art,'gw-p')}</div>`);
     $('#gw-list').scrollTop=1e6; $('#gw-w').textContent=W[0]; $('#gw-l').textContent=W[1]; };
   const end=()=>{ if(battle.ended) return; battle.ended=true; clearTimeout(battle.timer); while(i<duels.length) add(duels[i++]);
     $('#gw-end').innerHTML=`<div class="result ${won?'win':'lose'}">${won?'A céh győzött!':'A céh kikapott'}</div><div class="rewards">${rw}</div><button class="btn primary" data-act="closebattle">Tovább</button>`;
@@ -2466,7 +2511,7 @@ document.addEventListener('click',e=>{
     case 'closelvl': $('#overlay-root').innerHTML=''; break;
     case 'golvlceh': $('#overlay-root').innerHTML=''; view='ceh'; render(); window.scrollTo(0,0); break;
     case 'pickemb': { pickedEmblem=el.dataset.e; const v=$('#gname')?.value||''; render(); if($('#gname')) $('#gname').value=v; } break;
-    case 'foundguild': { if(state.gold<GUILD_COST||state.guild) return; const n=($('#gname')?.value||'').trim()||`${state.name} céhe`;
+    case 'foundguild': { if(state.gold<GUILD_COST||state.guild||state.memberOf) return; const n=($('#gname')?.value||'').trim()||`${state.name} céhe`;
       state.gold-=GUILD_COST; state.guild={name:n,emblem:pickedEmblem,members:[],treasury:0,upg:{kincstar:0,edzo:0,klub:0,fegyver:0},honor:0,readyAt:0,candidates:genCandidates()};
       state.guildLadder=genGuildLadder(); guildTab='tagok'; save(); render(); toast(`Megalakult: ${n}! Hívj be tagokat.`); } break;
     case 'gtab': guildTab=el.dataset.t; render(); break;
@@ -2475,7 +2520,9 @@ document.addEventListener('click',e=>{
       g.candidates=g.candidates.filter(x=>x!==c);
       if(Math.random()<GUILD_ACCEPT){ g.members.push(c); toast(`${c.name} csatlakozott!`); } else toast(`${c.name} nemet mondott.`);
       save(); render(); } break;
-    case 'gkick': { const g=state.guild, m=g.members.find(x=>x.id===id); if(!m) return; g.members=g.members.filter(x=>x!==m); save(); render(); toast(`${m.name} kilépett a céhből.`); } break;
+    case 'ginvreal': inviteReal(id); break;
+    case 'gleave': leaveGuild(); break;
+    case 'gkick': { const g=state.guild, m=g.members.find(x=>x.id===id); if(!m) return; if(m.real) onKickReal(m); g.members=g.members.filter(x=>x!==m); save(); render(); toast(`${m.name} kilépett a céhből.`); } break;
     case 'gdonate': { const a=+el.dataset.a; if(state.gold<a) return; state.gold-=a; state.guild.treasury+=a; save(); render(); } break;
     case 'gupg': { const g=state.guild, u=GUILD_UPG.find(x=>x.id===id), l=g.upg[id]||0, c=upgCost(l); if(!u||l>=10||g.treasury<c) return;
       g.treasury-=c; g.upg[id]=l+1; save(); render(); toast(`${u.name}: ${l+1}. szint (${u.fx(l+1)}).`); } break;
@@ -2506,6 +2553,8 @@ document.addEventListener('click',e=>{
     case 'authgo': doAuth(); break;
     case 'logout': flushCloud(); SB.auth.signOut(); break;
     case 'pduel': doOnlineDuel(id,el.dataset.pog); break;
+    case 'ginvyes': answerInvite(id,true); break;
+    case 'ginvno': answerInvite(id,false); break;
     case 'clearlog': state.arenaLog=[]; save(); render(); break;
     case 'enterchar': enterChar(id); break;
     case 'delchar': if(el.dataset.confirm){ deleteChar(id); } else { el.dataset.confirm='1'; el.textContent='Biztosan törlöd? Újra koppints.'; el.classList.add('danger'); } break;
@@ -2521,7 +2570,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 15:44';
+const BUILD='2026.11.01 15:54';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -2549,7 +2598,7 @@ async function loadPlayers(){
   if(!SB||!ONLINE.user||ONLINE.loadingPlayers) return; ONLINE.loadingPlayers=true;
   try{ const {data,error}=await SB.from('characters').select('id,user_id,name,cls,level,rating,data').order('rating',{ascending:false}).limit(150); if(error) throw error;
     ONLINE.all=data.filter(p=>p.data&&p.data.stats); ONLINE.players=ONLINE.all.filter(p=>p.user_id!==ONLINE.user.id); const me=data.find(p=>state&&p.id===state.cid); ONLINE.myRating=me?me.rating:1000; ONLINE.playersAt=now();
-    if(view==='arena'&&!battle) render(); }
+    if((view==='arena'||view==='ceh')&&!battle) render(); }
   catch(e){ ONLINE.playersAt=now(); console.warn(e); } finally{ ONLINE.loadingPlayers=false; }
 }
 async function loadOnlineLogs(announce){
@@ -2574,6 +2623,55 @@ async function doOnlineDuel(id,pay){
   catch(e){ rw+=`<span class="note">A rangpontot most nem sikerült elmenteni.</span>`; }
   ONLINE.playersAt=0; openBattle(me,o,res,rw);
 }
+/* ---------- guilds with real players: invites live in the guild_invites table ---------- */
+const GI={sent:[],got:[],at:0,busy:false,sig:''};
+function onlineChar(cid){ const p=(ONLINE.all||[]).find(x=>x.id===cid); return p&&p.data?{...p.data,cid:p.id,name:p.name,cls:p.cls,level:p.level}:null; }
+function realData(cid){ if(!cid) return null; if(state&&cid===state.cid) return state; return onlineChar(cid)||listChars().find(c=>c.cid===cid)||null; }
+function stalePlayers(){ if(!ONLINE.playersAt||now()-ONLINE.playersAt>20000) setTimeout(loadPlayers,0); }
+function memberGuild(){ if(!state||!state.memberOf) return null; stalePlayers(); const L=realData(state.memberOf.leaderCid); return L&&L.guild&&L.guild.members.some(m=>m.cid===state.cid)?{g:L.guild,leader:L}:null; }
+function realCandidates(){ stalePlayers(); if(!GI.at||now()-GI.at>15000) setTimeout(loadInvites,0); const g=state.guild;
+  return (ONLINE.all||[]).filter(p=>p.id!==state.cid&&p.level>=GUILD_UNLOCK&&!g.members.some(m=>m.cid===p.id)&&!p.data.guild&&!p.data.memberOf)
+    .map(p=>({cid:p.id,key:p.user_id===ONLINE.user.id?'c-'+p.id:'p-'+p.id,name:p.name,cls:p.cls,level:p.level,status:GI.sent.some(r=>r.from_char===state.cid&&r.to_char===p.id&&r.status==='pending')?'pending':''})); }
+function giErr(error){ console.warn(error); toast(/relation|does not exist|schema cache|guild_invites/i.test(error.message||'')?'A céhmeghívókhoz frissíteni kell az adatbázist (guild_invites tábla).':'Nem sikerült, próbáld újra.'); }
+async function inviteReal(cid){ const p=(ONLINE.all||[]).find(x=>x.id===cid), g=state.guild; if(!p||!g||g.members.length+1>=guildCap()) return;
+  await flushCloud();
+  await SB.from('guild_invites').delete().eq('from_char',state.cid).eq('to_char',cid);
+  const {error}=await SB.from('guild_invites').insert({from_char:state.cid,from_user:ONLINE.user.id,to_char:cid,to_user:p.user_id,guild_name:g.name,guild_emblem:g.emblem,leader_name:state.name,to_name:p.name});
+  if(error) return giErr(error);
+  toast(`Meghívó elküldve: ${p.name}. Ha elfogadja, belép a céhbe.`); GI.at=0; loadInvites(true); }
+function onKickReal(m){ SB.from('guild_invites').delete().eq('from_char',state.cid).eq('to_char',m.cid).then(()=>{}); }
+async function leaveGuild(){ const mo=state.memberOf; state.memberOf=null; save(); render(); toast('Kiléptél a céhből.');
+  if(mo){ const {error}=await SB.from('guild_invites').update({status:'left'}).eq('from_char',mo.leaderCid).eq('to_char',state.cid); if(error) console.warn(error); } }
+function invitesCard(){ if(!GI.at||now()-GI.at>10000) setTimeout(loadInvites,0);
+  const rows=GI.got.filter(r=>r.to_char===state.cid&&r.status==='pending'); if(!rows.length) return '';
+  return `<section class="card inv-card"><span class="label">${ic('user')}Céhmeghívók</span>${rows.map(r=>`<div class="opp"><div class="port g-mini">${svg(emblemSvg(EMBLEMS[r.guild_emblem]?r.guild_emblem:Object.keys(EMBLEMS)[0]))}</div><div><div class="item-name">${esc(r.guild_name)}</div><div class="item-stats"><span>Vezető: ${esc(r.leader_name||'')}</span></div></div><div class="row" style="gap:6px"><button class="btn small primary" data-act="ginvyes" data-id="${r.id}">Belépek</button><button class="btn small" data-act="ginvno" data-id="${r.id}">Nem</button></div></div>`).join('')}</section>`; }
+async function answerInvite(id,yes){ const r=GI.got.find(x=>String(x.id)===String(id)); if(!r) return;
+  if(yes&&(state.guild||state.memberOf)) return toast('Előbb lépj ki a mostani céhedből.');
+  const {error}=await SB.from('guild_invites').update({status:yes?'accepted':'declined'}).eq('id',r.id); if(error) return giErr(error);
+  r.status=yes?'accepted':'declined';
+  if(yes){ state.memberOf={leaderCid:r.from_char,name:r.guild_name,emblem:r.guild_emblem,leader:r.leader_name}; save(); toast(`Beléptél: ${r.guild_name}. ${r.leader_name||'A vezető'} a következő belépésekor felvesz.`); }
+  render(); }
+async function loadInvites(force){
+  if(!SB||!ONLINE.user||!state||GI.busy) return; GI.busy=true;
+  try{
+    const a=await SB.from('guild_invites').select('*').eq('from_user',ONLINE.user.id), b=await SB.from('guild_invites').select('*').eq('to_user',ONLINE.user.id);
+    GI.at=now(); if(a.error||b.error) return; GI.sent=a.data||[]; GI.got=b.data||[];
+    let changed=false; const g=state.guild;
+    if(g) for(const r of GI.sent.filter(r=>r.from_char===state.cid)){
+      const has=g.members.some(m=>m.cid===r.to_char);
+      if(r.status==='accepted'&&!has&&g.members.length+1<guildCap()){ const p=(ONLINE.all||[]).find(x=>x.id===r.to_char);
+        g.members.push({id:uid(),real:true,cid:r.to_char,name:p?p.name:r.to_name,cls:p?p.cls:'kidobo',lvl:p?p.level:1}); changed=true; toast(`${r.to_name} belépett a céhbe!`);
+        await SB.from('guild_invites').update({status:'joined'}).eq('id',r.id); r.status='joined'; }
+      else if(r.status==='left'||r.status==='declined'){ if(has){ g.members=g.members.filter(m=>m.cid!==r.to_char); changed=true; }
+        toast(r.status==='left'?`${r.to_name} kilépett a céhből.`:`${r.to_name} nem fogadta el a meghívást.`); await SB.from('guild_invites').delete().eq('id',r.id); }
+    }
+    if(state.memberOf){ const mine=GI.got.find(r=>r.to_char===state.cid&&r.from_char===state.memberOf.leaderCid&&(r.status==='accepted'||r.status==='joined'));
+      if(!mine){ toast(`Kikerültél a(z) ${state.memberOf.name} céhből.`); state.memberOf=null; changed=true; } }
+    if(changed) save();
+    const sig=JSON.stringify([GI.sent,GI.got]);
+    if((changed||sig!==GI.sig||force)&&view==='ceh'&&!battle&&!document.activeElement?.matches('input')) render(); GI.sig=sig;
+  } finally{ GI.busy=false; } }
+setInterval(()=>{ if(state&&ONLINE.user&&(state.guild||state.memberOf||view==='ceh')) loadInvites(); },20000);
 function renderNoConfig(){
   return `<div class="create wrap">${banner('skyline')}<div class="logo">Éjjeli<br><span>Járat</span></div>
     <section class="card stack"><h3>A szerver még nincs beállítva</h3><p class="muted" style="margin:0">Töltsd ki a <b>config.js</b> fájlban a Supabase projekt címét és az anon kulcsot, aztán töltsd újra az oldalt.</p></section></div>`;

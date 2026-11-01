@@ -93,3 +93,31 @@ end;
 $$;
 revoke all on function public.arena_result(text, text, boolean) from public;
 grant execute on function public.arena_result(text, text, boolean) to authenticated;
+
+-- ===== Céhmeghívók valódi játékosoknak =====
+-- (ha a fenti rész már lefutott korábban, elég csak ezt a blokkot futtatni)
+create table if not exists public.guild_invites (
+  id           bigint generated always as identity primary key,
+  from_char    text not null references public.characters(id) on delete cascade,
+  from_user    uuid not null default auth.uid(),
+  to_char      text not null references public.characters(id) on delete cascade,
+  to_user      uuid not null,
+  guild_name   text not null,
+  guild_emblem text,
+  leader_name  text,
+  to_name      text,
+  status       text not null default 'pending' check (status in ('pending','accepted','joined','declined','left')),
+  created_at   timestamptz not null default now(),
+  unique (from_char, to_char)
+);
+alter table public.guild_invites enable row level security;
+drop policy if exists "gi read"   on public.guild_invites;
+drop policy if exists "gi insert" on public.guild_invites;
+drop policy if exists "gi update" on public.guild_invites;
+drop policy if exists "gi delete" on public.guild_invites;
+create policy "gi read"   on public.guild_invites for select to authenticated using (from_user = auth.uid() or to_user = auth.uid());
+create policy "gi insert" on public.guild_invites for insert to authenticated with check (
+  from_user = auth.uid() and exists (select 1 from public.characters c where c.id = from_char and c.user_id = auth.uid()));
+create policy "gi update" on public.guild_invites for update to authenticated using (from_user = auth.uid() or to_user = auth.uid());
+create policy "gi delete" on public.guild_invites for delete to authenticated using (from_user = auth.uid() or to_user = auth.uid());
+grant select, insert, update, delete on public.guild_invites to authenticated;
