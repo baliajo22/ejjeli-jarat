@@ -565,6 +565,21 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .ins-guild{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border-radius:12px;padding:10px}
 .ins-guild .port{width:40px;height:40px;flex:none}
 .ins-guild p{margin:4px 0 0;white-space:pre-wrap}
+.skills .sk-sum{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.skills .sk-sum .chip{font-size:12px}
+.sk-tier{display:grid;grid-template-columns:38px 1fr;gap:8px;align-items:stretch;padding:6px 0;border-top:1px solid var(--line)}
+.sk-lv{display:grid;place-items:center;font-weight:700;color:var(--gold);font-size:13px;background:var(--panel);border-radius:8px}
+.sk-tier.locked .sk-lv{color:var(--muted)}
+.sk-opts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.sk-opt{display:flex;flex-direction:column;gap:2px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:inherit;font:inherit;cursor:pointer}
+.sk-opt b{font-size:13.5px}
+.sk-fx{font-size:12px;color:var(--ok);font-weight:600}
+.sk-opt .note{font-size:11px;line-height:1.3}
+.sk-opt:disabled{cursor:default}
+.sk-tier.pick .sk-opt{border-color:var(--sodium);animation:pulse 1.8s infinite}
+.sk-opt.on{border-color:var(--gold);background:linear-gradient(180deg,rgba(242,194,48,.16),transparent),var(--panel)}
+.sk-opt.off{opacity:.4}
+.sk-tier.locked .sk-opt{opacity:.45}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
 .install-card>div{flex:1;min-width:0}
@@ -1311,7 +1326,8 @@ function syncLadder(){
 function heroFighter(st){
   const s={...st.stats}; for(const it of Object.values(st.equip||{})) if(it) for(const [k,v] of Object.entries(it.bonus||{})) s[k]+=v;
   const w=st.equip&&st.equip.fegyver, armor=Object.values(st.equip||{}).reduce((a,it)=>a+(it?it.armor||0:0),0);
-  return {wpn:st.equip&&st.equip.fegyver&&st.equip.fegyver.base, name:st.name, cls:st.cls, level:st.level, stats:s, wMin:w?w.min:1, wMax:w?w.max:3, armor, hp:maxHp(s.con,st.level,st.cls), art:CLASS_ART[st.cls], real:true, cid:st.cid};
+  const fx=skillFx(st);
+  return {wpn:st.equip&&st.equip.fegyver&&st.equip.fegyver.base, name:st.name, cls:st.cls, level:st.level, stats:s, wMin:w?w.min:1, wMax:w?w.max:3, armor:Math.round(armor*(1+(fx.armor||0))), hp:Math.round(maxHp(s.con,st.level,st.cls)*(1+(fx.hp||0))), art:CLASS_ART[st.cls], real:true, cid:st.cid, fx};
 }
 function writeOther(st){ try{ localStorage.setItem(CHAR_PREFIX+st.cid, JSON.stringify(st)); }catch(e){} }
 
@@ -1328,8 +1344,8 @@ const GUILD_UPG=[
 function genGuildLadder(){ const n=new Set(); while(n.size<GUILD_N-1) n.add(`${pick(G_A)} ${pick(G_B)}`); return [...n].map((name,i)=>({id:uid(),name,emblem:pick(Object.keys(EMBLEMS)),off:Math.round(6-i*9/(GUILD_N-2)),size:Math.max(4,12-Math.floor(i/2))})).concat([{me:true}]); }
 function genCandidates(){ return Array.from({length:5},()=>({id:uid(),name:`${pick(EPI)} ${pick(FIRST)}`,cls:pick(Object.keys(CLASSES)),off:rand(-3,1)})); }
 function gUpg(k){ const G=state.guild||(memberGuild()||{}).g; return G?G.upg[k]||0:0; }
-function goldMult(){ return 1+.03*gUpg('kincstar'); }
-function xpMult(){ return 1+.03*gUpg('edzo'); }
+function goldMult(){ return 1+.03*gUpg('kincstar')+((state&&skillFx(state).gold)||0); }
+function xpMult(){ return 1+.03*gUpg('edzo')+((state&&skillFx(state).xp)||0); }
 function guildCap(){ return 5+2*gUpg('klub'); }
 function upgCost(l){ return Math.round(150*Math.pow(1.6,l)); }
 function memberLevel(m){ if(m.real){ const d=realData(m.cid); return d?d.level:(m.lvl||1); } return Math.max(1,state.level+m.off); }
@@ -1452,7 +1468,7 @@ function migrate(s){
 function effStats(eq=state.equip){ const s={...state.stats}; for(const it of Object.values(eq)) if(it) for(const [k,v] of Object.entries(it.bonus)) s[k]+=v; return s; }
 function totalArmor(eq=state.equip){return Object.values(eq).reduce((a,it)=>a+(it?it.armor:0),0)}
 function maxHp(con,lvl,cls){return Math.round(con*HP_PER_CON*CLASSES[cls].hp)}
-function critChance(f){return Math.min(.5, f.stats.lck/(f.stats.lck+40+f.level*4)*CLASSES[f.cls||state.cls].crit)}
+function critChance(f){return Math.min(FX_CAP.crit, Math.min(.5, f.stats.lck/(f.stats.lck+40+f.level*4)*CLASSES[f.cls||state.cls].crit)+((f.fx&&f.fx.crit)||0))}
 // each attack stat also protects against the class that attacks with it (max 50%)
 function resist(s,lvl){return Math.min(.5, s/(s+15+lvl*8))}
 const PLURAL={kidobo:'kidobók',magus:'panelmágusok',futar:'tetőlövészek',zsebmetszo:'zsebmetszők'};
@@ -1530,7 +1546,8 @@ window.addEventListener('scroll',()=>{ if(tipEl) hideTip(); },{passive:true});
 function armorRed(f){return Math.min(CLASSES[f.cls].maxArmor, f.armor/Math.max(1,f.level*10))}
 function playerFighter(){
   const s=effStats(), w=state.equip.fegyver;
-  return {name:state.name, cls:state.cls, level:state.level, stats:s, wMin:w?w.min:1, wMax:w?w.max:3, armor:totalArmor(), hp:maxHp(s.con,state.level,state.cls), art:CLASS_ART[state.cls], wpn:w&&w.base};
+  const fx=skillFx(state);
+  return {name:state.name, cls:state.cls, level:state.level, stats:s, wMin:w?w.min:1, wMax:w?w.max:3, armor:Math.round(totalArmor()*(1+(fx.armor||0))), hp:Math.round(maxHp(s.con,state.level,state.cls)*(1+(fx.hp||0))), art:CLASS_ART[state.cls], wpn:w&&w.base, fx};
 }
 // enemies ramp up gently over the first levels, then catch up with the normal curve by level 9
 function enemyLvl(l){ return 1+(l-1)*ENEMY_GROW; }
@@ -1539,7 +1556,8 @@ function genFighter(name, lvl, mult, cls){
   const m=CLASSES[cls].main, e=enemyLvl(lvl);
   const s={str:Math.round(3+e),dex:Math.round(3+e),int:Math.round(3+e),con:Math.round((5+e*2.5+rand(0,Math.round(e)))*mult),lck:Math.round(3+e)+rand(0,Math.round(e))};
   s[m]=Math.round((6+e*2.5+rand(0,Math.round(e)))*mult);
-  return {name, cls, level:lvl, stats:s, wMin:Math.round((e*1.6+2)*mult), wMax:Math.round((e*2.4+4)*mult), armor:Math.round(e*rand(5,9)*mult), hp:maxHp(s.con,e,cls)};
+  const fx=enemyFx(lvl);
+  return {name, cls, level:lvl, stats:s, wMin:Math.round((e*1.6+2)*mult), wMax:Math.round((e*2.4+4)*mult), armor:Math.round(e*rand(5,9)*mult), hp:Math.round(maxHp(s.con,e,cls)*(1+(fx.hp||0))), fx};
 }
 
 /* ================= generation ================= */
@@ -1579,18 +1597,25 @@ function genArena(){
 function strike(att, def, followUp){
   const ac=CLASSES[att.cls], dc=CLASSES[def.cls], mag=att.cls==='magus';
   if(!mag && Math.random()<MISS) return {dmg:0,miss:true};
-  if(!mag && dc.dodge && Math.random()<dc.dodge) return {dmg:0,dodge:true};
-  if(!mag && !followUp && dc.block && Math.random()<dc.block) return {dmg:0,block:true}; // a quick follow-up stab slips past the shield
+  const af=att.fx||{}, df=def.fx||{}, dodge=Math.min(FX_CAP.dodge,(dc.dodge||0)+(df.dodge||0)), block=Math.min(FX_CAP.block,(dc.block||0)+(df.block||0)), pierce=af.pierce||0;
+  if(!mag && dodge && Math.random()<dodge) return {dmg:0,dodge:true};
+  if(!mag && !followUp && block && Math.random()<block) return {dmg:0,block:true}; // a quick follow-up stab slips past the shield
   const m=ac.main;
-  let dmg = (rand(att.wMin, att.wMax) + att.stats[m]*STAT_DMG) * ac.dmg * (1 - resist(def.stats[m], def.level));
-  if(att.cls!=='magus') dmg *= 1-armorRed(def);
-  const crit=Math.random()<critChance(att); if(crit) dmg*=2;
+  let dmg = (rand(att.wMin, att.wMax) + att.stats[m]*STAT_DMG) * ac.dmg * (1 - resist(def.stats[m], def.level)*(1-pierce)) * (1+(af.dmg||0));
+  if(att.cls!=='magus') dmg *= 1-armorRed(def)*(1-pierce);
+  const crit=Math.random()<critChance(att); if(crit) dmg*=2+(af.critx||0);
   return {dmg:Math.max(1,Math.round(dmg)), crit};
 }
 function simulate(a,b){
-  let hA=a.hp, hB=b.hp, t=Math.random()<.5?0:1, log=[], n=0;
-  while(hA>0 && hB>0 && n<300){ const att=t?b:a, hits=CLASSES[att.cls].hits||1;
-    for(let h=0;h<hits&&hA>0&&hB>0;h++){ const r=strike(att, t?a:b, h>0); if(t) hA=Math.max(0,hA-r.dmg); else hB=Math.max(0,hB-r.dmg); log.push({...r, side:t, hA, hB, extra:h>0}); n++; }
+  const fa=a.fx||{}, fb=b.fx||{}, mA=a.maxHp||a.hp, mB=b.maxHp||b.hp;
+  let hA=a.hp, hB=b.hp, t=Math.random()<.5+(fa.first||0)-(fb.first||0)?0:1, log=[], n=0;
+  while(hA>0 && hB>0 && n<300){ const att=t?b:a, def=t?a:b, af=att.fx||{}, df=def.fx||{}, hits=(CLASSES[att.cls].hits||1)+(af.extra&&Math.random()<af.extra?1:0);
+    for(let h=0;h<hits&&hA>0&&hB>0;h++){ const r=strike(att, def, h>0);
+      if(t) hA=Math.max(0,hA-r.dmg); else hB=Math.max(0,hB-r.dmg);
+      // talents: life steal for the attacker, thorns back at them
+      if(r.dmg>0&&af.leech){ const g=Math.round(r.dmg*af.leech); if(t) hB=Math.min(mB,hB+g); else hA=Math.min(mA,hA+g); r.heal=g; }
+      if(r.dmg>0&&df.thorns&&(t?hA:hB)>0){ const th=Math.max(1,Math.round(r.dmg*df.thorns)); if(t) hB=Math.max(0,hB-th); else hA=Math.max(0,hA-th); r.thorns=th; }
+      log.push({...r, side:t, hA, hB, extra:h>0}); n++; }
     t=1-t; }
   // a fight always ends with a knockout: if it drags on, the one in worse shape runs out of breath
   if(hA>0&&hB>0){ const aWins=hA/(a.maxHp||a.hp)>=hB/(b.maxHp||b.hp); if(aWins){ log.push({dmg:hB,side:0,hA,hB:0,finish:true}); hB=0; } else { log.push({dmg:hA,side:1,hA:0,hB,finish:true}); hA=0; } }
@@ -1604,7 +1629,78 @@ function logLine(e,a,b){
   if(e.dodge) return `<div class="${e.side?'them':'me'} dodge">${esc(def.name)} elhajol ${esc(att.name)} elől.</div>`;
   if(e.miss) return `<div class="${e.side?'them':'me'} dodge">${esc(att.name)} nagyot suhint, de mellé.</div>`;
   if(e.block) return `<div class="${e.side?'them':'me'} dodge">${esc(def.name)} pajzzsal hárítja ${esc(att.name)} ütését.</div>`;
-  return `<div class="${e.side?'them':'me'}${e.crit?' crit':''}">${esc(att.name)} ${pick(VERBS[att.cls])}: <span class="mono">−${e.dmg}</span>${e.crit?' kritikus!':''}</div>`;
+  return `<div class="${e.side?'them':'me'}${e.crit?' crit':''}">${esc(att.name)} ${pick(VERBS[att.cls])}: <span class="mono">−${e.dmg}</span>${e.crit?' kritikus!':''}${e.heal?` <span class="ok">+${e.heal} élet</span>`:''}${e.thorns?` <span class="note">(visszakap ${e.thorns})</span>`:''}</div>`;
+}
+
+
+/* ================= skill tree: at set levels pick one of two talents ================= */
+const SKILL_LV=[5,10,20,30,40,50,60,70,85,100];
+const FX_TXT={dmg:v=>`+${Math.round(v*100)}% sebzés`,hp:v=>`+${Math.round(v*100)}% életerő`,crit:v=>`+${Math.round(v*100)}% krit esély`,critx:v=>`+${Math.round(v*100)}% krit sebzés`,
+  dodge:v=>`+${Math.round(v*100)}% kitérés`,block:v=>`+${Math.round(v*100)}% pajzs`,armor:v=>`+${Math.round(v*100)}% páncél`,first:v=>`+${Math.round(v*100)}% esély elsőként ütni`,
+  leech:v=>`a sebzés ${Math.round(v*100)}%-át visszagyógyítod`,thorns:v=>`a kapott ütés ${Math.round(v*100)}%-át visszaadod`,pierce:v=>`${Math.round(v*100)}%-ban átüti a védelmet`,
+  extra:v=>`${Math.round(v*100)}% esély egy plusz ütésre`,gold:v=>`+${Math.round(v*100)}% forint`,xp:v=>`+${Math.round(v*100)}% XP`};
+// talents are kept modest: every value below is halved when the tree is built
+const SK_SCALE=.5;
+const S=(n,fx,d)=>({n,fx:Object.fromEntries(Object.entries(fx).map(([k,v])=>[k,+(v*SK_SCALE).toFixed(3)])),d});
+const SKILLS={
+ kidobo:[[S('Vastag bőr',{hp:.06},'Egy életnyi verekedés nyoma.'),S('Nehéz kéz',{dmg:.05},'Egy pofon, és vége a bulinak.')],
+  [S('Pajzsfal',{block:.04},'A sörösrekesz pajzsnak is jó.'),S('Kocsmai rúgás',{crit:.04},'Pont oda, ahol fáj.')],
+  [S('Ajtófélfa',{armor:.15},'Nem mozdul, ha nekimennek.'),S('Visszakézből',{thorns:.08},'Aki megüti, visszakapja.')],
+  [S('Második szél',{leech:.04},'Ütés közben kifújja magát.'),S('Ököljog',{critx:.3},'A kritikus ütés még nagyobbat szól.')],
+  [S('Hústorony',{hp:.08},'Ennyi embert nem lehet kidobni.'),S('Kidobás',{first:.15},'Mire észbe kapnál, már kint vagy.')],
+  [S('Kemény koponya',{block:.04},'Fejjel is lehet hárítani.'),S('Bárpult-kombó',{extra:.08},'Egy jobb, egy bal, egy pult.')],
+  [S('Törzsvendég',{gold:.06},'A kocsmáros mindig ad borravalót.'),S('Rendcsináló',{xp:.06},'Minden verekedésből tanul.')],
+  [S('Betonfal',{armor:.2},'Az ajtó előtt áll, és az ajtó ő.'),S('Haragos',{dmg:.07},'Ma nem jó napja van.')],
+  [S('Sörhas',{hp:.1},'Ez nem kövérség, hanem páncél.'),S('Üveglavina',{crit:.06},'Ami a kezébe akad, repül.')],
+  [S('A kocsma ura',{hp:.06,dmg:.05},'A városban mindenki ismeri.'),S('Utolsó kör',{leech:.06,critx:.3},'Záróra után a legveszélyesebb.')]],
+ magus:[[S('Lift nélküli edzés',{hp:.08},'Tíz emelet naponta kétszer.'),S('Rövidzárlat',{dmg:.05},'A villanyóra is beleremeg.')],
+  [S('Távirányítás',{crit:.04},'Ránéz, és átkapcsol.'),S('Panelrezonancia',{critx:.3},'A falak felerősítik a varázst.')],
+  [S('Kapualj-varázs',{dodge:.06},'Egy pillanatra eltűnik a lépcsőházban.'),S('Áramszünet',{first:.2},'Sötétben ő lát először.')],
+  [S('Életerő-csapolás',{leech:.05},'A szomszéd mérőóráját is lecsapolja.'),S('Túlfeszültség',{dmg:.06},'Kicsapja a biztosítékot.')],
+  [S('Védőbűbáj',{hp:.1},'Egy régi takaróba szőtt átok.'),S('Kettős varázs',{extra:.08},'Egyszerre két átkot mormol.')],
+  [S('Lakógyűlés',{xp:.07},'Minden vitából tanul valamit.'),S('Közös költség',{gold:.06},'Mindenki fizet, ő is kap belőle.')],
+  [S('Penészvarázs',{thorns:.06},'Aki hozzáér, megbánja.'),S('Szikrázó ész',{crit:.05},'Egy jó ötlet, egy nagy villám.')],
+  [S('Tizedik emelet',{hp:.1},'Már semmi nem tudja meglepni.'),S('Villámlánc',{extra:.1},'A villám kétszer is becsap.')],
+  [S('Fényszóró',{critx:.4},'Vakító, ha talál.'),S('Áramütés',{dmg:.08},'Rázós a kézfogása.')],
+  [S('A panel szelleme',{hp:.08,leech:.04},'Az egész ház vele van.'),S('Tébolyult tudós',{dmg:.06,crit:.04},'Senki nem tudja, mit csinál. Ő sem.')]],
+ futar:[[S('Könnyű léptek',{dodge:.03},'A cserép meg sem reccsen.'),S('Jó szem',{crit:.04},'Egy galambot is eltalál a Bazilikáról.')],
+  [S('Magaslati előny',{first:.15},'Fentről mindent előbb lát.'),S('Feszes gumi',{dmg:.05},'Új csúzligumi, nagyobb csattanás.')],
+  [S('Cserépvért',{armor:.15},'Ami a tetőn megvédi, rajta is.'),S('Átütő lövés',{pierce:.15},'A páncél sem állja útját.')],
+  [S('Gyors töltés',{extra:.07},'Mire felnézel, már újra lőtt.'),S('Fejlövés',{critx:.3},'Ha talál, nagyon talál.')],
+  [S('Szomszéd tető',{dodge:.04},'Egy ugrás, és már ott sincs.'),S('Galambetetés',{leech:.04},'A galambok hálásak, segítenek.')],
+  [S('Futárpénz',{gold:.06},'Minden útért jár egy kis borravaló.'),S('Tetőtúra',{xp:.06},'Minden tetőről tanul valamit.')],
+  [S('Kémény mögött',{hp:.08},'Mindig van mögé bújni.'),S('Vadász',{dmg:.07},'Tudja, hova kell célozni.')],
+  [S('Szél ellen',{crit:.05},'A szelet is beleszámolja.'),S('Átütő nyíl',{pierce:.2},'Ez a nyíl a falon is átmegy.')],
+  [S('Árnyék a tetőn',{dodge:.05},'Csak a sziluettje látszik.'),S('Duplázás',{extra:.1},'Két lövés egy lélegzettel.')],
+  [S('A háztetők ura',{dodge:.03,dmg:.06},'A város fölött ő az úr.'),S('Mesterlövész',{crit:.05,critx:.3},'Egy lövés, egy találat.')]],
+ zsebmetszo:[[S('Ügyes ujjak',{crit:.04},'Mindig a gyenge pontot találja.'),S('Hidegvér',{hp:.06},'Nem ijed meg a saját árnyékától.')],
+  [S('Sikátorlépés',{dodge:.03},'Egy lépés oldalra, és már nincs ott.'),S('Hátba szúrás',{first:.15},'Mindig mögötted áll.')],
+  [S('Méregpenge',{pierce:.15},'A méreg a páncélon is átjut.'),S('Tolvajszerencse',{gold:.07},'Valahogy mindig több pénz lesz nála.')],
+  [S('Vérszívó',{leech:.05},'Minden vágással erősebb.'),S('Gyors kés',{extra:.07},'A harmadik vágást senki nem várja.')],
+  [S('Árnyékba olvadás',{dodge:.04},'A sötét a barátja.'),S('Mély vágás',{critx:.3},'Ritkán talál nagyot, de akkor nagyon.')],
+  [S('Zsebtolvaj',{gold:.06},'Az ellenfél zsebe is az övé.'),S('Tanulópénz',{xp:.07},'Minden balhéból okul.')],
+  [S('Bőrdzseki',{armor:.2},'Vastag, kopott, de megvédi.'),S('Kétkezes',{dmg:.07},'Mindkét kés egyformán éles.')],
+  [S('Kiszámíthatatlan',{dodge:.04},'Senki nem tudja, merre lép.'),S('Érzéki találat',{crit:.05},'Tudja, hol fáj a legjobban.')],
+  [S('Hármas szúrás',{extra:.1},'Kettő kevés, legyen három.'),S('Rozsdás penge',{pierce:.2},'Ez a rozsda mindenen átmegy.')],
+  [S('A sikátor ura',{dodge:.03,leech:.04},'A sikátor minden árnyéka az övé.'),S('Ezer vágás',{dmg:.06,extra:.06},'Ennyi sebet nem lehet számolni.')]]
+};
+const FX_CAP={dodge:.45,block:.35,crit:.6};
+function skillFx(st){ const fx={}, sk=st&&st.skills||[], T=SKILLS[st&&st.cls]||[]; sk.forEach((c,i)=>{ if(c==null||!T[i]) return; for(const [k,v] of Object.entries(T[i][c].fx)) fx[k]=(fx[k]||0)+v; }); return fx; }
+// enemies get a small built-in bonus so talents feel good but don't trivialise the game
+function enemyFx(lvl){ const n=SKILL_LV.filter(l=>l<=lvl).length; return n?{dmg:n*.02,hp:n*.02}:{}; }
+function skillOpen(){ if(!state) return -1; const sk=state.skills||[]; return SKILL_LV.findIndex((l,i)=>state.level>=l&&sk[i]==null); }
+function skillPick(i,c){ state.skills=state.skills||[]; if(state.level<SKILL_LV[i]||state.skills[i]!=null) return; state.skills[i]=c; save(); render(); sfx('levelup'); toast(`Új képesség: ${SKILLS[state.cls][i][c].n}`); }
+const RESPEC_POG=5;
+function skillReset(){ const free=!state.respecUsed; if(!free&&!spendPog(RESPEC_POG)) return; state.respecUsed=true; state.skills=[]; save(); render(); toast('A képességeid visszaálltak, válassz újra.'); }
+const fxList=fx=>Object.entries(fx).map(([k,v])=>FX_TXT[k](v)).join(', ');
+function renderSkills(){
+  const T=SKILLS[state.cls], sk=state.skills||[], fx=skillFx(state), next=SKILL_LV.find(l=>l>state.level);
+  let h=`<section class="card skills"><div class="row between" style="margin-bottom:6px"><span class="label">${ic('xp')}Képességfa</span>${sk.some(x=>x!=null)?`<button class="btn small" data-act="skillreset">${state.respecUsed?`${pogIc()}${RESPEC_POG} · Újratanulás`:'Újratanulás (ingyen)'}</button>`:''}</div>
+    <p class="note" style="margin:0 0 8px">Bizonyos szinteken két képesség közül választhatsz egyet. Ezek az arénában, a küldetésekben és a kazamatákban is számítanak.</p>`;
+  if(Object.keys(fx).length) h+=`<div class="sk-sum">${Object.entries(fx).map(([k,v])=>`<span class="chip">${FX_TXT[k](v)}</span>`).join('')}</div>`;
+  SKILL_LV.forEach((L,i)=>{ const ch=sk[i], open=state.level>=L, two=T[i];
+    h+=`<div class="sk-tier ${open?'':'locked'} ${open&&ch==null?'pick':''}"><div class="sk-lv mono">${L}.</div><div class="sk-opts">${two.map((o,c)=>`<button class="sk-opt ${ch===c?'on':ch!=null?'off':''}" ${open&&ch==null?`data-act="skillpick" data-i="${i}" data-c="${c}"`:'disabled'}><b>${o.n}</b><span class="sk-fx">${fxList(o.fx)}</span><span class="note">${o.d}</span></button>`).join('')}</div></div>`; });
+  return h+`${next?`<p class="note" style="margin:8px 0 0">Következő választás: ${next}. szinten.</p>`:''}</section>`;
 }
 
 /* ================= progression ================= */
@@ -1710,7 +1806,7 @@ function renderHud(){
 function renderTabs(){
   const t=[['terkep','Térkép'],['kocsma','Kocsma'],['karakter','Karakter'],['bolt','Bolt'],['arena','Aréna'],['kazamata','Kazamata'],['ceh','Céh']];
   const ready = state.active && state.active.endsAt<=now();
-  return `<nav class="tabs"><div class="in">${t.map(([k,l])=>`<button class="tab" data-act="view" data-v="${k}" ${view===k?'aria-current="page"':''}>${TAB_ICON[k]}${l}${(k==='kocsma'&&(ready||wheelFreeReady()||tasksClaimable())&&view!=='kocsma')||(k==='arena'&&view!=='arena'&&bossReady())||(k==='bolt'&&state.freeReshop&&view!=='bolt')?'<span class="dot"></span>':''}${(k==='kazamata'&&state.level<DUNGEON_UNLOCK)||(k==='ceh'&&state.level<GUILD_UNLOCK)?`<span class="lock-mini">${ic('lock')}</span>`:''}</button>`).join('')}</div></nav>`;
+  return `<nav class="tabs"><div class="in">${t.map(([k,l])=>`<button class="tab" data-act="view" data-v="${k}" ${view===k?'aria-current="page"':''}>${TAB_ICON[k]}${l}${(k==='kocsma'&&(ready||wheelFreeReady()||tasksClaimable())&&view!=='kocsma')||(k==='karakter'&&view!=='karakter'&&skillOpen()>=0)||(k==='arena'&&view!=='arena'&&bossReady())||(k==='bolt'&&state.freeReshop&&view!=='bolt')?'<span class="dot"></span>':''}${(k==='kazamata'&&state.level<DUNGEON_UNLOCK)||(k==='ceh'&&state.level<GUILD_UNLOCK)?`<span class="lock-mini">${ic('lock')}</span>`:''}</button>`).join('')}</div></nav>`;
 }
 function questCost(q){
   return `<span class="with-ic">${ic('clock','ic-time')}${effDur(q)} mp${mountRed()?` <s class="muted">${q.dur}</s>`:''}</span><span class="with-ic">${ic('coffee','ic-coffee')}−${qCost(q)} kávé</span>`;
@@ -2022,6 +2118,7 @@ function renderKarakter(){
       <div>${ic('shield','ic-armor')}<b>${Math.round(armorRed(f)*100)}%</b><span>Páncél</span></div>
       <div>${ic('target','ic-crit')}<b>${Math.round(critChance(f)*100)}%</b><span>Krit</span></div>
     </div></section>`;
+  html+=renderSkills();
   html+=`<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('str')}Tulajdonságok</span><span class="note">Edzés forintért</span></div>`;
   for(const [k,n,d] of STATS){
     const cost=statCost(state.bought[k]), bonus=s[k]-state.stats[k];
@@ -2783,6 +2880,7 @@ function showLevelUp(L){
       <div class="lv-row">${ic('refresh','ic-item')}<span>Ingyenes boltfrissítés</span><b></b><span class="eff-next">1×</span></div>
     </div>
     ${L.from<GUILD_UNLOCK&&L.to>=GUILD_UNLOCK?`<div class="lv-unlock"><div class="port">${svg(emblemSvg('hold'))}</div><div><div class="label">${ic('user')}Új funkció</div><div class="lv-unlock-name">Megnyílt a Céh</div><div class="note">Alapíts céhet, hívj be tagokat, és harcoljatok más céhek ellen.</div></div><button class="btn small primary" data-act="golvlceh">Megnézem</button></div>`:''}
+    ${SKILL_LV.some(l=>l>L.from&&l<=L.to)?`<div class="lv-unlock"><div class="port" style="display:grid;place-items:center;color:var(--gold)">${ic('xp')}</div><div><div class="label">${ic('xp')}Új képesség</div><div class="lv-unlock-name">Választhatsz a képességfán</div><div class="note">Két képesség közül egyet. A Karakter fülön.</div></div><button class="btn small primary" data-act="golvlkar">Megnézem</button></div>`:''}
     ${DUNGEONS.filter(d=>d.unlock>L.from&&d.unlock<=L.to&&(!d.dawn||state.dawn)).map(d=>`<div class="lv-unlock">${portrait(ENEMY_ART['boss_'+d.id])}<div><div class="label">${ic('down')}Új kazamata nyílt meg</div><div class="lv-unlock-name">${d.name}</div><div class="note">10 emelet, a végén ${esc(d.floors[9])} vár.</div></div><button class="btn small primary" data-act="golvlkaz">Megnézem</button></div>`).join('')}
     <div class="lv-tip">${ic('cart')}<span><b>Tipp:</b> az ellenfelek is erősödtek. Nézz be a boltba egy jobb fegyverért, és edzd ${({str:'az erődet',dex:'az ügyességedet',int:'az eszedet'})[CLASSES[state.cls].main]}.</span></div>
     <button class="btn primary lv-btn" data-act="closelvl">Szuper!</button>
@@ -3050,6 +3148,8 @@ document.addEventListener('click',e=>{
     case 'unfriend': removeFriend(id); renderMail(); return;
     case 'addfriend': { const x=INSPECT; if(x) addFriend(el.dataset.k,x.name,x.cls); if(INSPECT) renderInspect(); } return;
     case 'gsend': doGuildSend(); return;
+    case 'skillpick': { const y=window.scrollY; skillPick(+el.dataset.i,+el.dataset.c); window.scrollTo(0,y); } return;
+    case 'skillreset': { const y=window.scrollY; skillReset(); window.scrollTo(0,y); } return;
     case 'gdescedit': GDESC_EDIT=true; { const y=window.scrollY; render(); window.scrollTo(0,y); setTimeout(()=>$('#gdesc')?.focus(),30); } return;
     case 'gdesccancel': GDESC_EDIT=false; { const y=window.scrollY; render(); window.scrollTo(0,y); } return;
     case 'gdescsave': if(state.guild){ state.guild.desc=($('#gdesc')?.value||'').trim().slice(0,300); GDESC_EDIT=false; save(); const y=window.scrollY; render(); window.scrollTo(0,y); toast('A céh leírása elmentve.'); } return;
@@ -3098,6 +3198,7 @@ document.addEventListener('click',e=>{
     case 'gwar': doGuildWar(id,el.dataset.pog); break;
     case 'gwskip': gwFinal(); break;
     case 'gwnext': gwNext(); break;
+    case 'golvlkar': $('#overlay-root').innerHTML=''; view='karakter'; render(); setTimeout(()=>document.querySelector('.skills')?.scrollIntoView({behavior:'smooth'}),50); break;
     case 'golvlkaz': $('#overlay-root').innerHTML=''; view='kazamata'; render(); window.scrollTo(0,0); break;
     case 'train': { const k=el.dataset.s, c=statCost(state.bought[k]); if(state.gold<c) return; state.gold-=c; state.stats[k]++; state.bought[k]++; save(); render(); } break;
     case 'equip': { const i=state.inv.findIndex(x=>x.id===id); if(i<0) return; const it=state.inv[i], old=state.equip[it.slot]; state.equip[it.slot]=it; state.inv.splice(i,1); if(old) state.inv.push(old); save(); render(); } break;
@@ -3150,7 +3251,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 23:46';
+const BUILD='2026.11.02 00:23';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
