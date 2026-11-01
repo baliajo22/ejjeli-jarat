@@ -1853,7 +1853,8 @@ const matIc=(i,sz='')=>`<span class="mat-ic ${sz}">${svg(MATS[i].art())}</span>`
 function disenchantYield(it){ return {[MATS[it.rar].id]:1}; }
 // crafting: 3 of the chosen colour + 2 of the colour below
 const CRAFT_COST=[{csavar:3},{neon:3,csavar:2},{kristaly:3,neon:2},{esszencia:3,kristaly:2},{szikra:3,esszencia:2}];
-const craftFee=r=>Math.round((10+state.level*6)*[1,1.5,2,3,4][r]);
+const craftFee=r=>4*Math.round((10+state.level*6)*[1,1.5,2,3,4][r]);
+const CRAFT_POG=[0,0,0,1,3];
 const CONVERT_N=5;
 function mats(){ return state.mats||(state.mats={csavar:0,neon:0,kristaly:0,esszencia:0,szikra:0}); }
 function canPay(cost){ const m=mats(); return Object.entries(cost).every(([k,v])=>(m[k]||0)>=v); }
@@ -1870,8 +1871,9 @@ function craftPreview(){ const lvl=state.level, RM_=[.8,1,1.15,1.4,1.7][CRAFT.ra
   else if(ARMOR_W[CRAFT.slot]) p.push(`<span class="with-ic">${ic('shield','ic-armor')}${Math.round((lvl*ARMOR_W[CRAFT.slot]+2)*RM_)}</span>`);
   const v=Math.round((1.6+lvl*.7)*RM_); CRAFT.stats.forEach(k=>p.push(`<span class="with-ic">${ic(k,'ic-'+k)}+${v}</span>`));
   return p.join(''); }
-function doCraft(){ const r=CRAFT.rar, cost=CRAFT_COST[r], fee=craftFee(r), n=craftStatN();
-  if(CRAFT.stats.length!==n||!canPay(cost)||state.gold<fee||state.inv.length>=INV_MAX) return;
+function doCraft(){ const r=CRAFT.rar, cost=CRAFT_COST[r], fee=craftFee(r), n=craftStatN(), pg=CRAFT_POG[r];
+  if(CRAFT.stats.length!==n||!canPay(cost)||state.gold<fee||(state.pog||0)<pg||state.inv.length>=INV_MAX) return;
+  state.pog-=pg;
   const it=genItem(state.level,CRAFT.slot,null,r), RM_=[.8,1,1.15,1.4,1.7][r], m=mats();
   it.bonus={}; CRAFT.stats.forEach(k=>it.bonus[k]=Math.round((1.6+state.level*.7)*RM_)+rand(0,1)); it.crafted=true;
   for(const [k,v] of Object.entries(cost)) m[k]-=v; state.gold-=fee; addItem(it); save();
@@ -1887,8 +1889,8 @@ function renderMuhely(){
     <div><div class="note" style="margin-bottom:6px">2. Milyen minőségű?</div><div class="craft-rar">${RAR_NAME.map((nm,i)=>`<button class="crar r${i} ${r===i?'on':''}" data-act="crar" data-r="${i}">${nm}</button>`).join('')}</div></div>
     <div><div class="note" style="margin-bottom:6px">3. Válassz ${n} tulajdonságot <span class="mono">(${CRAFT.stats.length}/${n})</span></div><div class="craft-stats">${STATS.map(([k,nm])=>`<button class="cstat ${CRAFT.stats.includes(k)?'on':''} ${state.cls&&CLASSES[state.cls].main===k?'main':''}" data-act="cstat" data-k="${k}">${ic(k,'ic-'+k)}${nm}</button>`).join('')}</div></div>
     <div class="craft-prev"><div class="itile t${r}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${SLOT_EMPTY[CRAFT.slot]}</svg></div><div><div class="item-name r${r}">${RAR_NAME[r]} ${SLOT_NAME[CRAFT.slot].toLowerCase()} · ${state.level}. szint</div><div class="item-stats">${craftPreview()||'<span class="note">Válassz tulajdonságot</span>'}</div></div></div>
-    <div class="row between"><span class="row" style="gap:6px;flex-wrap:wrap">${costHtml(cost)}<span class="mat-cost ${state.gold>=fee?'':'short'}">${ic('coin','ic-gold')}${fmt(fee)} Ft</span></span>
-      <button class="btn primary" data-act="craft" ${CRAFT.stats.length!==n||!canPay(cost)||state.gold<fee||state.inv.length>=INV_MAX?'disabled':''}>${ic('refresh')}Elkészítem</button></div>
+    <div class="row between"><span class="row" style="gap:6px;flex-wrap:wrap">${costHtml(cost)}<span class="mat-cost ${state.gold>=fee?'':'short'}">${ic('coin','ic-gold')}${fmt(fee)} Ft</span>${CRAFT_POG[r]?`<span class="mat-cost ${(state.pog||0)>=CRAFT_POG[r]?'':'short'}">${pogIc()}${CRAFT_POG[r]}</span>`:''}</span>
+      <button class="btn primary" data-act="craft" ${CRAFT.stats.length!==n||!canPay(cost)||state.gold<fee||(state.pog||0)<CRAFT_POG[r]||state.inv.length>=INV_MAX?'disabled':''}>${ic('refresh')}Elkészítem</button></div>
     ${state.inv.length>=INV_MAX?'<p class="note">Tele a hátizsák, előbb szedj szét vagy adj el valamit.</p>':''}
     ${CRAFT.made&&state.inv.find(x=>x.id===CRAFT.made)?`<div class="crafted-new"><span class="label">Most készült</span><div class="item" data-tip="loot:${CRAFT.made}">${itemTile(LOOT[CRAFT.made])}<div><div class="item-name r${LOOT[CRAFT.made].rar}">${esc(LOOT[CRAFT.made].name)}</div><div class="item-stats">${itemStats(LOOT[CRAFT.made])}</div></div><button class="btn small primary" data-act="equip" data-id="${CRAFT.made}">${ic('equip')}Felvesz</button></div></div>`:''}
   </section>`;
@@ -2753,7 +2755,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 22:07';
+const BUILD='2026.11.01 22:12';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
