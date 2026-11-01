@@ -405,6 +405,9 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .wheel-prize.jack .wp-in{border-color:var(--gold);box-shadow:0 8px 30px rgba(0,0,0,.6),0 0 60px rgba(242,194,48,.8)}
 .wheel-prize.jack b{color:var(--gold)}
 @keyframes prizepop{0%{transform:scale(.2);opacity:0}100%{transform:none;opacity:1}}
+.shop-new{animation:shopin .45s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes shopin{0%{opacity:0;transform:translateX(30px) scale(.96)}100%{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.shop-new{animation:none}}
 .mg-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mg-tile{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 8px;color:inherit;font:inherit;cursor:pointer}
 .mg-tile:hover{border-color:var(--sodium)}
@@ -1351,6 +1354,10 @@ function genQuests(){
   }
   return out.sort(()=>Math.random()-.5);
 }
+let SHOP_FX=false;
+// new stock: make sure every item is actually new, show it with a short shuffle animation
+function reshop(){ const old=new Set((state.shop||[]).map(x=>x.name)); let n=genShop(), tries=0; while(tries++<5&&n.filter(x=>old.has(x.name)).length>2) n=genShop();
+  state.shop=n; save(); SHOP_FX=true; render(); SHOP_FX=false; const c=$('#shoplist'); if(c&&c.getBoundingClientRect().top<0) c.scrollIntoView({behavior:'smooth',block:'start'}); }
 function genShop(){ const l=state.level, others=SLOTS.map(s=>s[0]).filter(k=>k!=='fegyver').sort(()=>Math.random()-.5).slice(0,6); return [genItem(l,'fegyver'),genItem(l,'fegyver'),...others.map(k=>genItem(l,k))]; }
 function genArena(){
   syncLadder();
@@ -1748,10 +1755,11 @@ function renderBolt(){
   <section class="card"><div class="item" style="padding:0"><div class="itile" style="--rc:#d9a06b;display:grid;place-items:center;color:#d9a06b">${ic('coffee')}</div>
     <div><div class="item-name">Dupla eszpresszó</div><div class="item-stats"><span class="with-ic">${ic('coffee','ic-coffee')}+${ESPRESSO_GAIN} kávé azonnal</span><span>ma még ${espressoLeft()}/${ESPRESSO_DAILY}</span></div></div>
     <button class="btn small pog-btn" data-act="coffeepog" title="Dupla eszpresszó 1 pogácsáért" ${canEspresso()?'':'disabled'}>${espressoLeft()?`${pogIc()}1`:'Holnap újra'}</button></div></section>
-  <section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('cart')}Kínálat</span><span class="row" style="gap:6px">${state.freeReshop?`<button class="btn small primary free-btn" data-act="reshop">${ic('refresh')}Új kínálat · ingyen</button>`:`<button class="btn small pog-btn" data-act="reshoppog" title="Új kínálat 1 pogácsáért" ${(state.pog||0)<1?'disabled':''}>${ic('refresh')}Új kínálat · ${pogIc()}1</button>`}</span></div>`;
+  <section class="card" id="shoplist"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('cart')}Kínálat</span><span class="row" style="gap:6px">${state.freeReshop?`<button class="btn small primary free-btn" data-act="reshop">${ic('refresh')}Új kínálat · ingyen</button>`:`<button class="btn small pog-btn" data-act="reshoppog" title="Új kínálat 1 pogácsáért" ${(state.pog||0)<1?'disabled':''}>${ic('refresh')}Új kínálat · ${pogIc()}1</button>`}</span></div>`;
+  let si=0;
   for(const it of state.shop){
     const better=itemScore(it)>itemScore(state.equip[it.slot]);
-    html+=`<div class="item" data-tip="shop:${it.id}">${itemTile(it)}<div><div class="item-name r${it.rar}">${esc(it.name)} ${cmpMark(it)}</div><div class="item-stats"><span>${SLOT_NAME[it.slot]} · ${RAR_NAME[it.rar]}</span>${itemStats(it)}</div></div>
+    html+=`<div class="item ${SHOP_FX?'shop-new':''}" style="${SHOP_FX?`animation-delay:${si++*60}ms`:''}" data-tip="shop:${it.id}">${itemTile(it)}<div><div class="item-name r${it.rar}">${esc(it.name)} ${cmpMark(it)}</div><div class="item-stats"><span>${SLOT_NAME[it.slot]} · ${RAR_NAME[it.rar]}</span>${itemStats(it)}</div></div>
       <button class="btn small ${better?'primary':''}" data-act="buy" data-id="${it.id}" ${state.gold<it.price||state.inv.length>=INV_MAX?'disabled':''}>${fmt(it.price)} Ft</button></div>`;
   }
   if(!state.shop.length) html+=`<p class="muted">Feri kifogyott. Kérj új kínálatot.</p>`;
@@ -2454,8 +2462,8 @@ document.addEventListener('click',e=>{
     case 'sell': { const i=state.inv.findIndex(x=>x.id===id); if(i<0) return; state.gold+=Math.round(state.inv[i].price*.4); state.inv.splice(i,1); save(); render(); } break;
     case 'buy': { const i=state.shop.findIndex(x=>x.id===id); if(i<0) return; const it=state.shop[i]; if(state.gold<it.price||state.inv.length>=INV_MAX) return; state.gold-=it.price; state.inv.push(it); state.shop.splice(i,1); save(); render(); toast(`${it.name} a hátizsákban. Vedd fel a Karakter fülön.`); } break;
     case 'rushquest': if(state.active&&state.active.endsAt>now()&&spendPog(1)){ state.active.endsAt=now(); save(); render(); } break;
-    case 'reshoppog': if(spendPog(1)){ state.shop=genShop(); save(); render(); toast('Feri kipakolt egy új adagot.'); } break;
-    case 'reshop': { if(state.freeReshop){ state.freeReshop=false; state.shop=genShop(); save(); render(); toast('Ingyenes új kínálat a szintlépésért!'); break; }
+    case 'reshoppog': if(spendPog(1)){ reshop(); toast('Feri kipakolt egy új adagot.'); } break;
+    case 'reshop': { if(state.freeReshop){ state.freeReshop=false; reshop(); toast('Ingyenes új kínálat a szintlépésért!'); break; }
       } break;
     case 'coffeepog': { if(!espressoLeft()){ toast(`Ma már megittad a ${ESPRESSO_DAILY} duplát. Holnap újra.`); break; }
       if(state.energy<ENERGY_MAX&&spendPog(1)){ if(state.coffeeDay!==todayKey()){ state.coffeeDay=todayKey(); state.coffeeCount=0; } state.coffeeCount++; state.energy=Math.min(ENERGY_MAX,state.energy+ESPRESSO_GAIN); save(); render(); } } break;
@@ -2488,7 +2496,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 15:35';
+const BUILD='2026.11.01 15:38';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
