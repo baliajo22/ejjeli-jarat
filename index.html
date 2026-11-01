@@ -1081,8 +1081,8 @@ function fmtLeft(ms){ const m=Math.max(1,Math.floor(ms/60000)), d=Math.floor(m/1
 function mountRed(){ const v=activeVeh(); return v?v.red:0; }
 function effDur(q){ return Math.max(3,Math.round(q.dur*(1-mountRed()))); }
 function qCost(q){ const v=activeVeh(), d=v&&v.coffee?effDur(q):q.dur; return Math.max(1,Math.round((Math.round(d*.8)+5)*.24)); }
-/* double espresso: pogácsa only, +40 coffee, max 10 per day */
-const ESPRESSO_GAIN=40, ESPRESSO_DAILY=10;
+/* double espresso: pogácsa only, +30 coffee, max 10 per day */
+const ESPRESSO_GAIN=30, ESPRESSO_DAILY=10;
 function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
 function espressoLeft(){ return state.coffeeDay===todayKey()?Math.max(0,ESPRESSO_DAILY-(state.coffeeCount||0)):ESPRESSO_DAILY; }
 function canEspresso(){ return espressoLeft()>0&&(state.pog||0)>=1&&state.energy<ENERGY_MAX; }
@@ -2755,7 +2755,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 22:12';
+const BUILD='2026.11.01 22:13';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
