@@ -389,6 +389,20 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .ins-stats>div.main{outline:1px solid var(--sodium)}
 .ins-verdict{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:700;border-radius:10px;padding:8px;background:var(--panel)}
 .ins-verdict.up{color:var(--ok)} .ins-verdict.down{color:var(--bad)}
+.mg-bar{display:flex;gap:8px;margin-bottom:-4px}
+.mg-chip{flex:1;position:relative;display:flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 10px;background:var(--panel);border:1px solid var(--line);border-radius:999px;color:inherit;font:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}
+.mg-chip:hover{border-color:var(--sodium)}
+.mg-ic{width:24px;height:24px;flex:none}
+.mg-ic svg{width:100%;height:100%;display:block}
+.mg-dot{position:absolute;top:-2px;right:6px;width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 2px var(--night);animation:pulse 1.6s infinite}
+.wheel-prize{position:absolute;inset:0;display:grid;place-items:center;z-index:3;cursor:pointer}
+.wp-in{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:78%;text-align:center;background:var(--concrete);border:3px solid var(--sodium);border-radius:20px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.6),0 0 40px rgba(242,163,58,.5);animation:prizepop .55s cubic-bezier(.3,1.7,.5,1) both}
+.wp-in b{font-size:19px;line-height:1.2}
+.wp-ic{width:46px;height:46px;display:grid;place-items:center}
+.wp-ic svg,.wp-ic .ic{width:42px;height:42px}
+.wheel-prize.jack .wp-in{border-color:var(--gold);box-shadow:0 8px 30px rgba(0,0,0,.6),0 0 60px rgba(242,194,48,.8)}
+.wheel-prize.jack b{color:var(--gold)}
+@keyframes prizepop{0%{transform:scale(.2);opacity:0}100%{transform:none;opacity:1}}
 .mg-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mg-tile{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 8px;color:inherit;font:inherit;cursor:pointer}
 .mg-tile:hover{border-color:var(--sodium)}
@@ -1503,7 +1517,7 @@ const WHEEL=[
   {k:'cof2',w:6,  c:'#6b3a2a', lab:()=>'+40 kávé', icon:()=>ic('coffee','ic-coffee'), give(){ state.energy=Math.min(ENERGY_MAX,state.energy+40); return '+40 kávé'; }},
   {k:'jack',w:2,  c:'#8a6a12', lab:()=>'5 pogi!', icon:()=>pogIc(), give(){ state.pog=(state.pog||0)+5; return 'FŐNYEREMÉNY: +5 pogácsa!'; }}
 ];
-let WHEEL_ROT=0, WHEEL_ROT_SHOW=null, WHEEL_BUSY=false, WHEEL_MSG='';
+let WHEEL_ROT=0, WHEEL_ROT_SHOW=null, WHEEL_BUSY=false, WHEEL_MSG='', WHEEL_PRIZE=null;
 function wheelSvg(){
   const n=WHEEL.length, R=100, seg=360/n; let g='';
   WHEEL.forEach((p,i)=>{ const a0=(i*seg-90-seg/2)*Math.PI/180, a1=((i+1)*seg-90-seg/2)*Math.PI/180;
@@ -1511,13 +1525,13 @@ function wheelSvg(){
     g+=`<g transform="rotate(${i*seg}) translate(0 -52)"><foreignObject x="-15" y="-15" width="30" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="wh-ic">${p.icon()}</div></foreignObject><text y="-25" text-anchor="middle" class="wh-t">${esc(p.lab())}</text></g>`; });
   return `<svg viewBox="-104 -104 208 208" class="wheel-svg"><circle r="103" fill="#f2a33a"/>${g}<circle r="14" fill="#f2a33a" stroke="#13141f" stroke-width="3"/></svg>`;
 }
-function openWheel(){ dayReset(); WHEEL_MSG=''; renderWheel(); }
+function openWheel(){ dayReset(); WHEEL_MSG=''; WHEEL_PRIZE=null; renderWheel(); }
 function renderWheel(){
   dayReset(); const free=state.wheelFree, paidLeft=WHEEL_PAID_DAILY-state.wheelPaid;
   $('#overlay-root').innerHTML=`<div class="overlay" data-act="closemg"><div class="mg-card" data-act="noop" role="dialog" aria-label="Szerencsekerék">
     <button class="ins-x" data-act="closemg" aria-label="Bezárás">×</button>
     <span class="label">${ic('pin')}Ica asztala</span><h2>Szerencsekerék</h2>
-    <div class="wheel-wrap"><div class="wheel-ptr"></div><div class="wheel" id="wheel" style="transform:rotate(${WHEEL_ROT_SHOW??WHEEL_ROT}deg)">${wheelSvg()}</div></div>
+    <div class="wheel-wrap"><div class="wheel-ptr"></div><div class="wheel" id="wheel" style="transform:rotate(${WHEEL_ROT_SHOW??WHEEL_ROT}deg)">${wheelSvg()}</div>${WHEEL_PRIZE?`<div class="wheel-prize ${WHEEL_PRIZE.jack?'jack':''}" data-act="prizeok"><div class="wp-in"><span class="wp-ic">${WHEEL_PRIZE.icon}</span><span class="label">${WHEEL_PRIZE.jack?'Főnyeremény!':'Nyertél'}</span><b>${esc(WHEEL_PRIZE.txt)}</b></div></div>`:''}</div>
     <div class="mg-msg" id="wmsg">${WHEEL_MSG||(free?'Ma még egyszer ingyen pörgethetsz!':`Pörgetés 1 pogácsáért · ma még ${paidLeft}/${WHEEL_PAID_DAILY}`)}</div>
     ${free?`<button class="btn primary mg-go" data-act="spin" ${WHEEL_BUSY?'disabled':''}>${ic('refresh')}Ingyen pörgetés</button>`
       :`<button class="btn pog-btn mg-go" data-act="spin" data-pog="1" ${WHEEL_BUSY||paidLeft<=0||(state.pog||0)<1?'disabled':''}>${paidLeft>0?`${pogIc()}Pörgetés · 1 pogácsa`:'Holnap újra'}</button>`}
@@ -1531,10 +1545,10 @@ function spinWheel(){
   const tot=WHEEL.reduce((a,p)=>a+p.w,0); let r=Math.random()*tot, i=0; while(r>=WHEEL[i].w){ r-=WHEEL[i].w; i++; }
   const seg=360/WHEEL.length, target=(360-i*seg+(Math.random()-.5)*seg*.7)%360;
   const from=WHEEL_ROT%360; WHEEL_ROT=from+360*6+((target-from)%360+360)%360; WHEEL_BUSY=true; save();
-  WHEEL_ROT_SHOW=from; renderWheel(); WHEEL_ROT_SHOW=null;
+  WHEEL_PRIZE=null; WHEEL_ROT_SHOW=from; renderWheel(); WHEEL_ROT_SHOW=null;
   const w=$('#wheel'); w.getBoundingClientRect(); requestAnimationFrame(()=>{ w.classList.add('spinning'); w.style.transform=`rotate(${WHEEL_ROT}deg)`; });
   let ticks=0; const tk=setInterval(()=>{ if(++ticks>14) return clearInterval(tk); sfx('tick'); },160+ticks*15);
-  setTimeout(()=>{ clearInterval(tk); WHEEL_BUSY=false; const txt=WHEEL[i].give(); WHEEL_MSG=`<b class="${WHEEL[i].k==='jack'?'jack':''}">${esc(txt)}</b>`; sfx(WHEEL[i].k==='jack'||WHEEL[i].k==='pog'?'levelup':'coins'); save();
+  setTimeout(()=>{ clearInterval(tk); WHEEL_BUSY=false; const txt=WHEEL[i].give(); WHEEL_MSG=''; WHEEL_PRIZE={txt:txt.replace('FŐNYEREMÉNY: ',''),icon:WHEEL[i].icon(),jack:WHEEL[i].k==='jack'}; sfx(WHEEL[i].k==='jack'||WHEEL[i].k==='pog'?'levelup':'coins'); save();
     const lv=lvlFx; lvlFx=false; render(); if(lv){ lvlFx=lv; render(); } else renderWheel(); }, 4200);
 }
 
@@ -1608,6 +1622,11 @@ function pokerStand(){
     PK.phase='done'; PK.icaRolling=null; save(); render(); renderPoker(); };
   setTimeout(step,1100);
 }
+function minigameBar(){
+  dayReset();
+  return `<div class="mg-bar"><button class="mg-chip" data-act="openwheel"><span class="mg-ic">${svg(`<circle cx="32" cy="34" r="24" fill="${OR}"/><path d="M32 34L32 10M32 34L52 22M32 34L52 46M32 34L32 58M32 34L12 46M32 34L12 22" stroke-width="2"/><circle cx="32" cy="34" r="5" fill="${Y}"/>`)}</span>Szerencsekerék${state.wheelFree?'<span class="mg-dot" aria-label="ingyen pörgetés"></span>':''}</button>
+    <button class="mg-chip" data-act="openpoker"><span class="mg-ic">${svg(`<rect x="8" y="14" width="36" height="36" rx="7" fill="${WH}"/><circle cx="18" cy="24" r="3.5" fill="${K}" stroke="none"/><circle cx="26" cy="32" r="3.5" fill="${K}" stroke="none"/><circle cx="34" cy="40" r="3.5" fill="${K}" stroke="none"/>`)}</span>Kockapóker</button></div>`;
+}
 function minigameCard(){
   dayReset();
   return `<section class="card mg-row"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('pin')}Ica asztala</span><span class="note">Éjfélkor újraindul</span></div>
@@ -1616,7 +1635,7 @@ function minigameCard(){
 }
 
 function renderKocsma(){
-  let html=`${banner('kocsma')}<section class="scene"><span class="label">${ic('pin')}Romkocsma · VII. kerület · 23:47</span><h2>Ica a pult mögül int</h2><p>„Megint gyűlnek a bejelentések, drágám. Válassz egyet, de előtte igyál egy kávét.”</p></section>${vehicleCard()}`;
+  let html=`${minigameBar()}${banner('kocsma')}<section class="scene"><span class="label">${ic('pin')}Romkocsma · VII. kerület · 23:47</span><h2>Ica a pult mögül int</h2><p>„Megint gyűlnek a bejelentések, drágám. Válassz egyet, de előtte igyál egy kávét.”</p></section>${vehicleCard()}`;
   if(state.active){
     const q=state.active.q, left=Math.max(0,state.active.endsAt-now()), ready=left<=0;
     html+=`<section class="card active stack ${ready?'arrived':'depart'}">
@@ -1646,7 +1665,7 @@ function renderKocsma(){
   }
   html+=`</section>`;
   if(!state.active && state.quests.every(q=>state.energy<qCost(q))) html+=`<div class="card row between"><span class="note">Elfogyott a kávé. Éjfélkor újratöltődik, addig igyál egy duplát.</span><button class="btn small pog-btn" data-act="coffeepog" ${canEspresso()?'':'disabled'}>${ic('coffee')}+${ESPRESSO_GAIN} · ${pogIc()}1</button></div>`;
-  return html+minigameCard();
+  return html;
 }
 function fmtTime(ms){ const s=Math.ceil(ms/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
 
@@ -2390,6 +2409,7 @@ document.addEventListener('click',e=>{
     case 'inspect': hideTip(); openInspect(id); return;
     case 'openwheel': openWheel(); return;
     case 'spin': spinWheel(); return;
+    case 'prizeok': WHEEL_PRIZE=null; renderWheel(); return;
     case 'openpoker': openPoker(); return;
     case 'pkcur': PK.cur=el.dataset.c; renderPoker(); return;
     case 'pkbet': pokerBet(+el.dataset.v); return;
@@ -2466,7 +2486,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 15:18';
+const BUILD='2026.11.01 15:21';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
