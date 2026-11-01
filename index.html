@@ -592,6 +592,7 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 /* the close button stays in reach while the card scrolls */
 .ins-card>.ins-x,.mg-card>.ins-x{position:sticky;top:0;align-self:flex-end;flex:none;margin:-8px -6px -40px 0;z-index:6;width:40px;height:40px;font-size:22px;box-shadow:0 2px 10px rgba(0,0,0,.45)}
 body.modal-open{overflow:hidden}
+.ins-card>.ins-x{margin:-8px -6px -4px 0}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
 .install-card>div{flex:1;min-width:0}
@@ -3271,7 +3272,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 00:43';
+const BUILD='2026.11.02 00:45';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
