@@ -408,6 +408,11 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .shop-new{animation:shopin .45s cubic-bezier(.3,1.5,.5,1) both}
 @keyframes shopin{0%{opacity:0;transform:translateX(30px) scale(.96)}100%{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.shop-new{animation:none}}
+.rl-row{grid-template-columns:34px 32px 1fr auto auto}
+.rl-row .lad-name{display:flex;flex-direction:column;min-width:0}
+.rl-row .lad-name small{font-size:11px}
+.rl-row .lad-lvl small{font-size:10px;color:var(--muted)}
+.rl-row .btn{padding:6px 10px}
 .mg-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mg-tile{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 8px;color:inherit;font:inherit;cursor:pointer}
 .mg-tile:hover{border-color:var(--sodium)}
@@ -1816,6 +1821,31 @@ function insTipHtml(it){
   return `<div class="tip-cols"><div class="tip-card"><div class="tip-tag">Nála</div>${tipHead(it)}<div class="tip-list">${tipStats(it)}</div></div>
     <div class="tip-card worn"><div class="tip-tag">Rajtad</div>${mine?`${tipHead(mine)}<div class="tip-list">${tipStats(mine)}</div>`:'<div class="note" style="margin-top:6px">Ez a hely nálad üres.</div>'}</div></div>`;
 }
+let arenaTab='arena';
+function arenaBar(){ return `<div class="mg-bar" role="tablist">${[['arena','Aréna','fight'],['rang','Ranglétra','trophy']].map(([k,l,i])=>`<button class="mg-chip ${arenaTab===k?'on':''}" role="tab" data-act="arenatab" data-t="${k}" aria-selected="${arenaTab===k}"><span class="mg-ic">${ic(i)}</span>${l}</button>`).join('')}</div>`; }
+/* real players only: offline these are your own heroes on this device (the online build replaces this) */
+function realPlayers(){
+  if(!ONLINE.playersAt||now()-ONLINE.playersAt>20000) setTimeout(loadPlayers,0);
+  const out=(ONLINE.all||[]).map(p=>{ const base={name:p.name,cls:p.cls,level:p.level,score:p.rating};
+    if(p.id===state.cid) return {...base,key:'me',name:state.name,level:state.level,score:ONLINE.myRating??p.rating,me:true};
+    if(p.user_id===ONLINE.user.id) return {...base,key:'c-'+p.id,duel:'c-'+p.id};
+    return {...base,key:'p-'+p.id,pduel:p.id}; });
+  if(!out.some(x=>x.me)&&ONLINE.playersAt) out.push({key:'me',name:state.name,cls:state.cls,level:state.level,score:ONLINE.myRating??1000,me:true});
+  return out.sort((a,b)=>b.score-a.score||b.level-a.level);
+}
+function realPlayersOffline(){
+  const me={key:'me',name:state.name,cls:state.cls,level:state.level,score:state.wins||0,me:true};
+  return [me,...otherHeroes().map(h=>({key:'c-'+h.cid,name:h.name,cls:h.cls,level:h.level,score:h.wins||0,duel:'c-'+h.cid}))].sort((a,b)=>b.level-a.level||b.score-a.score);
+}
+const REAL_SCORE_LABEL='pont', REAL_NOTE='Csak valódi játékosok, rangpont szerint. Győzelemmel pontot szerzel, vereséggel veszítesz. Koppints egy játékosra, és megnézheted.';
+function renderRealLadder(){
+  syncLadder();
+  const L=realPlayers(), left=Math.max(0,state.arenaReadyAt-now());
+  let html=`<section class="scene"><span class="label">${ic('trophy')}Népliget · eredményjelző tábla</span><h2>A város legjobbjai</h2><p>${REAL_NOTE}</p></section><section class="card"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('trophy')}Ranglétra</span><span class="note">${L.length} játékos</span></div><div class="ladder">`;
+  if(!L.length) html+=`<p class="muted">Betöltés…</p>`;
+  L.forEach((p,i)=>{ html+=`<div class="lad-row rl-row ${p.me?'me':''}" role="button" tabindex="0" data-act="inspect" data-id="${p.key}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(CLASS_ART[p.cls]||CLASS_ART.kidobo,'lad-port')}<span class="lad-name">${esc(p.name)}${p.me?' <em>te</em>':''}<small class="note">${p.level}. szint · ${CLASSES[p.cls]?CLASSES[p.cls].name:''}</small></span><span class="lad-lvl mono">${fmt(p.score)} <small>${REAL_SCORE_LABEL}</small></span>${p.me?'':`<button class="btn small ${left?'pog-btn':'primary'}" data-act="${p.pduel?'pduel':'duel'}" data-id="${p.pduel||p.duel}" ${left?`data-pog="1" ${(state.pog||0)<1?'disabled':''}`:''}>${left?pogIc()+'1':ic('fight')}</button>`}</div>`; });
+  return html+`</div></section>`;
+}
 function onlinePlayersCard(left){
   if(!ONLINE.playersAt||now()-ONLINE.playersAt>20000) setTimeout(loadPlayers,0);
   const myR=ONLINE.myRating;
@@ -1827,26 +1857,20 @@ function onlinePlayersCard(left){
   return h+`</section>`;
 }
 function renderArena(){
+  if(arenaTab==='rang') return arenaBar()+renderRealLadder();
   syncLadder();
   const left=Math.max(0,state.arenaReadyAt-now()), myI=state.ladder.findIndex(e=>e.me), mv=state.rankMove&&state.rankMove.fresh?state.rankMove:null;
   if(mv&&!battle) setTimeout(()=>{ if(state.rankMove) state.rankMove.fresh=false; },6000);
-  let html=`${banner('arena')}<section class="scene"><span class="label">${ic('pin')}Népliget · régi buszgarázs</span><h2>Más hősök is erre járnak</h2><p>Hívj ki valakit, aki előtted áll a ranglétrán. Ha legyőzöd, átveszed a helyét. Ha kikapsz, két helyet csúszol.</p></section>
+  let html=`${arenaBar()}${banner('arena')}<section class="scene"><span class="label">${ic('pin')}Népliget · régi buszgarázs</span><h2>Más hősök is erre járnak</h2><p>Hívj ki valakit, aki előtted áll a ranglétrán. Ha legyőzöd, átveszed a helyét. Ha kikapsz, két helyet csúszol.</p></section>
   <section class="card rank-card">
     <div class="rank-big"><span class="label">${ic('trophy')}Rangod</span><div class="rank-num">#${myI+1}<small>/ ${state.ladder.length}</small></div>${mv&&mv.from!==mv.to?`<span class="rank-delta ${mv.to<mv.from?'up':'down'}">${mv.to<mv.from?'▲':'▼'} ${Math.abs(mv.from-mv.to)} hely</span>`:''}</div>
     <div class="rank-side"><div><div class="label">Mérleg</div><div class="mono">${state.wins} gy · ${state.losses} v</div></div><div><div class="label">${ic('clock')}Következő meccs</div><div class="mono" id="acd">${left?fmtTime(left):'Most'}</div></div></div>
   </section>
-  ${onlinePlayersCard(left)}<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('fight')}Kihívható ellenfelek</span><span class="note">${myI===0?'Te vagy az első! Védd meg a helyed.':'Győzelemmel átveszed a helyét'}</span></div>`;
+  <section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('fight')}Kihívható ellenfelek</span><span class="note">${myI===0?'Te vagy az első! Védd meg a helyed.':'Győzelemmel átveszed a helyét'}</span></div>`;
   for(const o of state.arena){
     html+=`<div class="opp">${portrait(CLASS_ART[o.cls]).replace('<div','<div data-act="inspect" data-id="'+o.id+'"')}
       <div data-act="inspect" data-id="${o.id}" class="insp"><div class="item-name"><span class="rank-tag">#${o.rank}</span> ${esc(o.name)}</div><div class="item-stats"><span>${o.level}. szint · ${CLASSES[o.cls].name}</span><span class="with-ic">${ic('con','ic-hp')}${fmt(o.hp)}</span></div></div>
       ${left?`<button class="btn small pog-btn" data-act="duel" data-pog="1" data-id="${o.id}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Kihív most</button>`:`<button class="btn small primary" data-act="duel" data-id="${o.id}">${ic('fight')}Kihív</button>`}</div>`;
-  }
-  const heroes=otherHeroes();
-  if(heroes.length){
-    html+=`</section><section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Hőseid az arénában</span><span class="note">Mindig kihívhatók</span></div>`;
-    for(const h of heroes){ const e=state.ladder.find(x=>x.real&&x.cid===h.cid), rk=state.ladder.indexOf(e)+1, f=heroFighter(h);
-      html+=`<div class="opp">${portrait(CLASS_ART[h.cls]).replace('<div','<div data-act="inspect" data-id="c-'+h.cid+'"')}<div data-act="inspect" data-id="c-${h.cid}" class="insp"><div class="item-name"><span class="rank-tag">#${rk}</span> ${esc(h.name)}</div><div class="item-stats"><span>${h.level}. szint · ${CLASSES[h.cls].name}</span><span class="with-ic">${ic('con','ic-hp')}${fmt(f.hp)}</span></div></div>
-        ${left?`<button class="btn small pog-btn" data-act="duel" data-pog="1" data-id="c-${h.cid}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Most</button>`:`<button class="btn small primary" data-act="duel" data-id="c-${h.cid}">${ic('fight')}Kihív</button>`}</div>`; }
   }
   const log=(state.arenaLog||[]).concat(ONLINE.logs).sort((a,b)=>a.at-b.at).slice(-6).reverse();
   if(log.length){
@@ -2417,6 +2441,7 @@ document.addEventListener('click',e=>{
     case 'start': { if(listChars().length>=MAX_CHARS) return; const n=($('#nm').value||'').trim(); if(n.length<3){ $('#nm').focus(); toast('A névnek legalább 3 betűsnek kell lennie.'); return; } newPlayer(n,pickedClass); view='terkep'; save(); render(); window.scrollTo(0,0); } break;
     case 'view': view=el.dataset.v; render(); window.scrollTo(0,0); break;
     case 'inspect': hideTip(); openInspect(id); return;
+    case 'arenatab': arenaTab=el.dataset.t; render(); window.scrollTo(0,0); return;
     case 'openwheel': openWheel(); return;
     case 'spin': spinWheel(); return;
     case 'prizeok': WHEEL_PRIZE=null; renderWheel(); return;
@@ -2496,7 +2521,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 15:38';
+const BUILD='2026.11.01 15:44';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -2523,7 +2548,7 @@ async function pullRoster(){
 async function loadPlayers(){
   if(!SB||!ONLINE.user||ONLINE.loadingPlayers) return; ONLINE.loadingPlayers=true;
   try{ const {data,error}=await SB.from('characters').select('id,user_id,name,cls,level,rating,data').order('rating',{ascending:false}).limit(150); if(error) throw error;
-    ONLINE.players=data.filter(p=>p.user_id!==ONLINE.user.id&&p.data&&p.data.stats); const me=data.find(p=>state&&p.id===state.cid); ONLINE.myRating=me?me.rating:1000; ONLINE.playersAt=now();
+    ONLINE.all=data.filter(p=>p.data&&p.data.stats); ONLINE.players=ONLINE.all.filter(p=>p.user_id!==ONLINE.user.id); const me=data.find(p=>state&&p.id===state.cid); ONLINE.myRating=me?me.rating:1000; ONLINE.playersAt=now();
     if(view==='arena'&&!battle) render(); }
   catch(e){ ONLINE.playersAt=now(); console.warn(e); } finally{ ONLINE.loadingPlayers=false; }
 }
