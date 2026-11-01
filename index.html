@@ -565,6 +565,13 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .ins-guild{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border-radius:12px;padding:10px}
 .ins-guild .port{width:40px;height:40px;flex:none}
 .ins-guild p{margin:4px 0 0;white-space:pre-wrap}
+.skills-btn{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer}
+.skills-btn.pick{border-color:var(--sodium)}
+.sk-mini{font-size:12.5px;color:var(--ok);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.sk-count{position:relative;font-size:13px;color:var(--muted)}
+.sk-count .mg-dot{top:-8px;right:-8px}
+.sk-card .skills{border:0;padding:0;background:none}
+.sk-card .skills>.row:first-child{padding-right:44px}
 .skills .sk-sum{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .skills .sk-sum .chip{font-size:12px}
 .sk-tier{display:grid;grid-template-columns:38px 1fr;gap:8px;align-items:stretch;padding:6px 0;border-top:1px solid var(--line)}
@@ -1693,6 +1700,9 @@ function skillPick(i,c){ state.skills=state.skills||[]; if(state.level<SKILL_LV[
 const RESPEC_POG=5;
 function skillReset(){ const free=!state.respecUsed; if(!free&&!spendPog(RESPEC_POG)) return; state.respecUsed=true; state.skills=[]; save(); render(); toast('A képességeid visszaálltak, válassz újra.'); }
 const fxList=fx=>Object.entries(fx).map(([k,v])=>FX_TXT[k](v)).join(', ');
+function skillsCard(){ const fx=skillFx(state), op=skillOpen()>=0, n=(state.skills||[]).filter(x=>x!=null).length, av=SKILL_LV.filter(l=>l<=state.level).length;
+  return `<button class="card skills-btn ${op?'pick':''}" data-act="openskills"><span class="label">${ic('xp')}Képességfa</span><span class="sk-mini">${Object.keys(fx).length?Object.entries(fx).slice(0,3).map(([k,v])=>FX_TXT[k](v)).join(' · ')+(Object.keys(fx).length>3?' …':''):'Még nincs kiválasztott képesség'}</span><span class="sk-count mono">${n}/${av||0}${op?'<span class="mg-dot"></span>':''}</span></button>`; }
+function openSkills(){ $('#overlay-root').innerHTML=`<div class="overlay" data-act="closemg"><div class="mg-card sk-card" data-act="noop" role="dialog" aria-label="Képességfa"><button class="ins-x" data-act="closemg" aria-label="Bezárás">×</button>${renderSkills()}</div></div>`; }
 function renderSkills(){
   const T=SKILLS[state.cls], sk=state.skills||[], fx=skillFx(state), next=SKILL_LV.find(l=>l>state.level);
   let h=`<section class="card skills"><div class="row between" style="margin-bottom:6px"><span class="label">${ic('xp')}Képességfa</span>${sk.some(x=>x!=null)?`<button class="btn small" data-act="skillreset">${state.respecUsed?`${pogIc()}${RESPEC_POG} · Újratanulás`:'Újratanulás (ingyen)'}</button>`:''}</div>
@@ -2118,7 +2128,7 @@ function renderKarakter(){
       <div>${ic('shield','ic-armor')}<b>${Math.round(armorRed(f)*100)}%</b><span>Páncél</span></div>
       <div>${ic('target','ic-crit')}<b>${Math.round(critChance(f)*100)}%</b><span>Krit</span></div>
     </div></section>`;
-  html+=renderSkills();
+  html+=skillsCard();
   html+=`<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('str')}Tulajdonságok</span><span class="note">Edzés forintért</span></div>`;
   for(const [k,n,d] of STATS){
     const cost=statCost(state.bought[k]), bonus=s[k]-state.stats[k];
@@ -3148,8 +3158,9 @@ document.addEventListener('click',e=>{
     case 'unfriend': removeFriend(id); renderMail(); return;
     case 'addfriend': { const x=INSPECT; if(x) addFriend(el.dataset.k,x.name,x.cls); if(INSPECT) renderInspect(); } return;
     case 'gsend': doGuildSend(); return;
-    case 'skillpick': { const y=window.scrollY; skillPick(+el.dataset.i,+el.dataset.c); window.scrollTo(0,y); } return;
-    case 'skillreset': { const y=window.scrollY; skillReset(); window.scrollTo(0,y); } return;
+    case 'openskills': openSkills(); return;
+    case 'skillpick': { const sc=$('.sk-card')?.scrollTop||0; skillPick(+el.dataset.i,+el.dataset.c); openSkills(); const c=$('.sk-card'); if(c) c.scrollTop=sc; } return;
+    case 'skillreset': { skillReset(); openSkills(); } return;
     case 'gdescedit': GDESC_EDIT=true; { const y=window.scrollY; render(); window.scrollTo(0,y); setTimeout(()=>$('#gdesc')?.focus(),30); } return;
     case 'gdesccancel': GDESC_EDIT=false; { const y=window.scrollY; render(); window.scrollTo(0,y); } return;
     case 'gdescsave': if(state.guild){ state.guild.desc=($('#gdesc')?.value||'').trim().slice(0,300); GDESC_EDIT=false; save(); const y=window.scrollY; render(); window.scrollTo(0,y); toast('A céh leírása elmentve.'); } return;
@@ -3198,7 +3209,7 @@ document.addEventListener('click',e=>{
     case 'gwar': doGuildWar(id,el.dataset.pog); break;
     case 'gwskip': gwFinal(); break;
     case 'gwnext': gwNext(); break;
-    case 'golvlkar': $('#overlay-root').innerHTML=''; view='karakter'; render(); setTimeout(()=>document.querySelector('.skills')?.scrollIntoView({behavior:'smooth'}),50); break;
+    case 'golvlkar': $('#overlay-root').innerHTML=''; view='karakter'; render(); openSkills(); break;
     case 'golvlkaz': $('#overlay-root').innerHTML=''; view='kazamata'; render(); window.scrollTo(0,0); break;
     case 'train': { const k=el.dataset.s, c=statCost(state.bought[k]); if(state.gold<c) return; state.gold-=c; state.stats[k]++; state.bought[k]++; save(); render(); } break;
     case 'equip': { const i=state.inv.findIndex(x=>x.id===id); if(i<0) return; const it=state.inv[i], old=state.equip[it.slot]; state.equip[it.slot]=it; state.inv.splice(i,1); if(old) state.inv.push(old); save(); render(); } break;
@@ -3251,7 +3262,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 00:23';
+const BUILD='2026.11.02 00:32';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
