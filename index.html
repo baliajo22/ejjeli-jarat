@@ -1114,7 +1114,7 @@ function lvlGain(st,n){ st.stats[CLASSES[st.cls].main]+=GAIN_MAIN*n; st.stats.co
 /* premium currency: Ica's magic pogácsa (S&F mushroom equivalent) */
 const POG_START=25;
 const pogIc=(c='')=>`<svg class="ic pog-ic ${c}" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="14.5" rx="9.5" ry="6.5" fill="#c98b3a" stroke="#10111b" stroke-width="1.4"/><ellipse cx="12" cy="12" rx="8.5" ry="5.8" fill="#f2c26b" stroke="#10111b" stroke-width="1.4"/><path d="M6.5 10.5l3.5 3M9.5 8.6l5 4.4M13.5 8.2l4 3.4M7.5 13.5l3.5-4M11 14.6l4.5-5.4M14.6 14.4l3-3.4" stroke="#b27a2c" stroke-width="1" fill="none"/></svg>`;
-const POG_RATE={quest:[.03,.05,.08], arena:.03, floor:.1}, POG_BOSS=3, RANK_POG=[[1,10],[3,5],[10,3]];
+const POG_RATE={quest:[.03,.05,.08], arena:.03, floor:.1}, POG_BOSS=1, RANK_POG=[[1,10],[3,5],[10,3]];
 const pogChip=n=>`<span class="chip pog-chip">${pogIc()}+${n} pogácsa</span>`;
 function spendPog(n){ if((state.pog||0)<n){ toast(`Ehhez ${n} pogácsa kell, neked ${state.pog||0} van.`); return false; } state.pog-=n; return true; }
 
@@ -3017,7 +3017,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 23:01';
+const BUILD='2026.11.01 23:02';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
