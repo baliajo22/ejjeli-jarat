@@ -451,6 +451,32 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .gw-t.dead .port{opacity:.3;filter:grayscale(1)}
 .gw-btns{gap:8px}
 .gw-btns .btn{flex:1}
+.mat-ic{display:inline-block;width:32px;height:32px;flex:none;vertical-align:middle}
+.mat-ic.sm{width:20px;height:20px}
+.mat-ic svg{width:100%;height:100%;display:block}
+.mat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.mat{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--panel);border-radius:10px;padding:8px 4px;text-align:center}
+.mat b{font-size:16px}
+.mat span{font-size:10px;color:var(--muted);line-height:1.15}
+.mat.r1 b{color:var(--r-uncommon)} .mat.r2 b{color:var(--r-rare)} .mat.r3 b{color:var(--r-epic)} .mat.r4 b{color:var(--r-special)}
+.mat-conv{margin-top:8px}
+.mat-conv summary{cursor:pointer}
+.conv-row{padding:6px 0;border-bottom:1px solid var(--line)}
+.craft-slots{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.cslot{display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 2px;color:inherit;font:inherit;font-size:10px;cursor:pointer}
+.cslot .itile{width:34px;height:34px}
+.cslot.on{border-color:var(--sodium);color:var(--sodium)}
+.craft-rar,.craft-stats{display:flex;flex-wrap:wrap;gap:6px}
+.crar,.cstat{display:inline-flex;align-items:center;gap:5px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 12px;color:inherit;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.crar.r0{color:var(--r-common)} .crar.r1{color:var(--r-uncommon)} .crar.r2{color:var(--r-rare)} .crar.r3{color:var(--r-epic)} .crar.r4{color:var(--r-special)}
+.crar.on{border-color:currentColor;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px currentColor}
+.cstat.on{border-color:var(--sodium);background:rgba(242,163,58,.15);color:var(--sodium)}
+.cstat.main:not(.on){border-style:dashed}
+.craft-prev{display:flex;gap:12px;align-items:center;background:var(--night);border-radius:12px;padding:10px}
+.mat-cost{display:inline-flex;align-items:center;gap:3px;font-weight:700;font-size:13px;background:var(--panel);border-radius:999px;padding:2px 8px 2px 4px}
+.mat-cost.short{color:var(--bad)}
+.dis-btn{white-space:nowrap}
+.crafted-new{border-top:1px solid var(--line);padding-top:8px}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
 .install-card>div{flex:1;min-width:0}
@@ -1318,6 +1344,7 @@ function newPlayer(name, cls){
 }
 function migrate(s){
   if(!s) return s;
+  if(!s.mats) s.mats={csavar:0,neon:0,kristaly:0,esszencia:0,szikra:0};
   const all=[...Object.values(WEAPONS).flat(),...Object.values(GEAR).flat()];
   const fix=it=>{ if(it&&!it.base){ const n=it.name.toLowerCase(); it.base=all.find(b=>n.includes(b.toLowerCase()))||null; } };
   s.equip=s.equip||{}; for(const [k] of SLOTS) if(!(k in s.equip)) s.equip[k]=null;
@@ -1788,7 +1815,7 @@ function renderKarakter(){
   if(!state.inv.length) html+=`<p class="muted" style="margin:8px 0 0">Üres. Tárgyakat küldetésekből és a boltból szerezhetsz.</p>`;
   for(const it of state.inv){
     html+=`<div class="item" data-tip="inv:${it.id}"><div class="drag-h" data-drag="inv:${it.id}">${itemTile(it)}</div><div><div class="item-name r${it.rar}">${esc(it.name)} ${cmpMark(it)}</div><div class="item-stats"><span>${SLOT_NAME[it.slot]}</span>${itemStats(it)}</div></div>
-      <div class="acts"><button class="btn small primary" data-act="equip" data-id="${it.id}">${ic('equip')}Felvesz</button><button class="btn small" data-act="sell" data-id="${it.id}" title="Eladás">${ic('coin','ic-gold')}${Math.round(it.price*.4)}</button></div></div>`;
+      <div class="acts"><button class="btn small primary" data-act="equip" data-id="${it.id}">${ic('equip')}Felvesz</button><button class="btn small" data-act="sell" data-id="${it.id}" title="Eladás">${ic('coin','ic-gold')}${Math.round(it.price*.4)}</button><button class="btn small" data-act="disench" data-id="${it.id}" title="Szétszedés nyersanyagra">${matIc(it.rar,'sm')}</button></div></div>`;
   }
   html+=`</section><section class="card row between"><div><div class="label">${ic('user')}Hőseid</div><div class="note">A mostani hősöd mentve marad, bármikor visszaléphetsz.</div></div><button class="btn small primary" data-act="switchchar">Karakterváltás</button></section>`;
   return html;
@@ -1810,7 +1837,70 @@ function vehicleLine(){
   if(r&&r.id){ const o=VEHICLES.find(x=>x.id===r.id); return `<button class="veh-line none expired" data-act="gogarage">${ic('clock')}Lejárt: ${o?o.name:'jármű'}. Újítsd meg a Garázsban →</button>`; }
   return `<button class="veh-line none" data-act="gogarage">${ic('wheel','ic-time')}Gyalog jársz. Jármű a Garázsban →</button>`;
 }
-function boltTabs(){ return `<div class="mg-bar" role="tablist"><button class="mg-chip ${boltTab==='kisbolt'?'on':''}" role="tab" data-act="bolttab" data-t="kisbolt" aria-selected="${boltTab==='kisbolt'}"><span class="mg-ic">${ic('cart')}</span>Kisbolt</button><button class="mg-chip ${boltTab==='garazs'?'on':''}" role="tab" data-act="bolttab" data-t="garazs" aria-selected="${boltTab==='garazs'}"><span class="mg-ic">${svg(VEH_ART[(activeVeh()||VEHICLES[1]).id])}</span>Garázs${activeVeh()?'':'<span class="mg-dot" aria-label="nincs járműved"></span>'}</button></div>`; }
+function boltTabs(){ const ch=(k,l,icon,extra='')=>`<button class="mg-chip ${boltTab===k?'on':''}" role="tab" data-act="bolttab" data-t="${k}" aria-selected="${boltTab===k}"><span class="mg-ic">${icon}</span>${l}${extra}</button>`;
+  return `<div class="mg-bar" role="tablist">${ch('kisbolt','Kisbolt',ic('cart'))}${ch('garazs','Garázs',svg(VEH_ART[(activeVeh()||VEHICLES[1]).id]),activeVeh()?'':'<span class="mg-dot" aria-label="nincs járműved"></span>')}${ch('muhely','Műhely',svg(MATS[2].art()))}</div>`; }
+
+/* ================= workshop: take items apart for materials, build your own gear ================= */
+const MATS=[
+  {id:'csavar',   name:'Rozsdás csavar',   art:()=>`<path d="M24 14h16l6 8-6 8H24l-6-8z" fill="${GL}"/><path d="M28 30h8v24l-4 6-4-6z" fill="${GY}"/><path d="M28 36l8 3M28 42l8 3M28 48l8 3" stroke-width="1.6"/><circle cx="20" cy="50" r="3" fill="${OR}" stroke="none" opacity=".7"/>`},
+  {id:'neon',     name:'Neonpor',          art:()=>`<path d="M22 22h20v6l6 24a6 6 0 01-6 8H22a6 6 0 01-6-8l6-24z" fill="${PL}"/><path d="M19 44h26l3 8a6 6 0 01-6 8H22a6 6 0 01-6-8z" fill="${GR}"/><rect x="20" y="14" width="24" height="8" rx="2" fill="${BR}"/>${star4(30,50,3,WH)}`},
+  {id:'kristaly', name:'Holdkristály',     art:()=>`<path d="M32 6l14 18-14 34-14-34z" fill="${BU}"/><path d="M32 6l6 18-6 34z" fill="#9cc7ff" stroke="none"/><path d="M18 24h28" stroke-width="1.8"/>${star4(50,12,4,WH)}`},
+  {id:'esszencia',name:'Éjféli esszencia', art:()=>`<path d="M26 10h12v10c8 4 12 12 12 20a18 18 0 01-36 0c0-8 4-16 12-20z" fill="${PU}"/><path d="M22 40a10 10 0 0020 0" fill="none" stroke="#e3c9ff" stroke-width="2"/><rect x="24" y="6" width="16" height="6" rx="2" fill="${BR}"/>${star4(32,36,4,Y)}`},
+  {id:'szikra',   name:'Lidércszikra',     art:()=>`<path d="M32 4c6 12 18 16 18 32a18 18 0 01-36 0c0-10 6-14 8-22 4 6 4 10 10 12-2-10-2-16 0-22z" fill="${OR}"/><path d="M32 30c4 6 8 8 8 14a8 8 0 01-16 0c0-6 4-8 8-14z" fill="${Y}"/>`}
+];
+const matIc=(i,sz='')=>`<span class="mat-ic ${sz}">${svg(MATS[i].art())}</span>`;
+// taking an item apart gives its own tier plus some of the tier below
+function disenchantYield(it){ const r=it.rar, out={}; out[MATS[r].id]=[3,2,2,2,1][r]; if(r>0) out[MATS[r-1].id]=2; return out; }
+const CRAFT_COST=[{csavar:4},{neon:4,csavar:4},{kristaly:4,neon:4},{esszencia:4,kristaly:5},{szikra:3,esszencia:5}];
+const craftFee=r=>Math.round((10+state.level*6)*[1,1.5,2,3,4][r]);
+const CONVERT_N=5;
+function mats(){ return state.mats||(state.mats={csavar:0,neon:0,kristaly:0,esszencia:0,szikra:0}); }
+function canPay(cost){ const m=mats(); return Object.entries(cost).every(([k,v])=>(m[k]||0)>=v); }
+function costHtml(cost){ const m=mats(); return Object.entries(cost).map(([k,v])=>{ const i=MATS.findIndex(x=>x.id===k); return `<span class="mat-cost ${(m[k]||0)>=v?'':'short'}">${matIc(i,'sm')}${v}</span>`; }).join(''); }
+function disenchant(id){ const i=state.inv.findIndex(x=>x.id===id); if(i<0) return; const it=state.inv[i], y=disenchantYield(it), m=mats();
+  for(const [k,v] of Object.entries(y)) m[k]=(m[k]||0)+v+(Math.random()<.35?1:0);
+  state.inv.splice(i,1); save(); render(); sfx('clink'); toast(`${it.name} szétszedve: ${Object.keys(y).map(k=>MATS.find(x=>x.id===k).name).join(', ')}.`); }
+function convertMat(r){ const m=mats(), a=MATS[r].id, b=MATS[r+1].id, fee=craftFee(r); if((m[a]||0)<CONVERT_N||state.gold<fee) return;
+  m[a]-=CONVERT_N; m[b]=(m[b]||0)+1; state.gold-=fee; save(); render(); sfx('coins'); toast(`${CONVERT_N} ${MATS[r].name} → 1 ${MATS[r+1].name}`); }
+let CRAFT={slot:'fegyver',rar:1,stats:[]};
+function craftStatN(){ return TRINKET.includes(CRAFT.slot)?[1,1,2,2,3][CRAFT.rar]:[1,1,1,2,3][CRAFT.rar]; }
+function craftPreview(){ const lvl=state.level, RM_=[.8,1,1.15,1.4,1.7][CRAFT.rar], p=[];
+  if(CRAFT.slot==='fegyver') p.push(`<span class="with-ic">${ic('sword','ic-crit')}${Math.round((lvl*1.6+2)*RM_)}–${Math.round((lvl*2.4+4)*RM_)}</span>`);
+  else if(ARMOR_W[CRAFT.slot]) p.push(`<span class="with-ic">${ic('shield','ic-armor')}${Math.round((lvl*ARMOR_W[CRAFT.slot]+2)*RM_)}</span>`);
+  const v=Math.round((1.6+lvl*.7)*RM_); CRAFT.stats.forEach(k=>p.push(`<span class="with-ic">${ic(k,'ic-'+k)}+${v}</span>`));
+  return p.join(''); }
+function doCraft(){ const r=CRAFT.rar, cost=CRAFT_COST[r], fee=craftFee(r), n=craftStatN();
+  if(CRAFT.stats.length!==n||!canPay(cost)||state.gold<fee||state.inv.length>=INV_MAX) return;
+  const it=genItem(state.level,CRAFT.slot,null,r), RM_=[.8,1,1.15,1.4,1.7][r], m=mats();
+  it.bonus={}; CRAFT.stats.forEach(k=>it.bonus[k]=Math.round((1.6+state.level*.7)*RM_)+rand(0,1)); it.crafted=true;
+  for(const [k,v] of Object.entries(cost)) m[k]-=v; state.gold-=fee; addItem(it); save();
+  CRAFT.made=it.id; LOOT[it.id]=it; render(); sfx('buy'); toast(`Elkészült: ${it.name}!`); }
+function renderMuhely(){
+  const m=mats(), n=craftStatN(), r=CRAFT.rar, cost=CRAFT_COST[r], fee=craftFee(r);
+  CRAFT.stats=CRAFT.stats.slice(0,n);
+  let html=`${boltTabs()}${banner('garazs')}<section class="scene"><span class="label">${ic('pin')}Műhely · Gyuri bácsi satupadja</span><h2>Amit nem használsz, abból lesz az új</h2><p>Szedd szét a felesleges cuccaidat nyersanyagra, aztán készíts belőlük saját tárgyat, olyan tulajdonságokkal, amilyeneket te választasz.</p></section>`;
+  html+=`<section class="card"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('box')}Nyersanyagaid</span></div><div class="mat-row">${MATS.map((x,i)=>`<div class="mat r${i}">${matIc(i)}<b class="mono">${m[x.id]||0}</b><span>${x.name}</span></div>`).join('')}</div>
+    <details class="mat-conv"><summary class="note">Átváltás: ${CONVERT_N} alacsonyabb → 1 magasabb</summary>${MATS.slice(0,4).map((x,i)=>`<div class="row between conv-row"><span class="row" style="gap:6px">${matIc(i,'sm')}${CONVERT_N} → ${matIc(i+1,'sm')}1</span><button class="btn small" data-act="matconv" data-r="${i}" ${(m[x.id]||0)<CONVERT_N||state.gold<craftFee(i)?'disabled':''}>${fmt(craftFee(i))} Ft</button></div>`).join('')}</details></section>`;
+  // crafting
+  html+=`<section class="card stack"><span class="label">${ic('refresh')}Saját tárgy készítése</span>
+    <div><div class="note" style="margin-bottom:6px">1. Mit készítesz?</div><div class="craft-slots">${SLOTS.map(([k,nm])=>`<button class="cslot ${CRAFT.slot===k?'on':''}" data-act="cslot" data-k="${k}">${emptyTile(k)}<span>${nm}</span></button>`).join('')}</div></div>
+    <div><div class="note" style="margin-bottom:6px">2. Milyen minőségű?</div><div class="craft-rar">${RAR_NAME.map((nm,i)=>`<button class="crar r${i} ${r===i?'on':''}" data-act="crar" data-r="${i}">${nm}</button>`).join('')}</div></div>
+    <div><div class="note" style="margin-bottom:6px">3. Válassz ${n} tulajdonságot <span class="mono">(${CRAFT.stats.length}/${n})</span></div><div class="craft-stats">${STATS.map(([k,nm])=>`<button class="cstat ${CRAFT.stats.includes(k)?'on':''} ${state.cls&&CLASSES[state.cls].main===k?'main':''}" data-act="cstat" data-k="${k}">${ic(k,'ic-'+k)}${nm}</button>`).join('')}</div></div>
+    <div class="craft-prev"><div class="itile t${r}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${SLOT_EMPTY[CRAFT.slot]}</svg></div><div><div class="item-name r${r}">${RAR_NAME[r]} ${SLOT_NAME[CRAFT.slot].toLowerCase()} · ${state.level}. szint</div><div class="item-stats">${craftPreview()||'<span class="note">Válassz tulajdonságot</span>'}</div></div></div>
+    <div class="row between"><span class="row" style="gap:6px;flex-wrap:wrap">${costHtml(cost)}<span class="mat-cost ${state.gold>=fee?'':'short'}">${ic('coin','ic-gold')}${fmt(fee)} Ft</span></span>
+      <button class="btn primary" data-act="craft" ${CRAFT.stats.length!==n||!canPay(cost)||state.gold<fee||state.inv.length>=INV_MAX?'disabled':''}>${ic('refresh')}Elkészítem</button></div>
+    ${state.inv.length>=INV_MAX?'<p class="note">Tele a hátizsák, előbb szedj szét vagy adj el valamit.</p>':''}
+    ${CRAFT.made&&state.inv.find(x=>x.id===CRAFT.made)?`<div class="crafted-new"><span class="label">Most készült</span><div class="item" data-tip="loot:${CRAFT.made}">${itemTile(LOOT[CRAFT.made])}<div><div class="item-name r${LOOT[CRAFT.made].rar}">${esc(LOOT[CRAFT.made].name)}</div><div class="item-stats">${itemStats(LOOT[CRAFT.made])}</div></div><button class="btn small primary" data-act="equip" data-id="${CRAFT.made}">${ic('equip')}Felvesz</button></div></div>`:''}
+  </section>`;
+  // taking apart
+  html+=`<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('bag')}Szétszedés</span><span class="note mono">${state.inv.length}/${INV_MAX}</span></div><p class="note" style="margin:0 0 4px">Forint helyett nyersanyagot kapsz érte. A jobb minőségű tárgy értékesebb anyagot ad.</p>`;
+  if(!state.inv.length) html+=`<p class="muted" style="margin:6px 0 0">Üres a hátizsák.</p>`;
+  for(const it of state.inv){ const y=disenchantYield(it);
+    html+=`<div class="item" data-tip="inv:${it.id}">${itemTile(it)}<div><div class="item-name r${it.rar}">${esc(it.name)} ${cmpMark(it)}</div><div class="item-stats"><span>${SLOT_NAME[it.slot]}</span>${itemStats(it)}</div></div>
+      <button class="btn small dis-btn" data-act="disench" data-id="${it.id}" title="Szétszedés">${Object.entries(y).map(([k,v])=>`${matIc(MATS.findIndex(x=>x.id===k),'sm')}${v}`).join(' ')}</button></div>`; }
+  return html+`</section>`;
+}
+
 function renderGarazs(){
   const cur=activeVeh(), curRed=cur?cur.red:0, left=cur?state.vehicle.until-now():0;
   let html=`${boltTabs()}${banner('garazs')}<section class="scene"><span class="label">${ic('pin')}Garázs · udvari bringatároló</span><h2>Gyuri bácsi mindent megjavít</h2><p>A járműveket 7 napra béreled. Gyorsabb járművel rövidebb az út, a repülő seprűvel ráadásul kevesebb kávé is fogy.</p></section>`;
@@ -1829,6 +1919,7 @@ function renderGarazs(){
 }
 function renderBolt(){
   if(boltTab==='garazs') return renderGarazs();
+  if(boltTab==='muhely') return renderMuhely();
   const refresh=5+state.level*2, coffee=8+state.level*2;
   let html=`${boltTabs()}${banner('bolt')}<section class="scene"><span class="label">${ic('pin')}Kisbolt · non-stop</span><h2>Feri éjjel is nyitva tart</h2><p>Turis kabátok, átkozott sapkák és egy pult, ahol a kávé mindig forró. A kínálat minden éjfélkor megújul.</p></section>
   <section class="card"><div class="item" style="padding:0"><div class="itile" style="--rc:#d9a06b;display:grid;place-items:center;color:#d9a06b">${ic('coffee')}</div>
@@ -2617,6 +2708,12 @@ document.addEventListener('click',e=>{
     case 'golvlkaz': $('#overlay-root').innerHTML=''; view='kazamata'; render(); window.scrollTo(0,0); break;
     case 'train': { const k=el.dataset.s, c=statCost(state.bought[k]); if(state.gold<c) return; state.gold-=c; state.stats[k]++; state.bought[k]++; save(); render(); } break;
     case 'equip': { const i=state.inv.findIndex(x=>x.id===id); if(i<0) return; const it=state.inv[i], old=state.equip[it.slot]; state.equip[it.slot]=it; state.inv.splice(i,1); if(old) state.inv.push(old); save(); render(); } break;
+    case 'disench': disenchant(id); break;
+    case 'matconv': convertMat(+el.dataset.r); break;
+    case 'cslot': CRAFT.slot=el.dataset.k; CRAFT.made=null; { const y=window.scrollY; render(); window.scrollTo(0,y); } return;
+    case 'crar': CRAFT.rar=+el.dataset.r; CRAFT.made=null; { const y=window.scrollY; render(); window.scrollTo(0,y); } return;
+    case 'cstat': { const k=el.dataset.k, n=craftStatN(); if(CRAFT.stats.includes(k)) CRAFT.stats=CRAFT.stats.filter(x=>x!==k); else { CRAFT.stats.push(k); if(CRAFT.stats.length>n) CRAFT.stats.shift(); } const y=window.scrollY; render(); window.scrollTo(0,y); } return;
+    case 'craft': { const y=window.scrollY; doCraft(); window.scrollTo(0,y); } break;
     case 'sell': { const i=state.inv.findIndex(x=>x.id===id); if(i<0) return; state.gold+=Math.round(state.inv[i].price*.4); state.inv.splice(i,1); save(); render(); } break;
     case 'buy': { const i=state.shop.findIndex(x=>x.id===id); if(i<0) return; const it=state.shop[i]; if(state.gold<it.price||state.inv.length>=INV_MAX) return; state.gold-=it.price; state.inv.push(it); state.shop.splice(i,1); save(); render(); toast(`${it.name} a hátizsákban. Vedd fel a Karakter fülön.`); } break;
     case 'rushquest': if(state.active&&state.active.endsAt>now()&&spendPog(1)){ state.active.endsAt=now(); save(); render(); } break;
@@ -2657,7 +2754,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 20:06';
+const BUILD='2026.11.01 21:19';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
