@@ -428,6 +428,14 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .upg-mini>div{display:grid;grid-template-columns:20px 1fr auto;column-gap:6px;align-items:center;background:var(--panel);border-radius:8px;padding:6px 8px;font-size:12.5px}
 .upg-mini>div small{grid-column:2/4;color:var(--ok);font-size:11px}
 .upg-mini .ic{width:16px;height:16px}
+.gw-teams{display:flex;justify-content:space-between;gap:10px}
+.gw-teams>div{display:flex;flex-wrap:wrap;gap:4px;max-width:49%}
+.gw-teams>div:last-child{justify-content:flex-end}
+.gw-t .port{width:26px;height:26px;border-radius:7px;transition:opacity .2s,filter .2s}
+.gw-t.cur .port{outline:2px solid var(--sodium);outline-offset:1px}
+.gw-t.dead .port{opacity:.3;filter:grayscale(1)}
+.gw-btns{gap:8px}
+.gw-btns .btn{flex:1}
 .mg-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mg-tile{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 8px;color:inherit;font:inherit;cursor:pointer}
 .mg-tile:hover{border-color:var(--sodium)}
@@ -2181,10 +2189,10 @@ function openBattle(a,b,res,rewardsHtml){
 }
 async function stepBattle(){
   const B=battle; if(!B||B.ended) return;
-  if(B.i>=B.res.log.length){ endBattle(); return; }
-  const e=B.res.log[B.i++];
+  if(B.i>=B.res.log.length){ B.guild?gwDuelEnd():endBattle(); return; }
+  const e=B.res.log[B.i++], k=B.k;
   await playFx(e);
-  if(battle!==B||B.ended) return;
+  if(battle!==B||B.ended||B.k!==k) return;
   $('#blog').insertAdjacentHTML('beforeend', logLine(e,B.a,B.b)); $('#blog').scrollTop=1e6;
   setHp(e.hA,e.hB);
   B.timer=setTimeout(stepBattle, RM?320:B.i>24?220:560);
@@ -2456,7 +2464,7 @@ function doGuildWar(id,pay){
   const duels=[]; let i=0,j=0,ha=mine[0].hp,hb=theirs[0]?theirs[0].hp:0;
   while(i<mine.length&&j<theirs.length){ const a=mine[i], b=theirs[j], r=simulate({...a,hp:ha,maxHp:a.hp},{...b,hp:hb,maxHp:b.hp}), last=r.log[r.log.length-1]||{hA:ha,hB:hb};
     const ea=r.win?Math.max(1,last.hA):0, eb=r.win?0:Math.max(1,last.hB);
-    duels.push({a,b,win:r.win,aFrom:ha,aTo:ea,bFrom:hb,bTo:eb});
+    duels.push({a,b,win:r.win,aFrom:ha,aTo:ea,bFrom:hb,bTo:eb,res:r});
     if(r.win){ ha=ea; j++; hb=theirs[j]?theirs[j].hp:0; } else { hb=eb; i++; ha=mine[i]?mine[i].hp:0; } }
   const w=j, l=i;
   const won=j>=theirs.length, myI=L.findIndex(x=>x.me); let to=myI, rw='';
@@ -2471,23 +2479,62 @@ function doGuildWar(id,pay){
   g.readyAt=now()+GUILD_CD; save();
   openGuildBattle(e,duels,won,rw,mine.length,theirs.length);
 }
+/* guild war plays out like a normal fight, duel after duel: the winner carries their remaining life into the next one */
 function openGuildBattle(e,duels,won,rw,nA,nB){
-  battle={guild:true,ended:false,timer:null};
-  const g=state.guild, W=[nA,nB]; let i=0;
+  const g=state.guild, mine=[], theirs=[];
+  duels.forEach(d=>{ if(!mine.includes(d.a)) mine.push(d.a); if(!theirs.includes(d.b)) theirs.push(d.b); });
+  battle={guild:true,e,duels,won,rw,k:-1,alive:[nA,nB],mine,theirs,i:0,timer:null,ended:true,a:duels[0].a,b:duels[0].b,res:duels[0].res,rewardsHtml:''};
   $('#overlay-root').innerHTML=`<div class="overlay" role="dialog" aria-label="Céhharc"><div class="sheet wrap">
     <div class="gw-head"><div class="g-emb sm">${svg(emblemSvg(g.emblem))}</div><div class="gw-score"><span id="gw-w">${nA}</span><i>:</i><span id="gw-l">${nB}</span></div><div class="g-emb sm">${svg(emblemSvg(e.emblem))}</div></div>
-    <div class="gw-names"><b>${esc(g.name)}</b><span class="note">talpon maradt</span><b>${esc(e.name)}</b></div>
-    <div class="gw-list" id="gw-list" aria-live="polite"></div>
-    <div id="gw-end" class="stack"><button class="btn" data-act="gwskip">${ic('skip')}Átugrás</button></div></div></div>`;
-  const hpb=(from,to,max)=>`<i class="gw-hp"><b class="was" style="width:${Math.round(from/max*100)}%"></b><b style="width:${Math.round(to/max*100)}%"></b></i><small class="mono">${to?fmt(to)+' / '+fmt(max):'kiütve'}</small>`;
-  const add=d=>{ d.win?W[1]--:W[0]--; sfx(d.win?'hit':'block');
-    $('#gw-list').insertAdjacentHTML('beforeend',`<div class="gw-duel ${d.win?'win':'lose'}">${portrait(d.a.art,'gw-p')}<span class="gw-n">${esc(d.a.name)}${hpb(d.aFrom,d.aTo,d.a.hp)}</span><span class="gw-r">${d.win?'Győz':'Kikap'}</span><span class="gw-n r">${esc(d.b.name)}${hpb(d.bFrom,d.bTo,d.b.hp)}</span>${portrait(d.b.art,'gw-p')}</div>`);
-    $('#gw-list').scrollTop=1e6; $('#gw-w').textContent=W[0]; $('#gw-l').textContent=W[1]; };
-  const end=()=>{ if(battle.ended) return; battle.ended=true; clearTimeout(battle.timer); while(i<duels.length) add(duels[i++]);
-    $('#gw-end').innerHTML=`<div class="result ${won?'win':'lose'}">${won?'A céh győzött!':'A céh kikapott'}</div><div class="rewards">${rw}</div><button class="btn primary" data-act="closebattle">Tovább</button>`;
-    sfx(won?'win':'lose'); if(won) setTimeout(()=>coinBurst($('#gw-end .result')),120); };
-  const step=()=>{ if(!battle||battle.ended) return; if(i>=duels.length) return end(); add(duels[i++]); battle.timer=setTimeout(step,RM?150:560); };
-  battle.end=end; step();
+    <div class="gw-names"><b>${esc(g.name)}</b><span class="note" id="gw-round">talpon maradt</span><b>${esc(e.name)}</b></div>
+    <div class="gw-teams"><div id="gw-ta"></div><div id="gw-tb"></div></div>
+    <div class="versus">
+      <div class="fighter" id="fa"><div class="pw"></div><b id="fna"></b><div class="bar hp"><i id="ha"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hna"></span></span></div>
+      <span class="vs">VS</span>
+      <div class="fighter right" id="fb"><div class="pw"></div><b id="fnb"></b><div class="bar hp" style="--ok:var(--bad)"><i id="hb" style="background:var(--bad)"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hnb"></span></span></div>
+    </div>
+    <div class="blog" id="blog" aria-live="polite"></div>
+    <div id="bend" class="stack"></div>
+  </div></div>`;
+  gwNext();
+}
+function gwTeams(){ const B=battle, d=B.duels[B.k]||{};
+  const row=(list,cur,dead)=>list.map(f=>`<span class="gw-t ${f===cur?'cur':''} ${dead.has(f)?'dead':''}" title="${esc(f.name)}">${portrait(f.art)}</span>`).join('');
+  const deadA=new Set(), deadB=new Set(); B.duels.slice(0,B.k+(B.ended?1:0)).forEach(x=>{ if(x.win) deadB.add(x.b); else deadA.add(x.a); });
+  $('#gw-ta').innerHTML=row(B.mine,d.a,deadA); $('#gw-tb').innerHTML=row(B.theirs,d.b,deadB); }
+function gwBtns(){ const B=battle, last=B.k>=B.duels.length-1;
+  $('#bend').innerHTML=`<div class="row gw-btns"><button class="btn primary" data-act="gwnext">${ic('fight')}${last?(B.ended?'Eredmény':'Kör vége'):'Következő harc'}</button><button class="btn" data-act="gwskip">${ic('skip')}Átugrás</button></div>`; }
+function gwNext(){
+  const B=battle; if(!B||!B.guild) return; clearTimeout(B.timer);
+  if(B.k>=0&&!B.ended) gwDuelEnd(true);
+  if(B.k>=B.duels.length-1) return gwFinal();
+  const d=B.duels[++B.k]; B.a=d.a; B.b=d.b; B.res=d.res; B.i=0; B.ended=false;
+  const fa=$('#fa'), fb=$('#fb');
+  fa.querySelector('.pw').innerHTML=portrait(d.a.art); fb.querySelector('.pw').innerHTML=portrait(d.b.art);
+  $('#fna').textContent=d.a.name; $('#fnb').textContent=d.b.name; setHp(d.aFrom,d.bFrom);
+  $('#gw-round').textContent=`${B.k+1}. párharc`;
+  $('#blog').innerHTML=`<div class="muted">${esc(d.a.name)} ${d.aFrom<d.a.hp?`(${Math.round(d.aFrom/d.a.hp*100)}% élettel) `:''}kiáll ${esc(d.b.name)} ellen${d.bFrom<d.b.hp?` (${Math.round(d.bFrom/d.b.hp*100)}% élettel)`:''}.</div>`;
+  gwTeams(); gwBtns(); sfx('bell'); B.timer=setTimeout(stepBattle,RM?200:700);
+}
+function gwDuelEnd(quick){
+  const B=battle; if(!B||B.ended) return; B.ended=true; clearTimeout(B.timer);
+  const d=B.duels[B.k], L=B.res.log[B.res.log.length-1]; if(L) setHp(L.hA,L.hB);
+  if(B.i<B.res.log.length&&!quick){ $('#blog').insertAdjacentHTML('beforeend','<div class="muted">…</div>'); B.i=B.res.log.length; }
+  B.alive[d.win?1:0]--; $('#gw-w').textContent=B.alive[0]; $('#gw-l').textContent=B.alive[1];
+  const lose=$(d.win?'#fb':'#fa'), win=$(d.win?'#fa':'#fb'), wf=d.win?d.a:d.b, left=d.win?d.aTo:d.bTo;
+  lose.querySelector('.port').classList.add('ko'); lose.querySelector('.pw').insertAdjacentHTML('beforeend','<span class="ko-stamp">K.O.</span>'); win.querySelector('.port').classList.add('win');
+  if(quick) return;
+  $('#blog').insertAdjacentHTML('beforeend',`<div class="crit">${esc(wf.name)} győzött, ${Math.round(left/wf.hp*100)}% élete maradt.</div>`); $('#blog').scrollTop=1e6;
+  sfx('ko'); gwTeams(); gwBtns();
+}
+function gwFinal(){
+  const B=battle; if(!B||!B.guild) return; clearTimeout(B.timer);
+  if(B.k>=0&&!B.ended) gwDuelEnd(true);
+  while(B.k<B.duels.length-1){ const d=B.duels[++B.k]; B.alive[d.win?1:0]--; }
+  B.ended=true; B.done=true; $('#gw-w').textContent=B.alive[0]; $('#gw-l').textContent=B.alive[1]; gwTeams();
+  $('#gw-round').textContent='vége';
+  $('#bend').innerHTML=`<div class="result ${B.won?'win':'lose'}">${B.won?'A céh győzött!':'A céh kikapott'}</div><div class="rewards">${B.rw}</div><button class="btn primary" data-act="closebattle">Tovább</button>`;
+  sfx(B.won?'win':'lose'); if(B.won) setTimeout(()=>coinBurst($('#bend .result')),120);
 }
 document.addEventListener('click',e=>{
   if(suppressClick){ suppressClick=false; return; }
@@ -2543,7 +2590,8 @@ document.addEventListener('click',e=>{
     case 'gupg': { const g=state.guild, u=GUILD_UPG.find(x=>x.id===id), l=g.upg[id]||0, c=upgCost(l); if(!u||l>=10||g.treasury<c) return;
       g.treasury-=c; g.upg[id]=l+1; save(); render(); toast(`${u.name}: ${l+1}. szint (${u.fx(l+1)}).`); } break;
     case 'gwar': doGuildWar(id,el.dataset.pog); break;
-    case 'gwskip': if(battle&&battle.end) battle.end(); break;
+    case 'gwskip': gwFinal(); break;
+    case 'gwnext': gwNext(); break;
     case 'golvlkaz': $('#overlay-root').innerHTML=''; view='kazamata'; render(); window.scrollTo(0,0); break;
     case 'train': { const k=el.dataset.s, c=statCost(state.bought[k]); if(state.gold<c) return; state.gold-=c; state.stats[k]++; state.bought[k]++; save(); render(); } break;
     case 'equip': { const i=state.inv.findIndex(x=>x.id===id); if(i<0) return; const it=state.inv[i], old=state.equip[it.slot]; state.equip[it.slot]=it; state.inv.splice(i,1); if(old) state.inv.push(old); save(); render(); } break;
@@ -2586,7 +2634,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 16:10';
+const BUILD='2026.11.01 16:14';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
