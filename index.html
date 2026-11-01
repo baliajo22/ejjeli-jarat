@@ -428,6 +428,16 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .upg-mini>div{display:grid;grid-template-columns:20px 1fr auto;column-gap:6px;align-items:center;background:var(--panel);border-radius:8px;padding:6px 8px;font-size:12.5px}
 .upg-mini>div small{grid-column:2/4;color:var(--ok);font-size:11px}
 .upg-mini .ic{width:16px;height:16px}
+.gw-queue{display:flex;flex-direction:column;gap:3px;margin-top:8px;width:100%;font-size:12px}
+.gw-queue .label{font-size:10px;margin-bottom:1px}
+.gw-qn{display:flex;align-items:center;gap:6px;min-width:0}
+.fighter .gw-qn .port,.gw-qn .port{width:22px;height:22px;min-width:22px;border-radius:6px;flex:none;aspect-ratio:auto}
+.gw-qn .port svg{width:100%;height:100%}
+.gw-qn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-align:left}
+.gw-qn small{color:var(--muted);font-size:10px}
+.fighter.right .gw-qn{flex-direction:row-reverse}
+.fighter.right .gw-qn span{text-align:right}
+.fighter.right .gw-queue .label{text-align:right}
 .gw-teams{display:flex;justify-content:space-between;gap:10px}
 .gw-teams>div{display:flex;flex-wrap:wrap;gap:4px;max-width:49%}
 .gw-teams>div:last-child{justify-content:flex-end}
@@ -2191,11 +2201,12 @@ async function stepBattle(){
   const B=battle; if(!B||B.ended) return;
   if(B.i>=B.res.log.length){ B.guild?gwDuelEnd():endBattle(); return; }
   const e=B.res.log[B.i++], k=B.k;
-  await playFx(e);
+  // long guild duels: animate the opening blows, then let the rest run quickly
+  if(!(B.guild&&B.i>10)) await playFx(e); else if(B.i%4===0) sfx('hit');
   if(battle!==B||B.ended||B.k!==k) return;
   $('#blog').insertAdjacentHTML('beforeend', logLine(e,B.a,B.b)); $('#blog').scrollTop=1e6;
   setHp(e.hA,e.hB);
-  B.timer=setTimeout(stepBattle, RM?320:B.i>24?220:560);
+  B.timer=setTimeout(stepBattle, RM?320:B.guild?(B.i>10?110:400):B.i>24?220:560);
 }
 
 /* ---- battle effects ---- */
@@ -2487,11 +2498,10 @@ function openGuildBattle(e,duels,won,rw,nA,nB){
   $('#overlay-root').innerHTML=`<div class="overlay" role="dialog" aria-label="Céhharc"><div class="sheet wrap">
     <div class="gw-head"><div class="g-emb sm">${svg(emblemSvg(g.emblem))}</div><div class="gw-score"><span id="gw-w">${nA}</span><i>:</i><span id="gw-l">${nB}</span></div><div class="g-emb sm">${svg(emblemSvg(e.emblem))}</div></div>
     <div class="gw-names"><b>${esc(g.name)}</b><span class="note" id="gw-round">talpon maradt</span><b>${esc(e.name)}</b></div>
-    <div class="gw-teams"><div id="gw-ta"></div><div id="gw-tb"></div></div>
     <div class="versus">
-      <div class="fighter" id="fa"><div class="pw"></div><b id="fna"></b><div class="bar hp"><i id="ha"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hna"></span></span></div>
+      <div class="fighter" id="fa"><div class="pw"></div><b id="fna"></b><div class="bar hp"><i id="ha"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hna"></span></span><div class="gw-queue" id="gw-ta"></div></div>
       <span class="vs">VS</span>
-      <div class="fighter right" id="fb"><div class="pw"></div><b id="fnb"></b><div class="bar hp" style="--ok:var(--bad)"><i id="hb" style="background:var(--bad)"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hnb"></span></span></div>
+      <div class="fighter right" id="fb"><div class="pw"></div><b id="fnb"></b><div class="bar hp" style="--ok:var(--bad)"><i id="hb" style="background:var(--bad)"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hnb"></span></span><div class="gw-queue" id="gw-tb"></div></div>
     </div>
     <div class="blog" id="blog" aria-live="polite"></div>
     <div id="bend" class="stack"></div>
@@ -2499,9 +2509,9 @@ function openGuildBattle(e,duels,won,rw,nA,nB){
   gwNext();
 }
 function gwTeams(){ const B=battle, d=B.duels[B.k]||{};
-  const row=(list,cur,dead)=>list.map(f=>`<span class="gw-t ${f===cur?'cur':''} ${dead.has(f)?'dead':''}" title="${esc(f.name)}">${portrait(f.art)}</span>`).join('');
-  const deadA=new Set(), deadB=new Set(); B.duels.slice(0,B.k+(B.ended?1:0)).forEach(x=>{ if(x.win) deadB.add(x.b); else deadA.add(x.a); });
-  $('#gw-ta').innerHTML=row(B.mine,d.a,deadA); $('#gw-tb').innerHTML=row(B.theirs,d.b,deadB); }
+  const fought=new Set(); B.duels.slice(0,B.k+1).forEach(x=>{ fought.add(x.a); fought.add(x.b); });
+  const q=(list,cur)=>{ const left=list.filter(f=>f!==cur&&!fought.has(f)); return `<div class="label">Még hátra · ${left.length}</div>${left.length?left.map(f=>`<span class="gw-qn">${portrait(f.art)}<span>${esc(f.name)}</span><small class="mono">${f.level}.</small></span>`).join(''):'<span class="note">senki</span>'}`; };
+  $('#gw-ta').innerHTML=q(B.mine,d.a); $('#gw-tb').innerHTML=q(B.theirs,d.b); }
 function gwBtns(){ const B=battle, last=B.k>=B.duels.length-1;
   $('#bend').innerHTML=`<div class="row gw-btns"><button class="btn primary" data-act="gwnext">${ic('fight')}${last?(B.ended?'Eredmény':'Kör vége'):'Következő harc'}</button><button class="btn" data-act="gwskip">${ic('skip')}Átugrás</button></div>`; }
 function gwNext(){
@@ -2525,7 +2535,7 @@ function gwDuelEnd(quick){
   lose.querySelector('.port').classList.add('ko'); lose.querySelector('.pw').insertAdjacentHTML('beforeend','<span class="ko-stamp">K.O.</span>'); win.querySelector('.port').classList.add('win');
   if(quick) return;
   $('#blog').insertAdjacentHTML('beforeend',`<div class="crit">${esc(wf.name)} győzött, ${Math.round(left/wf.hp*100)}% élete maradt.</div>`); $('#blog').scrollTop=1e6;
-  sfx('ko'); gwTeams(); gwBtns();
+  sfx('ko'); gwTeams(); gwBtns(); const k=B.k; B.timer=setTimeout(()=>{ if(battle===B&&B.k===k&&!B.done) gwNext(); },RM?900:1800);
 }
 function gwFinal(){
   const B=battle; if(!B||!B.guild) return; clearTimeout(B.timer);
@@ -2634,7 +2644,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 16:14';
+const BUILD='2026.11.01 16:25';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
