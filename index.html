@@ -554,6 +554,17 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .mrow-h{display:flex;justify-content:space-between;gap:8px;font-size:13.5px}
 .mrow-b{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mail-card{gap:10px}
+.g-head-wrap{display:flex;flex-direction:column;gap:10px}
+.g-bonus{display:flex;flex-wrap:wrap;gap:6px}
+.g-bonus .chip{font-size:12px}
+.g-desc{display:flex;flex-direction:column;gap:6px;align-items:flex-start;border-top:1px solid var(--line);padding-top:10px}
+.g-desc p{margin:0;white-space:pre-wrap;font-size:14px;line-height:1.4}
+.g-desc.edit{align-items:stretch}
+.g-desc textarea{width:100%;box-sizing:border-box;background:var(--night);border:1px solid var(--line);border-radius:10px;color:inherit;font:inherit;padding:10px;resize:vertical}
+.g-desc textarea:focus{outline:none;border-color:var(--sodium)}
+.ins-guild{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border-radius:12px;padding:10px}
+.ins-guild .port{width:40px;height:40px;flex:none}
+.ins-guild p{margin:4px 0 0;white-space:pre-wrap}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
 .install-card>div{flex:1;min-width:0}
@@ -1341,15 +1352,15 @@ function memberPending(){ return false; }
 function renderMemberGuild(){
   const mg=memberGuild(), mo=state.memberOf;
   if(!mg) return `<section class="card stack"><span class="label">${ic('clock')}Csatlakozás folyamatban</span><p class="muted" style="margin:0">Elfogadtad a(z) <b>${esc(mo.name)}</b> meghívását. Amint ${esc(mo.leader||'a vezető')} legközelebb belép, felvesz a tagok közé.</p><button class="btn small" data-act="gleave">Mégsem lépek be</button></section>${chatBox()}`;
-  const {g,leader}=mg, L=leader.guildLadder||[], rank=L.findIndex(e=>e.me)+1, lvl=1+Object.values(g.upg).reduce((a,b)=>a+b,0);
-  const row=(n,cls,l,role,me)=>`<div class="opp">${portrait(CLASS_ART[cls]||CLASS_ART.kidobo)}<div><div class="item-name">${esc(n)} <span class="role-tag ${role==='Vezető'?'lead':''}">${role}</span>${me?' <em class="me-tag">te</em>':''}</div><div class="item-stats"><span>${l}. szint · ${CLASSES[cls]?CLASSES[cls].name:''}</span></div></div></div>`;
-  return `<section class="card g-head"><div class="g-emb">${svg(emblemSvg(g.emblem))}</div><div class="g-info"><div class="label">Céhszint ${lvl} · tag vagy</div><h3>${esc(g.name)}</h3><div class="g-stats">${rank?`<span class="with-ic">${ic('trophy','ic-fame')}#${rank} / ${L.length}</span>`:''}<span class="with-ic">${ic('user')}${g.members.length+1} fő</span><span class="with-ic">${ic('fame','ic-fame')}${g.honor} becsület</span><span class="with-ic">${ic('coin','ic-gold')}${fmt(g.treasury+pendingDonations())} Ft kassza</span></div></div></section>
-   <section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Tagok</span><span class="note mono">${g.members.length+1} fő</span></div>${row(leader.name,leader.cls,leader.level,'Vezető',false)}${g.members.map(m=>m.real&&m.cid===state.cid?row(state.name,state.cls,state.level,'Játékos',true):row(m.name,m.cls,memberLevel(m),m.real?'Játékos':'Tag',false)).join('')}</section>
-   <section class="card"><div class="row between"><div><div class="label">${ic('coin')}Közös kassza</div><div class="mono" style="font-size:20px;font-weight:700">${fmt(g.treasury+pendingDonations())} Ft</div></div><div class="row" style="gap:6px">${[50,200,1000].map(a=>`<button class="btn small" data-act="gdonatem" data-a="${a}" ${state.gold<a?'disabled':''}>+${fmt(a)} Ft</button>`).join('')}</div></div>
-     <p class="note" style="margin:6px 0 0">A befizetésedből ${esc(leader.name)} fejleszt, a fejlesztések minden tagnak szólnak.${pendingDonations()?` ${fmt(pendingDonations())} Ft a vezető következő belépésekor kerül a kasszába.`:''}</p>${contribList(g)}
-     <div class="upg-mini">${GUILD_UPG.map(u=>`<div>${ic(u.icon)}<span>${u.name}</span><b class="mono">${g.upg[u.id]||0}/10</b><small>${u.fx(g.upg[u.id]||0)}</small></div>`).join('')}</div></section>
-   <p class="note">A céh fejlesztései neked is szólnak. A céhharcot a vezető indítja, és te is harcolsz benne a jelenlegi felszereléseddel.</p>
-   ${chatBox()}
+  const {g,leader}=mg, L=leader.guildLadder||[], myI=L.findIndex(e=>e.me), rank=myI+1;
+  let html=gHead(g,{member:true,rank,ladLen:L.length,treasury:g.treasury+pendingDonations()})+gTabs();
+  if(guildTab==='fejlesztes') return html+renderGuildUpg(g,true)+contribList(g);
+  if(guildTab==='chat') return html+chatBox();
+  if(guildTab==='harc') return html+`<section class="card row between"><span class="label">${ic('fight')}Céhharc</span><span class="note">${esc(leader.name)} indítja</span></section>
+    <p class="note">A céhharcot a vezető indítja, és te is harcolsz benne a jelenlegi felszereléseddel. Váltóharc: a győztes a megmaradt életével küzd tovább, amíg el nem esik.</p>
+    <section class="card"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('trophy')}Céhek ranglétrája</span><span class="note">${L.length} céh a városban</span></div><div class="ladder">${myI>=0?guildLadderRows(myI,L,g):'<p class="muted">A vezető még nem töltötte be a ranglétrát.</p>'}</div></section>`;
+  const row=(n,cls,l,role,me)=>`<div class="opp">${portrait(CLASS_ART[cls]||CLASS_ART.kidobo)}<div><div class="item-name">${esc(n)} <span class="role-tag ${role==='Vezető'?'lead':role==='Játékos'?'real':''}">${role}</span>${me?' <em class="me-tag">te</em>':''}</div><div class="item-stats"><span>${l}. szint · ${CLASSES[cls]?CLASSES[cls].name:''}</span></div></div></div>`;
+  return html+`<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Tagok</span><span class="note mono">${g.members.length+1} fő</span></div>${row(leader.name,leader.cls,leader.level,'Vezető',false)}${g.members.map(m=>m.real&&m.cid===state.cid?row(state.name,state.cls,state.level,'Játékos',true):row(m.name,m.cls,memberLevel(m),m.real?'Játékos':'Tag',false)).join('')}</section>
    <section class="card row between"><span class="note">Ha kilépsz, alapíthatsz saját céhet, vagy más meghívását is elfogadhatod.</span><button class="btn small" data-act="gleave">Kilépés</button></section>`;
 }
 function guildLevel(){ return 1+Object.values(state.guild.upg).reduce((a,b)=>a+b,0); }
@@ -2162,7 +2173,9 @@ function inspectOf(key){
 }
 function fDmg(f){ const c=CLASSES[f.cls], b=f.stats[c.main]*STAT_DMG; return `${c.hits>1?c.hits+'× ':''}${Math.round((f.wMin+b)*c.dmg)}–${Math.round((f.wMax+b)*c.dmg)}`; }
 function fAvg(f){ const c=CLASSES[f.cls]; return ((f.wMin+f.wMax)/2+f.stats[c.main]*STAT_DMG)*c.dmg*(c.hits||1); }
-function openInspect(key){ const x=inspectOf(key); if(!x) return; INSPECT=x; INSPECT.key=key; renderInspect(); }
+function openInspect(key){ const x=inspectOf(key); if(!x) return; const st=key==='me'?state:key.startsWith('c-')?realData(key.slice(2)):key.startsWith('p-')?realData(key.slice(2)):null;
+  if(st){ const G=st.guild||(st.memberOf&&(realData(st.memberOf.leaderCid)||{}).guild)||null; if(G) x.gInfo={name:G.name,emblem:G.emblem,desc:G.desc,lead:!!st.guild}; else if(st.memberOf) x.gInfo={name:st.memberOf.name,emblem:st.memberOf.emblem}; }
+  INSPECT=x; INSPECT.key=key; renderInspect(); }
 function renderInspect(){
   const x=INSPECT; if(!x){ return; }
   const f=x.fighter, me=playerFighter(), c=CLASSES[x.cls];
@@ -2188,6 +2201,7 @@ function renderInspect(){
       <div>${ic('target','ic-crit')}<b>${Math.round(critChance(f)*100)}%</b><span>Krit</span>${cmp(critChance(f),critChance(me),v=>Math.round(v*100)+'%')}</div>
     </div>
     <div class="ins-stats">${STATS.map(([k,n])=>`<div class="${c.main===k?'main':''}">${ic(k,'ic-'+k)}<span>${n}</span><b>${f.stats[k]}</b>${x.me?'':`<small class="muted">te: ${me.stats[k]}</small>`}</div>`).join('')}</div>
+    ${x.gInfo?`<div class="ins-guild"><div class="port g-mini">${svg(emblemSvg(EMBLEMS[x.gInfo.emblem]?x.gInfo.emblem:Object.keys(EMBLEMS)[0]))}</div><div><div class="label">${x.gInfo.lead?'Céhvezető':'Céhtag'}</div><b>${esc(x.gInfo.name)}</b>${x.gInfo.desc?`<p class="note">${esc(x.gInfo.desc)}</p>`:''}</div></div>`:''}
     ${verdict?`<div class="ins-verdict ${verdict[1]}">${ic('fight')}${verdict[0]}</div>`:''}
     ${!x.me&&!x.npc&&/^[cp]-/.test(x.key||'')?`<div class="row" style="justify-content:center;gap:8px">${isFriend(x.key.slice(2))?`<span class="note with-ic">${ic('friend')}Barátod</span>`:`<button class="btn small" data-act="addfriend" data-k="${x.key}">${ic('friend')}Barátnak jelölöm</button>`}<button class="btn small" data-act="mailthread" data-k="${x.key}" data-n="${esc(x.name)}">${ic('mail')}Üzenet</button></div>`:''}
     <div class="row" style="justify-content:center;gap:8px">${x.duel||x.pduel?(()=>{ const left=state.arenaReadyAt>now(), act=x.pduel?'pduel':'duel', id=x.pduel||x.duel; return left?`<button class="btn pog-btn" data-act="${act}" data-pog="1" data-id="${id}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Kihív most</button>`:`<button class="btn primary" data-act="${act}" data-id="${id}">${ic('fight')}Kihív</button>`; })():''}<button class="btn" data-act="closeinsp">Bezár</button></div>
@@ -2403,6 +2417,14 @@ function ladderRows(myI,mv){
   });
   return out;
 }
+let GDESC_EDIT=false;
+function gDescHtml(g,lead){
+  if(lead&&GDESC_EDIT) return `<div class="g-desc edit"><textarea id="gdesc" maxlength="300" rows="3" placeholder="pl. Napi 3 küldetés kötelező. Kincstár +15% pénz, Edzőterem +12% XP. Aktív, magyar céh.">${esc(g.desc||'')}</textarea><div class="row between"><span class="note">Ezt látják azok is, akiket meghívsz.</span><span class="row" style="gap:6px"><button class="btn small" data-act="gdesccancel">Mégse</button><button class="btn small primary" data-act="gdescsave">Mentés</button></span></div></div>`;
+  return `<div class="g-desc">${g.desc?`<p>${esc(g.desc)}</p>`:`<p class="muted">${lead?'Még nincs leírás. Írd ide, milyen a céhetek, és mit kaptok a fejlesztésekből.':'A vezető még nem írt leírást.'}</p>`}${lead?`<button class="btn small" data-act="gdescedit">${ic('chat')}${g.desc?'Szerkesztés':'Leírás írása'}</button>`:''}</div>`; }
+function gHead(g,o){ return `<section class="card g-head-wrap"><div class="g-head"><div class="g-emb">${svg(emblemSvg(g.emblem))}</div><div class="g-info"><div class="label">Céhszint ${1+Object.values(g.upg).reduce((a,b)=>a+b,0)}${o.member?' · tag vagy':''}</div><h3>${esc(g.name)}</h3><div class="g-stats">${o.rank?`<span class="with-ic">${ic('trophy','ic-fame')}#${o.rank} / ${o.ladLen}</span>`:''}<span class="with-ic">${ic('user')}${g.members.length+1}${o.cap?'/'+o.cap:''} fő</span><span class="with-ic">${ic('fame','ic-fame')}${g.honor} becsület</span><span class="with-ic">${ic('coin','ic-gold')}${fmt(o.treasury)} Ft kassza</span></div></div></div>
+  <div class="g-bonus">${GUILD_UPG.filter(u=>g.upg[u.id]).map(u=>`<span class="chip">${ic(u.icon)}${u.fx(g.upg[u.id])}</span>`).join('')||'<span class="note">Még nincs fejlesztés.</span>'}</div>${gDescHtml(g,!o.member)}</section>`; }
+const G_TABS=[['tagok','Tagok','user'],['fejlesztes','Fejlesztés','refresh'],['harc','Harc','fight'],['chat','Chat','chat']];
+const gTabs=()=>`<div class="seg seg4" role="tablist">${G_TABS.map(([k,l,i])=>`<button role="tab" data-act="gtab" data-t="${k}" aria-selected="${guildTab===k}">${ic(i)}${l}</button>`).join('')}</div>`;
 function renderCeh(){
   const g=state.guild;
   let html=`${banner('ceh')}<section class="scene"><span class="label">${ic('pin')}Panelház pincéje · klubhelyiség</span><h2>${g?esc(g.name):state.memberOf?esc(state.memberOf.name):'Egyedül nem megy'}</h2><p>${g?'Közös kassza, közös fejlesztések és közös harc a város többi céhe ellen.':state.memberOf?'Tag vagy. A vezető fejlesztései neked is szólnak, és a céhharcban te is ott vagy.':'Alapíts céhet, hívj be más hősöket, fejlesszétek együtt a klubhelyiséget, és harcoljatok a város többi céhe ellen.'}</p></section>`;
@@ -2410,8 +2432,8 @@ function renderCeh(){
   if(!g&&state.memberOf) return html+renderMemberGuild();
   if(!g) return html+invitesCard()+renderGuildCreate();
   const rank=state.guildLadder.findIndex(e=>e.me)+1;
-  html+=`<section class="card g-head"><div class="g-emb">${svg(emblemSvg(g.emblem))}</div><div class="g-info"><div class="label">Céhszint ${guildLevel()}</div><h3>${esc(g.name)}</h3><div class="g-stats"><span class="with-ic">${ic('trophy','ic-fame')}#${rank} / ${state.guildLadder.length}</span><span class="with-ic">${ic('user')}${g.members.length+1}/${guildCap()} fő</span><span class="with-ic">${ic('fame','ic-fame')}${g.honor} becsület</span><span class="with-ic">${ic('coin','ic-gold')}${fmt(g.treasury)} Ft kassza</span></div></div></section>`;
-  html+=`<div class="seg seg4" role="tablist">${[['tagok','Tagok','user'],['fejlesztes','Fejlesztés','refresh'],['harc','Harc','fight'],['chat','Chat','chat']].map(([k,l,i])=>`<button role="tab" data-act="gtab" data-t="${k}" aria-selected="${guildTab===k}">${ic(i)}${l}</button>`).join('')}</div>`;
+  html+=gHead(g,{rank,ladLen:state.guildLadder.length,cap:guildCap(),treasury:g.treasury});
+  html+=gTabs();
   return html+(guildTab==='tagok'?renderGuildMembers():guildTab==='fejlesztes'?renderGuildUpg():guildTab==='chat'?chatBox():renderGuildWar());
 }
 function renderGuildCreate(){
@@ -2440,14 +2462,13 @@ function renderGuildMembers(){
   if(!g.candidates.length) html+=`<p class="muted">Nincs több jelölt. Kérj újakat.</p>`;
   return html+`</section><p class="note">Nem mindenki fogadja el a meghívást. A tagjaid minden sikeres küldetésed után beadnak a közös kasszába, és veled harcolnak a céhharcban.</p>`;
 }
-function renderGuildUpg(){
-  const g=state.guild;
-  let html=`<section class="card"><div class="row between"><div><div class="label">${ic('coin')}Közös kassza</div><div class="mono" style="font-size:20px;font-weight:700">${fmt(g.treasury)} Ft</div></div><div class="row" style="gap:6px">${[50,200,1000].map(a=>`<button class="btn small" data-act="gdonate" data-a="${a}" ${state.gold<a?'disabled':''}>+${fmt(a)} Ft</button>`).join('')}</div></div><p class="note" style="margin:6px 0 0">A saját forintodból fizethetsz be, és a céhtagjaid is befizethetnek. A fejlesztések a kasszából fizetődnek, és a céh minden tagjának szólnak.</p>${contribList(g)}</section><section class="card">`;
+function renderGuildUpg(g=state.guild,ro=false){
+  let html=`<section class="card"><div class="row between"><div><div class="label">${ic('coin')}Közös kassza</div><div class="mono" style="font-size:20px;font-weight:700">${fmt(g.treasury+(ro?pendingDonations():0))} Ft</div></div><div class="row" style="gap:6px">${[50,200,1000].map(a=>`<button class="btn small" data-act="${ro?'gdonatem':'gdonate'}" data-a="${a}" ${state.gold<a?'disabled':''}>+${fmt(a)} Ft</button>`).join('')}</div></div><p class="note" style="margin:6px 0 0">A saját forintodból fizethetsz be, és a céhtagjaid is befizethetnek. A fejlesztések a kasszából fizetődnek, és a céh minden tagjának szólnak.</p>${contribList(g)}</section><section class="card">`;
   for(const u of GUILD_UPG){
     const l=g.upg[u.id]||0, max=l>=10, c=upgCost(l);
-    html+=`<div class="upg"><div class="stat-ic">${ic(u.icon)}</div><div><div class="item-name">${u.name} <span class="mono muted" style="font-weight:500">${l}/10</span></div><div class="pips small">${Array.from({length:10},(_,i)=>`<i class="${i<l?'done':''}"></i>`).join('')}</div><div class="note">${u.desc}</div><div class="eff"><span class="vals"><b>${u.fx(l)}</b>${max?'':`<span class="eff-next">→ ${u.fx(l+1)}</span>`}</span></div></div>${max?`<span class="chip">Max</span>`:`<button class="btn small primary" data-act="gupg" data-id="${u.id}" ${g.treasury<c?'disabled':''}>${fmt(c)} Ft</button>`}</div>`;
+    html+=`<div class="upg"><div class="stat-ic">${ic(u.icon)}</div><div><div class="item-name">${u.name} <span class="mono muted" style="font-weight:500">${l}/10</span></div><div class="pips small">${Array.from({length:10},(_,i)=>`<i class="${i<l?'done':''}"></i>`).join('')}</div><div class="note">${u.desc}</div><div class="eff"><span class="vals"><b>${u.fx(l)}</b>${max?'':`<span class="eff-next">→ ${u.fx(l+1)}</span>`}</span></div></div>${max?`<span class="chip">Max</span>`:ro?`<span class="chip">${fmt(c)} Ft</span>`:`<button class="btn small primary" data-act="gupg" data-id="${u.id}" ${g.treasury<c?'disabled':''}>${fmt(c)} Ft</button>`}</div>`;
   }
-  return html+`</section>`;
+  return html+`</section>${ro?'<p class="note">Fejleszteni csak a vezető tud. Te a kasszába fizetéssel segíthetsz, a fejlesztések neked is szólnak.</p>':''}`;
 }
 function renderGuildWar(){
   const g=state.guild, left=Math.max(0,g.readyAt-now()), L=state.guildLadder, myI=L.findIndex(e=>e.me), tg=[];
@@ -2462,11 +2483,11 @@ function renderGuildWar(){
   <section class="card"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('trophy')}Céhek ranglétrája</span><span class="note">${L.length} céh a városban</span></div><div class="ladder">${guildLadderRows(myI)}</div></section>`;
   return html;
 }
-function guildLadderRows(myI){
-  const L=state.guildLadder, show=new Set([0,1,2]); for(let i=Math.max(0,myI-3);i<=Math.min(L.length-1,myI+2);i++) show.add(i);
+function guildLadderRows(myI,L=state.guildLadder,G=state.guild){
+  const show=new Set([0,1,2]); for(let i=Math.max(0,myI-3);i<=Math.min(L.length-1,myI+2);i++) show.add(i);
   let out='', prev=-1;
   [...show].sort((a,b)=>a-b).forEach(i=>{ if(i>prev+1) out+=`<div class="lad-gap">···</div>`; prev=i;
-    const e=L[i], me=!!e.me, g=state.guild;
+    const e=L[i], me=!!e.me, g=G;
     out+=`<div class="lad-row ${me?'me':''}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span><div class="port lad-port g-mini">${svg(emblemSvg(me?g.emblem:e.emblem))}</div><span class="lad-name">${esc(me?g.name:e.name)}${me?' <em>ti</em>':''}</span><span class="lad-lvl mono">${me?g.members.length+1:e.size} fő</span></div>`; });
   return out;
 }
@@ -3029,6 +3050,9 @@ document.addEventListener('click',e=>{
     case 'unfriend': removeFriend(id); renderMail(); return;
     case 'addfriend': { const x=INSPECT; if(x) addFriend(el.dataset.k,x.name,x.cls); if(INSPECT) renderInspect(); } return;
     case 'gsend': doGuildSend(); return;
+    case 'gdescedit': GDESC_EDIT=true; { const y=window.scrollY; render(); window.scrollTo(0,y); setTimeout(()=>$('#gdesc')?.focus(),30); } return;
+    case 'gdesccancel': GDESC_EDIT=false; { const y=window.scrollY; render(); window.scrollTo(0,y); } return;
+    case 'gdescsave': if(state.guild){ state.guild.desc=($('#gdesc')?.value||'').trim().slice(0,300); GDESC_EDIT=false; save(); const y=window.scrollY; render(); window.scrollTo(0,y); toast('A céh leírása elmentve.'); } return;
     case 'taskclaim': claimTask(el.dataset.i); render(); renderTasks(); return;
     case 'openchest': openChest(); return;
     case 'chestdone': render(); renderTasks(); return;
@@ -3126,7 +3150,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 23:21';
+const BUILD='2026.11.01 23:46';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
