@@ -362,6 +362,33 @@ main{flex:1;padding-block:16px calc(110px + env(safe-area-inset-bottom,0px));dis
 .dawn-title.night{color:var(--muted)}
 .dawn-card{border-color:var(--gold)}
 .title-chip{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;font-weight:700;color:var(--sodium-ink);background:var(--gold);border-radius:999px;padding:2px 10px}
+.veh-card{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;background:linear-gradient(90deg,rgba(242,163,58,.16),transparent 70%),var(--concrete);border:2px solid var(--sodium);border-radius:14px;padding:10px 14px 10px 10px;color:inherit;font:inherit;cursor:pointer;box-shadow:0 0 0 4px rgba(242,163,58,.08)}
+.veh-card .itile{width:52px;height:52px;border-radius:12px}
+.veh-card .itile svg{padding:4px}
+.veh-body{display:flex;flex-direction:column;gap:3px;min-width:0}
+.veh-name{font-size:16px}
+.veh-pills{display:flex;flex-wrap:wrap;gap:6px}
+.veh-pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#10241a;background:var(--ok);border-radius:999px;padding:2px 9px}
+.veh-pill.cof{background:var(--gold);color:var(--sodium-ink)}
+.veh-left{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:13px}
+.veh-card.none{border-style:dashed;background:var(--concrete);box-shadow:none}
+.veh-card.none .itile{opacity:.75}
+.veh-card.expired{border-color:var(--bad);background:linear-gradient(90deg,rgba(236,101,82,.14),transparent 70%),var(--concrete);box-shadow:none}
+.veh-go{font-weight:700;color:var(--sodium);font-size:13px;white-space:nowrap}
+.insp,.opp .port[data-act],.lad-row[data-act]{cursor:pointer}
+.lad-row[data-act]:hover{outline:1px solid var(--sodium)}
+.ins-card{position:relative;width:min(460px,100%);max-height:100%;overflow-y:auto;background:var(--concrete);border:2px solid var(--line);border-radius:18px 18px 0 0;padding:18px max(14px,env(safe-area-inset-left,0px)) calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;animation:pop .3s ease-out both}
+@media(min-width:600px){.overlay .ins-card{border-radius:18px;margin:auto}}
+.ins-x{position:absolute;top:8px;right:10px;width:34px;height:34px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:inherit;font-size:20px;line-height:1;cursor:pointer}
+.ins-meta{display:flex;flex-wrap:wrap;gap:4px 10px;justify-content:center;font-size:12px;color:var(--muted);margin-top:4px}
+.ins-der small{display:block;font-size:11px;margin-top:2px}
+small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--muted)}
+.ins-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ins-stats>div{display:grid;grid-template-columns:20px 1fr auto;column-gap:6px;align-items:center;background:var(--panel);border-radius:8px;padding:6px 8px;font-size:13px}
+.ins-stats>div small{grid-column:2/4;text-align:right;font-size:11px}
+.ins-stats>div.main{outline:1px solid var(--sodium)}
+.ins-verdict{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:700;border-radius:10px;padding:8px;background:var(--panel)}
+.ins-verdict.up{color:var(--ok)} .ins-verdict.down{color:var(--bad)}
 .seg.seg3{grid-template-columns:repeat(3,1fr)}
 .seg.seg3 button{padding:9px 4px;font-size:13px}
 .emb-pick{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
@@ -921,8 +948,8 @@ function fmtLeft(ms){ const m=Math.max(1,Math.floor(ms/60000)), d=Math.floor(m/1
 function mountRed(){ const v=activeVeh(); return v?v.red:0; }
 function effDur(q){ return Math.max(3,Math.round(q.dur*(1-mountRed()))); }
 function qCost(q){ const v=activeVeh(), d=v&&v.coffee?effDur(q):q.dur; return Math.max(1,Math.round((Math.round(d*.8)+5)*.24)); }
-/* double espresso: pogácsa only, +20 coffee, max 10 per day */
-const ESPRESSO_GAIN=20, ESPRESSO_DAILY=10;
+/* double espresso: pogácsa only, +40 coffee, max 10 per day */
+const ESPRESSO_GAIN=40, ESPRESSO_DAILY=10;
 function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
 function espressoLeft(){ return state.coffeeDay===todayKey()?Math.max(0,ESPRESSO_DAILY-(state.coffeeCount||0)):ESPRESSO_DAILY; }
 function canEspresso(){ return espressoLeft()>0&&(state.pog||0)>=1&&state.energy<ENERGY_MAX; }
@@ -1221,6 +1248,7 @@ function showTip(row){
   const [src,id]=row.dataset.tip.split(':'), it=src==='eq'?state.equip[id]:src==='loot'?LOOT[id]:(src==='shop'?state.shop:state.inv).find(x=>x.id===id);
   if(src==='stat'){ hideTip(); tipKey=row.dataset.tip; tipEl=document.createElement('div'); tipEl.className='tip'; tipEl.setAttribute('role','tooltip');
     tipEl.innerHTML=`<div class="label">${ic(id,'ic-'+id)}${STAT_NAME[id]}</div>${statEffects(id)}<div class="note" style="margin-top:6px">Nem a kasztod fő tulajdonsága, csak védekezéshez számít.</div>`; document.body.appendChild(tipEl); placeTip(row); return; }
+  if(src==='ins'){ const t=INSPECT&&INSPECT.equip[id]; hideTip(); if(!t) return; tipKey=row.dataset.tip; tipEl=document.createElement('div'); tipEl.className='tip wide'; tipEl.setAttribute('role','tooltip'); tipEl.innerHTML=insTipHtml(t); document.body.appendChild(tipEl); placeTip(row); return; }
   hideTip(); if(!it) return;
   tipKey=row.dataset.tip; tipEl=document.createElement('div'); tipEl.className=src==='eq'?'tip':'tip wide'; tipEl.setAttribute('role','tooltip'); tipEl.innerHTML=src==='eq'?wornTipHtml(it):tipHtml(it,src); document.body.appendChild(tipEl); placeTip(row);
 }
@@ -1423,7 +1451,7 @@ function questRewards(q){
   return `<span class="rw rw-gold">${ic('coin')}<b>+${fmt(Math.round(q.gold*goldMult()))}</b> Ft</span><span class="rw rw-xp">${ic('xp')}<b>+${fmt(Math.round(q.xp*xpMult()))}</b> XP</span>${q.drop?`<span class="rw rw-item">${ic('box')}<b>Tárgy</b></span>`:''}${q.pog?`<span class="rw rw-pog">${pogIc()}<b>+1</b></span>`:''}${state.firstQuestDay!==todayKey()?`<span class="rw rw-pog">${pogIc()}<b>+1</b> napi első</span>`:''}`;
 }
 function renderKocsma(){
-  let html=`${banner('kocsma')}<section class="scene"><span class="label">${ic('pin')}Romkocsma · VII. kerület · 23:47</span><h2>Ica a pult mögül int</h2><p>„Megint gyűlnek a bejelentések, drágám. Válassz egyet, de előtte igyál egy kávét.”</p>${vehicleLine()}</section>`;
+  let html=`${banner('kocsma')}<section class="scene"><span class="label">${ic('pin')}Romkocsma · VII. kerület · 23:47</span><h2>Ica a pult mögül int</h2><p>„Megint gyűlnek a bejelentések, drágám. Válassz egyet, de előtte igyál egy kávét.”</p></section>${vehicleCard()}`;
   if(state.active){
     const q=state.active.q, left=Math.max(0,state.active.endsAt-now()), ready=left<=0;
     html+=`<section class="card active stack ${ready?'arrived':'depart'}">
@@ -1493,6 +1521,17 @@ function renderKarakter(){
   html+=`</section><section class="card row between"><div><div class="label">${ic('user')}Hőseid</div><div class="note">A mostani hősöd mentve marad, bármikor visszaléphetsz.</div></div><button class="btn small primary" data-act="switchchar">Karakterváltás</button></section>`;
   return html;
 }
+function vehicleCard(){
+  const v=activeVeh(), r=state.vehicle;
+  if(v) return `<button class="veh-card on" data-act="gogarage"><span class="itile t${v.red>=.4?3:v.red>=.2?2:1}">${svg(VEH_ART[v.id])}</span>
+    <span class="veh-body"><span class="label">${ic('wheel')}Járműved</span><b class="veh-name">${v.name}</b><span class="veh-pills"><span class="veh-pill">${ic('clock')}−${Math.round(v.red*100)}% útidő</span>${v.coffee?`<span class="veh-pill cof">${ic('coffee')}kevesebb kávé</span>`:''}</span></span>
+    <span class="veh-left"><span class="label">Még</span><b class="mono">${fmtLeft(r.until-now())}</b></span></button>`;
+  const best=VEHICLES.filter(x=>!x.pog&&x.price<=state.gold).pop(), cheap=VEHICLES[0], show=best||cheap;
+  const exp=r&&r.id?VEHICLES.find(x=>x.id===r.id):null;
+  return `<button class="veh-card ${exp?'expired':'none'}" data-act="gogarage"><span class="itile t1">${svg(VEH_ART[(exp||show).id])}</span>
+    <span class="veh-body"><span class="label">${ic(exp?'clock':'wheel')}${exp?'Lejárt a járműved':'Gyalog jársz'}</span><b class="veh-name">${exp?`${exp.name} · újítsd meg`:`${show.name}: −${Math.round(show.red*100)}% útidő`}</b><span class="note">${exp?'Nélküle minden út hosszabb.':best?'Erre már van pénzed a Garázsban.':`${show.price} Ft-tól bérelhetsz járművet a Garázsban.`}</span></span>
+    <span class="veh-go">Garázs →</span></button>`;
+}
 function vehicleLine(){
   const v=activeVeh(), r=state.vehicle;
   if(v) return `<button class="veh-line" data-act="gogarage"><span class="itile t${v.red>=.4?3:v.red>=.2?2:1}">${svg(VEH_ART[v.id])}</span>${v.name} · <span class="cmp-up">−${Math.round(v.red*100)}% út</span> · <span class="muted">még ${fmtLeft(r.until-now())}</span></button>`;
@@ -1533,13 +1572,63 @@ function renderBolt(){
   html+=`</section><p class="note">▲ jobb, ▼ gyengébb, mint ami most rajtad van. ${HOVER?'Vidd az egeret':'Koppints'} egy tárgyra, és látod, pontosan mit ad. A vett tárgy a hátizsákba kerül.</p>`;
   return html;
 }
+/* ---------- inspecting other heroes ---------- */
+let INSPECT=null;
+function withSeed(seed,fn){ let h=2166136261; for(const c of String(seed)) h=Math.imul(h^c.charCodeAt(0),16777619); const R=Math.random; Math.random=()=>{ h=Math.imul(h^(h>>>15),2246822507); h=Math.imul(h^(h>>>13),3266489909); return ((h^=h>>>16)>>>0)/4294967296; }; try{ return fn(); } finally{ Math.random=R; } }
+// NPCs: show exactly the fighter you would face; their gear is generated to match it
+function npcLook(e){ const lvl=entryLevel(e), o=state.arena.find(x=>x.id===e.id); return withSeed(e.id+':'+lvl,()=>{ const f=o?{...o,stats:{...o.stats}}:genFighter(e.name||'Ismeretlen',lvl,.96,e.cls||'kidobo'); const eq={}; for(const [sl] of SLOTS){ const r=Math.random(); eq[sl]=genItem(lvl,sl,f.cls,r<.1?3:r<.45?2:r<.85?1:0); } eq.fegyver={...eq.fegyver,min:f.wMin,max:f.wMax}; return {name:e.name||f.name,cls:f.cls,level:f.level,fighter:f,equip:eq,npc:true}; }); }
+function inspectOf(key){
+  if(key==='me') return {name:state.name,cls:state.cls,level:state.level,fighter:playerFighter(),equip:state.equip,titles:state.titles,me:true};
+  if(key.startsWith('c-')){ const st=REAL[key.slice(2)]; if(st) return {name:st.name,cls:st.cls,level:st.level,fighter:heroFighter(st),equip:st.equip||{},titles:st.titles,fame:st.fame,wins:st.wins,losses:st.losses,duel:key}; }
+  if(key.startsWith('p-')&&typeof ONLINE!=='undefined'){ const p=ONLINE.players.find(x=>x.id===key.slice(2)); if(p){ const st=p.data; return {name:p.name,cls:p.cls,level:p.level,fighter:heroFighter(st),equip:st.equip||{},titles:st.titles,fame:st.fame,wins:st.wins,losses:st.losses,rating:p.rating,pduel:p.id}; } }
+  const e=state.ladder.find(x=>x.id===key); if(!e) return null;
+  if(e.me) return inspectOf('me'); if(e.real) return inspectOf('c-'+e.cid);
+  const r=npcLook(e), o=state.arena.find(x=>x.id===key); if(o) r.duel=key; return r;
+}
+function fDmg(f){ const c=CLASSES[f.cls], b=f.stats[c.main]*STAT_DMG; return `${c.hits>1?c.hits+'× ':''}${Math.round((f.wMin+b)*c.dmg)}–${Math.round((f.wMax+b)*c.dmg)}`; }
+function fAvg(f){ const c=CLASSES[f.cls]; return ((f.wMin+f.wMax)/2+f.stats[c.main]*STAT_DMG)*c.dmg*(c.hits||1); }
+function openInspect(key){ const x=inspectOf(key); if(!x) return; INSPECT=x; INSPECT.key=key; renderInspect(); }
+function renderInspect(){
+  const x=INSPECT; if(!x){ return; }
+  const f=x.fighter, me=playerFighter(), c=CLASSES[x.cls];
+  const cmp=(a,b,fmtv)=>x.me?'':`<small class="${a>b*1.03?'down':a<b*.97?'up':'eq'}">te: ${fmtv?fmtv(b):b}</small>`;
+  const slot=k=>{ const it=x.equip[k]; return `<div class="dslot" ${it?`data-tip="ins:${k}"`:''}>${it?itemTile(it):emptyTile(k)}<span class="dslot-l">${SLOT_NAME[k]}</span></div>`; };
+  const w=x.equip.fegyver;
+  const verdict=x.me?'':(()=>{ const r=(me.hp*fAvg(me))/(f.hp*fAvg(f)); return r>1.35?['Könnyű ellenfél','up']:r>1.05?['Neked áll a zászló','up']:r>.8?['Kiegyenlített','eq']:r>.55?['Erősebb nálad','down']:['Sokkal erősebb nálad','down']; })();
+  $('#overlay-root').innerHTML=`<div class="overlay" data-act="closeinsp"><div class="ins-card" role="dialog" aria-label="${esc(x.name)}" data-act="noop">
+    <button class="ins-x" data-act="closeinsp" aria-label="Bezárás">×</button>
+    <div class="doll">
+      <div class="doll-col">${DOLL_LEFT.map(slot).join('')}</div>
+      <div class="doll-center">${portrait(CLASS_ART[x.cls],'doll-port')}
+        <div><h2>${esc(x.name)}</h2><div class="muted" style="font-size:13px">${x.level}. szintű ${c.name.toLowerCase()}</div>${(x.titles||[]).length?`<div class="title-chip">${ic('trophy')}${esc(x.titles[x.titles.length-1])}</div>`:''}
+        <div class="ins-meta">${x.rating!=null?`<span class="with-ic">${ic('trophy','ic-fame')}${x.rating} rangpont</span>`:''}${x.fame!=null?`<span class="with-ic">${ic('fame','ic-fame')}${x.fame} hírnév</span>`:''}${x.wins!=null?`<span>${x.wins} gy · ${x.losses} v</span>`:''}</div></div>
+        <div class="wslot" ${w?'data-tip="ins:fegyver"':''}>${w?itemTile(w):emptyTile('fegyver')}<div><div class="label">Fegyver</div>${w?`<div class="item-name r${w.rar}">${esc(w.name)}</div>`:'<div class="muted">Üres</div>'}</div></div>
+      </div>
+      <div class="doll-col">${DOLL_RIGHT.map(slot).join('')}</div>
+    </div>
+    <div class="derived ins-der">
+      <div>${ic('con','ic-hp')}<b>${fmt(f.hp)}</b><span>Életerő</span>${cmp(f.hp,me.hp,fmt)}</div>
+      <div>${ic('sword','ic-crit')}<b>${fDmg(f)}</b><span>Sebzés</span>${x.me?'':`<small class="${fAvg(f)>fAvg(me)*1.03?'down':fAvg(f)<fAvg(me)*.97?'up':'eq'}">te: ${fDmg(me)}</small>`}</div>
+      <div>${ic('shield','ic-armor')}<b>${Math.round(armorRed(f)*100)}%</b><span>Páncél</span>${cmp(armorRed(f),armorRed(me),v=>Math.round(v*100)+'%')}</div>
+      <div>${ic('target','ic-crit')}<b>${Math.round(critChance(f)*100)}%</b><span>Krit</span>${cmp(critChance(f),critChance(me),v=>Math.round(v*100)+'%')}</div>
+    </div>
+    <div class="ins-stats">${STATS.map(([k,n])=>`<div class="${c.main===k?'main':''}">${ic(k,'ic-'+k)}<span>${n}</span><b>${f.stats[k]}</b>${x.me?'':`<small class="muted">te: ${me.stats[k]}</small>`}</div>`).join('')}</div>
+    ${verdict?`<div class="ins-verdict ${verdict[1]}">${ic('fight')}${verdict[0]}</div>`:''}
+    <div class="row" style="justify-content:center;gap:8px">${x.duel||x.pduel?(()=>{ const left=state.arenaReadyAt>now(), act=x.pduel?'pduel':'duel', id=x.pduel||x.duel; return left?`<button class="btn pog-btn" data-act="${act}" data-pog="1" data-id="${id}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Kihív most</button>`:`<button class="btn primary" data-act="${act}" data-id="${id}">${ic('fight')}Kihív</button>`; })():''}<button class="btn" data-act="closeinsp">Bezár</button></div>
+  </div></div>`;
+}
+function insTipHtml(it){
+  const mine=state.equip[it.slot];
+  return `<div class="tip-cols"><div class="tip-card"><div class="tip-tag">Nála</div>${tipHead(it)}<div class="tip-list">${tipStats(it)}</div></div>
+    <div class="tip-card worn"><div class="tip-tag">Rajtad</div>${mine?`${tipHead(mine)}<div class="tip-list">${tipStats(mine)}</div>`:'<div class="note" style="margin-top:6px">Ez a hely nálad üres.</div>'}</div></div>`;
+}
 function onlinePlayersCard(left){
   if(!ONLINE.playersAt||now()-ONLINE.playersAt>20000) setTimeout(loadPlayers,0);
   const myR=ONLINE.myRating;
   let h=`<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Játékosok</span><span class="note">${myR!=null?`Rangpontod: <b class="mono">${myR}</b>`:'Online ranglista'}</span></div>`;
   if(!ONLINE.players.length) h+=`<p class="muted" style="margin:6px 0 0">${ONLINE.playersAt?'Még nincs más játékos. Hívd meg a barátaidat!':'Betöltés…'}</p>`;
   ONLINE.players.slice(0,30).forEach((p,i)=>{ const f=heroFighter(p.data);
-    h+=`<div class="opp">${portrait(CLASS_ART[p.cls]||CLASS_ART.kidobo)}<div><div class="item-name"><span class="rank-tag">#${i+1}</span> ${esc(p.name)}</div><div class="item-stats"><span>${p.level}. szint · ${CLASSES[p.cls]?CLASSES[p.cls].name:''}</span><span class="with-ic">${ic('trophy','ic-fame')}${p.rating}</span><span class="with-ic">${ic('con','ic-hp')}${fmt(f.hp)}</span></div></div>
+    h+=`<div class="opp">${portrait(CLASS_ART[p.cls]||CLASS_ART.kidobo).replace('<div','<div data-act="inspect" data-id="p-'+p.id+'"')}<div data-act="inspect" data-id="p-${p.id}" class="insp"><div class="item-name"><span class="rank-tag">#${i+1}</span> ${esc(p.name)}</div><div class="item-stats"><span>${p.level}. szint · ${CLASSES[p.cls]?CLASSES[p.cls].name:''}</span><span class="with-ic">${ic('trophy','ic-fame')}${p.rating}</span><span class="with-ic">${ic('con','ic-hp')}${fmt(f.hp)}</span></div></div>
       ${left?`<button class="btn small pog-btn" data-act="pduel" data-pog="1" data-id="${p.id}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Most</button>`:`<button class="btn small primary" data-act="pduel" data-id="${p.id}">${ic('fight')}Kihív</button>`}</div>`; });
   return h+`</section>`;
 }
@@ -1554,15 +1643,15 @@ function renderArena(){
   </section>
   ${onlinePlayersCard(left)}<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('fight')}Kihívható ellenfelek</span><span class="note">${myI===0?'Te vagy az első! Védd meg a helyed.':'Győzelemmel átveszed a helyét'}</span></div>`;
   for(const o of state.arena){
-    html+=`<div class="opp">${portrait(CLASS_ART[o.cls])}
-      <div><div class="item-name"><span class="rank-tag">#${o.rank}</span> ${esc(o.name)}</div><div class="item-stats"><span>${o.level}. szint · ${CLASSES[o.cls].name}</span><span class="with-ic">${ic('con','ic-hp')}${fmt(o.hp)}</span></div></div>
+    html+=`<div class="opp">${portrait(CLASS_ART[o.cls]).replace('<div','<div data-act="inspect" data-id="'+o.id+'"')}
+      <div data-act="inspect" data-id="${o.id}" class="insp"><div class="item-name"><span class="rank-tag">#${o.rank}</span> ${esc(o.name)}</div><div class="item-stats"><span>${o.level}. szint · ${CLASSES[o.cls].name}</span><span class="with-ic">${ic('con','ic-hp')}${fmt(o.hp)}</span></div></div>
       ${left?`<button class="btn small pog-btn" data-act="duel" data-pog="1" data-id="${o.id}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Kihív most</button>`:`<button class="btn small primary" data-act="duel" data-id="${o.id}">${ic('fight')}Kihív</button>`}</div>`;
   }
   const heroes=otherHeroes();
   if(heroes.length){
     html+=`</section><section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Hőseid az arénában</span><span class="note">Mindig kihívhatók</span></div>`;
     for(const h of heroes){ const e=state.ladder.find(x=>x.real&&x.cid===h.cid), rk=state.ladder.indexOf(e)+1, f=heroFighter(h);
-      html+=`<div class="opp">${portrait(CLASS_ART[h.cls])}<div><div class="item-name"><span class="rank-tag">#${rk}</span> ${esc(h.name)}</div><div class="item-stats"><span>${h.level}. szint · ${CLASSES[h.cls].name}</span><span class="with-ic">${ic('con','ic-hp')}${fmt(f.hp)}</span></div></div>
+      html+=`<div class="opp">${portrait(CLASS_ART[h.cls]).replace('<div','<div data-act="inspect" data-id="c-'+h.cid+'"')}<div data-act="inspect" data-id="c-${h.cid}" class="insp"><div class="item-name"><span class="rank-tag">#${rk}</span> ${esc(h.name)}</div><div class="item-stats"><span>${h.level}. szint · ${CLASSES[h.cls].name}</span><span class="with-ic">${ic('con','ic-hp')}${fmt(f.hp)}</span></div></div>
         ${left?`<button class="btn small pog-btn" data-act="duel" data-pog="1" data-id="c-${h.cid}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Most</button>`:`<button class="btn small primary" data-act="duel" data-id="c-${h.cid}">${ic('fight')}Kihív</button>`}</div>`; }
   }
   const log=(state.arenaLog||[]).concat(ONLINE.logs).sort((a,b)=>a.at-b.at).slice(-6).reverse();
@@ -1582,7 +1671,7 @@ function ladderRows(myI,mv){
     if(i>prev+1) out+=`<div class="lad-gap">···</div>`; prev=i;
     const e=L[i], me=!!e.me, rs=e.real?REAL[e.cid]:null, name=me?state.name:rs?rs.name:e.name, cls=me?state.cls:rs?rs.cls:e.cls, lvl=me?state.level:entryLevel(e);
     const move=me&&mv?(mv.to<mv.from?'moved-up':mv.to>mv.from?'moved-down':''):'';
-    out+=`<div class="lad-row ${me?'me':''} ${rs?'real':''} ${move}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(CLASS_ART[cls],'lad-port')}<span class="lad-name">${esc(name)}${me?' <em>te</em>':rs?' <em class="hero">hősöd</em>':''}</span><span class="lad-lvl mono">${lvl}. szint</span></div>`;
+    out+=`<div class="lad-row ${me?'me':''} ${rs?'real':''} ${move}" role="button" tabindex="0" data-act="inspect" data-id="${me?'me':e.id}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(CLASS_ART[cls],'lad-port')}<span class="lad-name">${esc(name)}${me?' <em>te</em>':rs?' <em class="hero">hősöd</em>':''}</span><span class="lad-lvl mono">${lvl}. szint</span></div>`;
   });
   return out;
 }
@@ -1997,6 +2086,7 @@ function doFight(){
   openBattle(me,foe,res,rw);
 }
 function doDuel(id,pay){
+  INSPECT=null;
   syncLadder();
   let o=state.arena.find(x=>x.id===id);
   if(!o&&id.startsWith('c-')){ const st=REAL[id.slice(2)]; if(st){ o=heroFighter(st); o.id=id; } }
@@ -2132,6 +2222,9 @@ document.addEventListener('click',e=>{
     case 'pickcls': { pickedClass=el.dataset.cls; const v=$('#nm')?.value||''; render(); $('#nm').value=v; } break;
     case 'start': { if(listChars().length>=MAX_CHARS) return; const n=($('#nm').value||'').trim()||'Éjféli Ernő'; newPlayer(n,pickedClass); view='terkep'; save(); render(); window.scrollTo(0,0); } break;
     case 'view': view=el.dataset.v; render(); window.scrollTo(0,0); break;
+    case 'inspect': hideTip(); openInspect(id); return;
+    case 'closeinsp': INSPECT=null; hideTip(); $('#overlay-root').innerHTML=''; return;
+    case 'noop': if(tr&&!HOVER){ tipKey===tr.dataset.tip?hideTip():showTip(tr); } else if(!tr) hideTip(); return;
     case 'selquest': { const y=window.scrollY; selQuest=selQuest===id?null:id; render(); window.scrollTo(0,y);
       if(selQuest) requestAnimationFrame(()=>{ const g=document.querySelector('.quest.sel .quest-go'); if(!g) return; const r=g.getBoundingClientRect(), bar=(document.querySelector('.tabs')?.offsetHeight||70)+12;
         if(r.bottom>innerHeight-bar) window.scrollBy({top:r.bottom-(innerHeight-bar),behavior:RM?'auto':'smooth'}); }); } break;
@@ -2195,7 +2288,7 @@ document.addEventListener('click',e=>{
 
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.01 14:11';
+const BUILD='2026.11.01 14:51';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -2235,7 +2328,7 @@ async function loadOnlineLogs(announce){
   if(view==='arena'&&!battle) render();
 }
 async function doOnlineDuel(id,pay){
-  const p=ONLINE.players.find(x=>x.id===id); if(!p) return;
+  INSPECT=null; const p=ONLINE.players.find(x=>x.id===id); if(!p) return;
   if(state.arenaReadyAt>now()&&!(pay&&spendPog(1))) return;
   const o=heroFighter(p.data); o.name=p.name; o.art=CLASS_ART[o.cls];
   const me=playerFighter(), res=simulate(me,o); let rw='';
