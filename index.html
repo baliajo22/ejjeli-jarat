@@ -616,6 +616,8 @@ body.modal-open{overflow:hidden}
 .lday.today{border:2px solid var(--sodium);box-shadow:0 0 18px rgba(242,163,58,.35);animation:pulse 1.8s infinite}
 .login-link{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:inherit;font:inherit;font-size:13.5px;cursor:pointer}
 .login-link>span:nth-child(2){flex:1}
+.raid-chip{color:var(--hex)}
+.raid-bonus{font-size:13px;color:var(--hex);margin-top:8px;display:flex;align-items:center;gap:6px}
 .raid-card{border-color:rgba(157,139,255,.5)}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
@@ -1381,8 +1383,8 @@ const GUILD_UPG=[
 function genGuildLadder(){ const n=new Set(); while(n.size<GUILD_N-1) n.add(`${pick(G_A)} ${pick(G_B)}`); return [...n].map((name,i)=>({id:uid(),name,emblem:pick(Object.keys(EMBLEMS)),off:Math.round(6-i*9/(GUILD_N-2)),size:Math.max(4,12-Math.floor(i/2))})).concat([{me:true}]); }
 function genCandidates(){ return Array.from({length:5},()=>({id:uid(),name:`${pick(EPI)} ${pick(FIRST)}`,cls:pick(Object.keys(CLASSES)),off:rand(-3,1)})); }
 function gUpg(k){ const G=state.guild||(memberGuild()||{}).g; return G?G.upg[k]||0:0; }
-function goldMult(){ return 1+.03*gUpg('kincstar')+((state&&skillFx(state).gold)||0); }
-function xpMult(){ return 1+.03*gUpg('edzo')+((state&&skillFx(state).xp)||0); }
+function goldMult(){ return 1+.03*gUpg('kincstar')+.01*raidKills()+((state&&skillFx(state).gold)||0); }
+function xpMult(){ return 1+.03*gUpg('edzo')+.01*raidKills()+((state&&skillFx(state).xp)||0); }
 function guildCap(){ return 5+2*gUpg('klub'); }
 function upgCost(l){ return Math.round(150*Math.pow(1.6,l)); }
 function memberLevel(m){ if(m.real){ const d=realData(m.cid); return d?d.level:(m.lvl||1); } return Math.max(1,state.level+m.off); }
@@ -2599,7 +2601,9 @@ function raidLeader(){ const ch=guildChannel(); if(!ch) return null; return ch==
 /* offline every hit is kept in the leader's save; the online build adds the server-side hits */
 function raidRows(){ const L=raidLeader(), R=(L&&L.guild&&L.guild.raid)||{}; const rows=Object.entries(R.hits||{}).map(([k,v])=>({key:k,...v,me:k===state.cid}));
   if(R.bots) rows.push({key:'bots',name:'Gépi céhtagok',cls:'kidobo',dmg:R.bots,bots:true}); return rows; }
-function raidState(){ const rows=raidRows().sort((a,b)=>b.dmg-a.dmg), total=rows.reduce((a,r)=>a+r.dmg,0); let i=0, acc=0; while(acc+raidBoss(i).hp<=total){ acc+=raidBoss(i).hp; i++; }
+function raidState(){ RAID_KC.at=0;
+  return raidStateRaw(); }
+function raidStateRaw(){ const rows=raidRows().sort((a,b)=>b.dmg-a.dmg), total=rows.reduce((a,r)=>a+r.dmg,0); let i=0, acc=0; while(acc+raidBoss(i).hp<=total){ acc+=raidBoss(i).hp; i++; }
   const B=raidBoss(i); return {rows,total,idx:i,boss:B,done:total-acc,hp:B.hp-(total-acc),me:rows.find(r=>r.me)}; }
 function raidDay(){ const r=state.raidDay||(state.raidDay={}); if(r.day!==todayKey()){ r.day=todayKey(); r.used=0; r.paid=0; } return r; }
 function raidSave(fn){ const L=raidLeader(); if(!L||!L.guild) return false; L.guild.raid=L.guild.raid||{hits:{},bots:0}; L.guild.raid.hits=L.guild.raid.hits||{}; fn(L.guild.raid); if(L===state) save(); else writeOther(L); return true; }
@@ -2615,27 +2619,28 @@ function raidAttack(pay){
   for(let n=0;n<40&&hA>0;n++){ const att=t?boss:me, hits=CLASSES[att.cls].hits||1;
     for(let h=0;h<hits&&hA>0;h++){ const r=strike(att,t?me:bdef,h>0); if(!t) r.dmg=Math.round(r.dmg*cf); if(t) hA=Math.max(0,hA-r.dmg); else dealt+=r.dmg; log.push({...r,side:t,hA,hB:Math.max(0,pool-dealt),extra:h>0}); }
     t=1-t; }
-  dealt=Math.min(dealt,pool); const bots=raidBots();
+  dealt=Math.min(dealt,pool); const bots=raidBots(); RAID_KC.at=0;
   const x=Math.max(5,Math.round(xpNeed(state.level)*.02*xpMult())); gainXp(x); recordRaidHit(dealt); track('raid',1); save();
   openBattle(me,{...boss,hp:Math.max(1,pool)},{log,win:true,boss:true,dealt,dead:dealt>=pool},`<span class="chip">${ic('xp','ic-xp')}+${fmt(x)} XP</span>${bots?`<span class="chip">${ic('user')}a gépi tagok is odavertek: ${fmt(bots)}</span>`:''}`);
 }
-function raidClaimable(){ if(!guildChannel()) return 0; const st=raidState(), got=(state.raidClaim||{})[guildChannel()]||0; return st.me&&st.me.dmg>0?Math.max(0,st.idx-got):0; }
+function raidClaimable(){ if(!state.guild) return 0; const st=raidState(), got=(state.raidClaim||{})[guildChannel()]||0; return st.me&&st.me.dmg>0?Math.max(0,st.idx-got):0; }
 function raidTreasury(n){ return Math.round((200+state.level*40)*n); }
-function raidClaim(){ const n=raidClaimable(); if(!n) return; const ch=guildChannel(), st=raidState();
-  state.raidClaim=state.raidClaim||{}; state.raidClaim[ch]=st.idx;
-  // the reward is permanent: +1 to every attribute per boss; the leader's treasury gets forint
-  for(const [k] of STATS) state.stats[k]+=n; state.raidStats=(state.raidStats||0)+n;
-  let t=''; if(state.guild){ const f=raidTreasury(n); state.guild.treasury+=f; state.guild.honor+=15*n; t=`, +${fmt(f)} Ft a közös kasszába`; }
-  save(); render(); sfx('levelup'); toast(`Céhes győzelem! +${n} minden tulajdonságra${t}.`); }
+// every boss the guild has beaten adds +1% forint and +1% XP for all members, for good
+let RAID_KC={at:0,v:0,ch:null};
+function raidKills(){ const ch=state&&guildChannel(); if(!ch) return 0; if(RAID_KC.ch!==ch||now()-RAID_KC.at>5000){ RAID_KC={at:now(),ch,v:raidStateRaw().idx}; } return RAID_KC.v; }
+function raidClaim(){ const n=raidClaimable(); if(!n||!state.guild) return; const ch=guildChannel(), st=raidState();
+  state.raidClaim=state.raidClaim||{}; state.raidClaim[ch]=st.idx; const f=raidTreasury(n); state.guild.treasury+=f; state.guild.honor+=15*n;
+  save(); render(); sfx('levelup'); toast(`Céhes győzelem! +${fmt(f)} Ft a közös kasszába.`); }
 function raidCard(){
   if(!guildChannel()) return ''; const st=raidState(), B=st.boss, d=raidDay(), free=RAID_FREE-d.used, paid=RAID_PAID-d.paid, cl=raidClaimable();
   let h=`<section class="card boss-card raid-card"><div class="boss-head">${portrait(ENEMY_ART[B.art],'boss-port')}<div><span class="label">${ic('fame')}Céhes rajtaütés · ${B.i+1}. főgonosz</span><h2>${esc(B.name)}</h2><p class="muted">Együtt verjétek le! Ha ledől, jön a következő, még erősebb.${st.idx?` Eddig ${st.idx} főgonoszt győztetek le.`:''}</p></div></div>
+    ${st.idx?`<div class="raid-bonus">${ic('fame')}Céhes bónusz: <b>+${st.idx}% forint, +${st.idx}% XP</b> minden tagnak</div>`:''}
     <div class="boss-hp"><i style="width:${Math.max(0,st.hp/B.hp*100)}%"></i><span class="mono">${fmt(st.hp)} / ${fmt(B.hp)}</span></div></section>`;
-  if(cl) h+=`<section class="card boss-win"><h3>${ic('trophy')}Ledőlt ${cl>1?cl+' főgonosz':'a főgonosz'}!</h3><p>A jutalmad: <b>+${cl} minden tulajdonságra</b> (Erő, Ügyesség, Ész, Kitartás, Szerencse), végleg.${state.guild?` A közös kasszába <b>${fmt(raidTreasury(cl))} Ft</b> kerül.`:' A közös kasszába a vezető átvételekor kerül forint.'}</p><button class="btn primary" data-act="raidclaim" style="width:100%">Jutalom átvétele</button></section>`;
+  if(cl) h+=`<section class="card boss-win"><h3>${ic('trophy')}Ledőlt ${cl>1?cl+' főgonosz':'a főgonosz'}!</h3><p>A céh mostantól <b>+${raidKills()}% forintot és +${raidKills()}% XP-t</b> kap mindenből. Vedd át a kasszába járó <b>${fmt(raidTreasury(cl))} Ft</b>-ot.</p><button class="btn primary" data-act="raidclaim" style="width:100%">Jutalom átvétele</button></section>`;
   h+=`<section class="card row between"><div><div class="label">${ic('fight')}Csapások ma</div><div class="note">${free>0?`${free}/${RAID_FREE} ingyen`:`pogácsáért még ${paid}/${RAID_PAID}`}</div></div>
     ${free>0?`<button class="btn primary" data-act="raidhit">${ic('fight')}Lecsapok</button>`:`<button class="btn pog-btn" data-act="raidhit" data-pog="1" ${paid<=0||(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Lecsapok</button>`}</section>`;
   if(st.rows.length) h+=`<section class="card"><div class="row between" style="margin-bottom:6px"><span class="label">${ic('trophy')}Ki mennyit ütött</span><span class="note">összesen ${fmt(st.total)}</span></div>${st.rows.slice(0,8).map((r,i)=>`<div class="lad-row ${r.me?'me':''}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(CLASS_ART[r.cls]||CLASS_ART.kidobo,'lad-port')}<span class="lad-name">${esc(r.name)}${r.me?' <em>te</em>':''}</span><span class="lad-lvl mono">${fmt(r.dmg)}</span></div>`).join('')}</section>`;
-  return h+`<p class="note">Naponta ${RAID_FREE} ingyen csapás jár, utána még ${RAID_PAID} pogácsáért. Minden ledöntött főgonoszért mindenki, aki ütött, végleg +1-et kap minden tulajdonságára, a céh kasszája pedig forintot.${state.raidStats?` Eddig összesen +${state.raidStats} jött így.`:''} A gépi céhtagok a vezető csapásaival együtt ütnek.</p>`;
+  return h+`<p class="note">Naponta ${RAID_FREE} ingyen csapás jár, utána még ${RAID_PAID} pogácsáért. Minden ledöntött főgonosz után a céh minden tagja végleg +1% forintot és +1% XP-t kap mindenből, a vezető pedig forintot vehet át a kasszába.${raidKills()?` Most: <b>+${raidKills()}% forint, +${raidKills()}% XP</b>.`:''} A gépi céhtagok a vezető csapásaival együtt ütnek.</p>`;
 }
 
 let GDESC_EDIT=false;
@@ -2653,7 +2658,7 @@ function gDescHtml(g,lead){
   if(lead&&GDESC_EDIT) return `<div class="g-desc edit"><textarea id="gdesc" maxlength="300" rows="3" placeholder="pl. Napi 3 küldetés kötelező. Kincstár +15% pénz, Edzőterem +12% XP. Aktív, magyar céh.">${esc(g.desc||'')}</textarea><div class="row between"><span class="note">Ezt látják azok is, akiket meghívsz.</span><span class="row" style="gap:6px"><button class="btn small" data-act="gdesccancel">Mégse</button><button class="btn small primary" data-act="gdescsave">Mentés</button></span></div></div>`;
   return `<div class="g-desc">${g.desc?`<p>${esc(g.desc)}</p>`:`<p class="muted">${lead?'Még nincs leírás. Írd ide, milyen a céhetek, és mit kaptok a fejlesztésekből.':'A vezető még nem írt leírást.'}</p>`}${lead?`<button class="btn small" data-act="gdescedit">${ic('chat')}${g.desc?'Szerkesztés':'Leírás írása'}</button>`:''}</div>`; }
 function gHead(g,o){ return `<section class="card g-head-wrap"><div class="g-head"><div class="g-emb">${svg(emblemSvg(g.emblem))}</div><div class="g-info"><div class="label">Céhszint ${1+Object.values(g.upg).reduce((a,b)=>a+b,0)}${o.member?' · tag vagy':''}</div><h3>${esc(g.name)}</h3><div class="g-stats">${o.rank?`<span class="with-ic">${ic('trophy','ic-fame')}#${o.rank} / ${o.ladLen}</span>`:''}<span class="with-ic">${ic('user')}${g.members.length+1}${o.cap?'/'+o.cap:''} fő</span><span class="with-ic">${ic('fame','ic-fame')}${g.honor} becsület</span><span class="with-ic">${ic('coin','ic-gold')}${fmt(o.treasury)} Ft kassza</span></div></div></div>
-  <div class="g-bonus">${GUILD_UPG.filter(u=>g.upg[u.id]).map(u=>`<span class="chip">${ic(u.icon)}${u.fx(g.upg[u.id])}</span>`).join('')||'<span class="note">Még nincs fejlesztés.</span>'}</div>${gDescHtml(g,!o.member&&!o.view)}</section>`; }
+  <div class="g-bonus">${GUILD_UPG.filter(u=>g.upg[u.id]).map(u=>`<span class="chip">${ic(u.icon)}${u.fx(g.upg[u.id])}</span>`).join('')}${o.view||!raidKills()?'':`<span class="chip raid-chip">${ic('fame')}rajtaütés: +${raidKills()}% Ft és XP</span>`}${!GUILD_UPG.some(u=>g.upg[u.id])&&(o.view||!raidKills())?'<span class="note">Még nincs fejlesztés.</span>':''}</div>${gDescHtml(g,!o.member&&!o.view)}</section>`; }
 const G_TABS=[['tagok','Tagok','user'],['fejlesztes','Fejlesztés','refresh'],['harc','Harc','fight'],['chat','Chat','chat']];
 function raidReady(){ if(!state||!guildChannel()) return false; return raidDay().used<RAID_FREE||raidClaimable()>0; }
 const gTabs=()=>`<div class="seg seg4" role="tablist">${G_TABS.map(([k,l,i])=>`<button role="tab" data-act="gtab" data-t="${k}" aria-selected="${guildTab===k}" style="position:relative">${ic(i)}${l}${k==='harc'&&raidReady()?'<span class="mg-dot"></span>':''}</button>`).join('')}</div>`;
@@ -3397,7 +3402,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 13:38';
+const BUILD='2026.11.02 13:40';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
