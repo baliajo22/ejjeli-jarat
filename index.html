@@ -1041,6 +1041,22 @@ h3{letter-spacing:.04em}
 .opp.pl-row:hover,.lad-row.pl-row:hover{background:rgba(242,163,58,.06)}
 .pl-name{cursor:pointer;text-decoration:underline dotted rgba(242,163,58,.6);text-underline-offset:3px}
 .pl-name:hover{color:var(--sodium)}
+
+/* ===== NPC szövegbuborék ===== */
+.banner .npc{pointer-events:auto;cursor:pointer}
+.bubble{position:absolute;z-index:3;max-width:46%;padding:7px 11px;border-radius:16px;background:#fffdf4;color:#1b1206;font:700 12.5px/1.25 var(--f-body);
+  border:2.5px solid #0b0c14;box-shadow:0 4px 0 #0b0c14,0 10px 18px rgba(0,0,0,.45);animation:bubLife 6.5s cubic-bezier(.2,1.3,.4,1) both;transform-origin:var(--to,100% 100%);pointer-events:none}
+.bubble::after{content:"";position:absolute;width:14px;height:14px;background:#fffdf4;border:2.5px solid #0b0c14;border-top:0;border-left:0;bottom:-8px;transform:rotate(45deg)}
+@keyframes bubLife{0%{opacity:0;transform:scale(.4)}6%{opacity:1;transform:scale(1.06)}10%,88%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.96) translateY(-6px)}}
+.b-kocsma .bubble{right:47%;top:10%;--to:100% 100%}
+.b-kocsma .bubble::after{right:14px}
+.b-bolt .bubble{left:6%;top:9%;--to:100% 100%;max-width:38%}
+.b-bolt .bubble::after{right:14px}
+.b-garazs .bubble{left:34%;top:10%;--to:0 100%}
+.b-garazs .bubble::after{left:14px}
+.b-muhely .bubble{left:6%;top:8%;--to:100% 100%;max-width:40%}
+.b-muhely .bubble::after{right:14px}
+@media (prefers-reduced-motion:reduce){.bubble{animation:bubFade 6.5s linear both}@keyframes bubFade{0%,90%{opacity:1}100%{opacity:0}}}
 </style>
 </head>
 <body>
@@ -1509,8 +1525,29 @@ function imgUrl(k,src){ const key=k; if(IMG_URL[key]) return IMG_URL[key]; const
 const bgUrl=k=>imgUrl(k,BG_IMG), npcUrl=k=>imgUrl('npc_'+k,{['npc_'+k]:NPC_IMG[k]});
 const BANNER_NPC={kocsma:'ica',bolt:'feri',garazs:'gyuri2',muhely:'gyuri'};
 const bgPic=(k,cls='')=>`<img class="bgpic ${cls}" src="${bgUrl(k)}" alt="" decoding="async">`;
+
+/* NPC-k szövegbuborékai: belépéskor mondanak valamit, rákoppintva újat */
+const NPC_LINES={
+ kocsma:()=>[ 'Kávét, drágám? Az első ingyen… majdnem.','Megint egy kobold a nyolcadikban. Vállalod?','Éjfél után itt minden bejelentés igaz.','Ne nézz így, a pörkölt tegnapi, de jó.','Válassz egy munkát, aztán igyunk rá!','Ki nem fizetett megint? …Ja, te voltál.','A liftben valami morog. Nem a szerelő.',
+   ...(state.energy<15?['Elfogyott a kávéd? Van dupla, pogácsáért.','Fáradtnak tűnsz. Igyál egy duplát!']:[]),
+   ...(typeof tasksClaimable==='function'&&tasksClaimable()?['Nézd meg a füzetem, van mit begyűjteni!']:[]) ],
+ bolt:()=>[ 'Mit adhatok? Ma minden akciós. Kivéve, ami nem.','Ezt a sapkát egy vámpírtól vettem. Ne kérdezd.','Éjjel kettőkor is nyitva. Sajnos.','Új áru éjfélkor jön, addig ez van.','Fizethetsz pogácsával is. Nem kérdezem, honnan van.','A kávé forró. A hűtő nem hideg. Ez van.','Jó cucc, szinte alig átkozott.',
+   ...(state.freeReshop?['Ingyen kipakolok újat, csak szólj!']:[]), ...(state.gold<50?['Kevés a forint? Szedj szét valamit a Műhelyben.']:[]) ],
+ garazs:()=>[ 'Ez a robogó? Kétszer olyan gyors, ha tolod.','Bérelj valamit, a gyaloglás az öregeknek való. Mint én.','Mindent megjavítok, kivéve a szíved.','Nálam a defekt nem kifogás.','Kerékkel hamarabb ott vagy, fiam!', ...(state.vehicle?['Vigyázz rá, nem egy Ikarus!']:['Gyalog még a kobold is lehagy.']) ],
+ muhely:()=>[ 'Hozd a kacatot, kristály lesz belőle!','Satu, kalapács, egy kis varázslat. Kész.','Szétszedni könnyű. Összerakni, na az a művészet.','A lila kristály csíp. Ne nyald meg.','Ebből még fegyver lesz, meglátod.' ]
+};
+const BUB={k:null,txt:'',at:0,last:{}}, BUB_MS=6500;
+function npcLine(k){ const L=(NPC_LINES[k]||(()=>[]))(); if(!L.length) return ''; let t; do{ t=pick(L); }while(L.length>1&&t===BUB.last[k]); BUB.last[k]=t; return t; }
+function npcBubble(k){ if(BUB.k!==k){ BUB.k=k; BUB.txt=npcLine(k); BUB.at=now(); }
+  const el=now()-BUB.at; if(!BUB.txt||el>BUB_MS) return '';
+  return `<div class="bubble" style="animation-delay:-${el}ms" aria-live="polite">${esc(BUB.txt)}</div>`; }
+function npcSay(k){ BUB.k=k; BUB.txt=npcLine(k); BUB.at=now(); const f=document.querySelector('.banner.b-'+k); if(!f) return;
+  f.querySelector('.bubble')?.remove(); f.insertAdjacentHTML('beforeend',`<div class="bubble">${esc(BUB.txt)}</div>`);
+  const n=f.querySelector('.npc'); if(n&&!RM) n.animate([{transform:'translateY(0)'},{transform:'translateY(-4%) rotate(-1.5deg)'},{transform:'translateY(0)'}],{duration:380,easing:'ease-out'});
+  if(typeof sfx==='function') try{ sfx('pop'); }catch(e){} }
+let BUB_VIEW='';
 const BANNERS={}; const bannerSvg=k=>`<figure class="banner">${BANNERS[k]||(BANNERS[k]={skyline:skylineSvg,kocsma:kocsmaSvg,bolt:boltSvg,arena:arenaSvg,kazamata:kazamataSvg,garazs:garazsSvg,ceh:cehSvg}[k]())}</figure>`;
-const banner=k=>BG_IMG[k]?`<figure class="banner pic b-${k}">${bgPic(k)}${BANNER_NPC[k]?`<div class="npc-clip"><img class="npc" src="${npcUrl(BANNER_NPC[k])}" alt="" decoding="async"></div>`:''}</figure>`:bannerSvg(k);
+const banner=k=>BG_IMG[k]?`<figure class="banner pic b-${k}">${bgPic(k)}${BANNER_NPC[k]?`<div class="npc-clip"><img class="npc" src="${npcUrl(BANNER_NPC[k])}" alt="Beszélj vele" decoding="async" data-act="npcsay" data-id="${k}" role="button" tabindex="0"></div>${npcBubble(k)}`:''}</figure>`:bannerSvg(k);
 
 /* ================= UI icons ================= */
 const I={
@@ -2219,6 +2256,7 @@ function render(){
   if(!SB){ app.innerHTML=renderNoConfig(); return; }
   if(!ONLINE.user){ app.innerHTML=renderAuth(); return; }
   if(!state){ app.innerHTML=renderCreate(); return; }
+  { const vk=view+'/'+(view==='bolt'?boltTab:''); if(vk!==BUB_VIEW){ BUB_VIEW=vk; BUB.k=null; } }
   app.innerHTML = renderHud() + `<main class="wrap">${({kocsma:renderKocsma,karakter:renderKarakter,bolt:renderBolt,arena:renderArena,kazamata:renderKazamata,ceh:renderCeh,terkep:renderTerkep})[view]()}</main>` + renderTabs();
   syncViewBg();
   if(lvlFx && !battle){ const L=lvlFx; lvlFx=false; showLevelUp(L); }
@@ -3787,6 +3825,7 @@ document.addEventListener('click',e=>{
     case 'pkroll': pokerRoll(); return;
     case 'pkstand': pokerStand(); return;
     case 'pkagain': PK={phase:'bet',cur:PK.cur}; renderPoker(); return;
+    case 'npcsay': npcSay(id); return;
     case 'closemg': if(WHEEL_BUSY||(PK&&(PK.phase==='play'||PK.phase==='ica'))) return; PK=null; $('#overlay-root').innerHTML=''; render(); return;
     case 'closeinsp': INSPECT=null; hideTip(); $('#overlay-root').innerHTML=''; return;
     case 'noop': if(tr&&!HOVER){ tipKey===tr.dataset.tip?hideTip():showTip(tr); } else if(!tr) hideTip(); return;
@@ -3877,7 +3916,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 17:15';
+const BUILD='2026.11.02 17:23';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
