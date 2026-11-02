@@ -827,6 +827,77 @@ details.install-card ol{margin:10px 0 0;padding-left:20px;display:flex;flex-dire
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--sodium);color:var(--sodium-ink);font-weight:700;padding:10px 16px;border-radius:999px;z-index:30;max-width:calc(100% - 32px);text-align:center;animation:in .25s}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:420px){.derived{grid-template-columns:repeat(2,1fr)}.hud-port{display:none}.slots{grid-template-columns:1fr}}
+
+/* ===== Éjszakai neon réteg: mélyebb éjszaka, üveges sávok, fénylő kártyák ===== */
+:root{
+  --night:#0c0d17; --concrete:#191a2b; --panel:#24263d; --line:#34375a;
+  --neon-a:#f2a33a; --neon-b:#ff4f8b; --neon-c:#7d6bff; --neon-d:#38d6c4;
+  --surf:linear-gradient(180deg,#1f2135 0%,#17182a 100%);
+  --edge:inset 0 1px 0 rgba(255,255,255,.06),0 10px 26px -12px rgba(0,0,0,.7);
+}
+body{background-color:var(--night);
+  background-image:
+    radial-gradient(90% 45% at 12% -8%,rgba(255,79,139,.16),transparent 60%),
+    radial-gradient(90% 45% at 92% -6%,rgba(125,107,255,.18),transparent 62%),
+    radial-gradient(120% 50% at 50% 112%,rgba(242,163,58,.12),transparent 60%),
+    radial-gradient(1px 1px at 20% 30%,rgba(255,255,255,.35),transparent 1px),
+    radial-gradient(1px 1px at 70% 18%,rgba(255,255,255,.28),transparent 1px),
+    radial-gradient(1px 1px at 84% 62%,rgba(255,255,255,.22),transparent 1px),
+    radial-gradient(1px 1px at 35% 78%,rgba(255,255,255,.2),transparent 1px);
+  background-attachment:fixed}
+body::before{background:rgba(12,13,23,.86)}
+
+/* felső sáv: üveg, neon csík alul */
+.hud{background:rgba(16,17,30,.78);-webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3);border-bottom:0;box-shadow:0 8px 24px -14px rgba(0,0,0,.9)}
+.hud::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:linear-gradient(90deg,transparent,var(--neon-b) 18%,var(--neon-a) 50%,var(--neon-c) 82%,transparent);opacity:.75;filter:drop-shadow(0 0 6px rgba(255,79,139,.6))}
+.plate{background:linear-gradient(160deg,#ffc56a,#f2a33a 55%,#d9811f);border-radius:10px;box-shadow:0 0 0 1px rgba(255,214,150,.55) inset,0 0 16px rgba(242,163,58,.45),0 4px 10px rgba(0,0,0,.4)}
+.hud-name b{text-shadow:0 0 12px rgba(255,255,255,.12)}
+.hud .bar{height:7px;background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.hud .bar i{background:linear-gradient(90deg,var(--neon-c),#b8a9ff);box-shadow:0 0 10px rgba(125,107,255,.8)}
+.chip{background:rgba(255,255,255,.055);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.chip.pog-chip{background:rgba(242,194,107,.1);box-shadow:inset 0 0 0 1px rgba(242,194,107,.3)}
+
+/* alsó menü: lebegő üvegsáv, a kiválasztott fül világít */
+.tabs{left:0;right:0;bottom:0;background:none;border-top:0;padding:0 8px calc(8px + env(safe-area-inset-bottom,0px));pointer-events:none}
+.tabs .in{pointer-events:auto;background:rgba(18,19,33,.82);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);border-radius:20px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),inset 0 1px 0 rgba(255,255,255,.08),0 12px 30px -8px rgba(0,0,0,.85);padding:5px}
+.tab{padding:8px 1px 7px;border-radius:14px;transition:color .2s,background .2s}
+.tab svg{transition:transform .2s,filter .2s}
+.tab[aria-current="page"]{color:#ffd08a;background:radial-gradient(80% 90% at 50% 30%,rgba(242,163,58,.28),rgba(242,163,58,.06) 70%);box-shadow:inset 0 0 0 1px rgba(242,163,58,.35)}
+.tab[aria-current="page"] svg{transform:translateY(-1px) scale(1.08);filter:drop-shadow(0 0 6px rgba(242,163,58,.9))}
+.tab[aria-current="page"]::before{top:auto;bottom:3px;left:40%;right:40%;height:2px;border-radius:2px;box-shadow:0 0 8px var(--sodium)}
+.tab:not([aria-current]):active{background:rgba(255,255,255,.05)}
+.tab .dot{top:5px;box-shadow:0 0 0 2px rgba(18,19,33,.9),0 0 8px var(--bad)}
+
+/* kártyák és dobozok */
+.card,.quest,.ros,.cls{background:var(--surf);border:1px solid rgba(120,126,190,.18);border-radius:14px;box-shadow:var(--edge)}
+.card{position:relative}
+.card::before{content:"";position:absolute;left:14px;right:14px;top:-1px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);pointer-events:none}
+.card>.row:first-child .label,.card>.label:first-child{color:#c9c4e8}
+.card>.row:first-child .label .ic,.card>.label:first-child .ic{color:var(--sodium);filter:drop-shadow(0 0 4px rgba(242,163,58,.6))}
+.quest{transition:border-color .2s,transform .15s,box-shadow .2s}
+.quest:hover{border-color:rgba(242,163,58,.6);box-shadow:var(--edge),0 0 0 1px rgba(242,163,58,.25),0 0 22px -6px rgba(242,163,58,.45)}
+.banner{border:1px solid rgba(120,126,190,.22);border-radius:16px;box-shadow:0 14px 34px -14px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.03) inset}
+.port{box-shadow:inset 0 0 0 1px rgba(150,156,220,.25),0 4px 12px -6px rgba(0,0,0,.8)}
+.seg{background:rgba(20,21,36,.7);border:1px solid rgba(120,126,190,.18);border-radius:14px;box-shadow:var(--edge)}
+.seg button{border-radius:10px;transition:background .2s,color .2s}
+.seg button[aria-selected="true"]{background:linear-gradient(160deg,#ffc56a,#f2a33a 60%,#e08a25);box-shadow:0 0 14px -2px rgba(242,163,58,.6),inset 0 1px 0 rgba(255,255,255,.35)}
+.scene h2{text-shadow:0 0 18px rgba(125,107,255,.25)}
+.scene .label{color:#b8b3dc}
+
+/* gombok: fényesebb fő gomb */
+.btn{border-radius:10px}
+.btn.primary{background:linear-gradient(160deg,#ffc56a,#f2a33a 55%,#df8722);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 16px -6px rgba(242,163,58,.7)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.primary:disabled{box-shadow:none}
+.field input{background:rgba(10,11,20,.6);border-color:rgba(120,126,190,.25);border-radius:10px}
+.field input:focus{border-color:var(--sodium);box-shadow:0 0 0 3px rgba(242,163,58,.18)}
+.sheet,.ins-card{background:linear-gradient(180deg,#1e2034,#151626)}
+.quest{position:relative;overflow:hidden}
+.quest::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0;background:var(--qc,var(--ok));box-shadow:0 0 10px var(--qc,var(--ok))}
+.quest:has(.diff-1){--qc:var(--sodium)} .quest:has(.diff-2){--qc:var(--bad)}
+.quest.sel{border-color:rgba(242,163,58,.55);box-shadow:var(--edge),0 0 24px -8px rgba(242,163,58,.55)}
+@media (prefers-reduced-transparency:reduce){.hud,.tabs .in{background:#14152a;-webkit-backdrop-filter:none;backdrop-filter:none}}
 </style>
 </head>
 <body>
@@ -3473,7 +3544,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 14:35';
+const BUILD='2026.11.02 15:40';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
