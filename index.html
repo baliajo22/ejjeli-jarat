@@ -622,6 +622,12 @@ body.modal-open{overflow:hidden}
 .kassza{display:flex;gap:16px;align-items:baseline;font-size:20px;font-weight:700;margin-top:2px}
 .kassza span{display:inline-flex;align-items:center;gap:6px}
 .upg-btn{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.fx-layer{position:absolute;left:-12%;top:-12%;width:124%;height:124%;z-index:4;overflow:visible;pointer-events:none}
+.trail{position:absolute;left:0;top:0;width:10px;height:10px;border-radius:50%;pointer-events:none;z-index:4}
+.trail.magic{background:radial-gradient(circle,#fff 0 25%,#9d8bff 55%,transparent 75%)}
+.trail.shot{width:7px;height:7px;background:radial-gradient(circle,#fff 0 25%,#f2a33a 55%,transparent 75%)}
+.pw .ghost{position:absolute;inset:0;pointer-events:none;filter:grayscale(.4) brightness(1.4)}
+.crit-flash{position:absolute;inset:0;border-radius:14px;background:radial-gradient(circle,rgba(255,255,255,.95),rgba(255,230,160,.6) 45%,transparent 75%);z-index:5;pointer-events:none}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
 .install-card>div{flex:1;min-width:0}
@@ -2933,17 +2939,34 @@ function floatText(pw,text,cls){
   const s=document.createElement('span'); s.className='float '+cls; s.textContent=text; pw.appendChild(s);
   s.animate([{transform:'translate(-50%,6px) scale(.6)',opacity:0},{transform:'translate(-50%,-14px) scale(1.15)',opacity:1,offset:.25},{transform:'translate(-50%,-50px) scale(1)',opacity:0}],{duration:RM?700:1000,easing:'ease-out'}).onfinish=()=>s.remove();
 }
-const SLASH={
-  kidobo:c=>`<path d="M10 80 Q38 6 94 24" fill="none" stroke="${c}" stroke-width="10" stroke-linecap="round"/><path d="M18 74 Q44 18 88 30" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`,
-  futar:c=>`<path d="M14 18 L86 82" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round"/><path d="M86 16 L16 84" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`
-};
-function slashFx(pw,cls,mirror){
-  if(RM) return;
-  const kind=cls==='zsebmetszo'?'futar':'kidobo', c=kind==='futar'?'#ec6552':'#f2a33a';
-  pw.insertAdjacentHTML('beforeend',`<svg class="fx-slash" viewBox="0 0 100 100" style="${mirror?'transform:scaleX(-1)':''}">${SLASH[kind](c)}</svg>`);
-  const s=pw.lastElementChild;
-  s.querySelectorAll('path').forEach((p,i)=>{ p.style.strokeDasharray='150'; p.animate([{strokeDashoffset:150},{strokeDashoffset:0}],{duration:170,delay:i*(kind==='futar'?100:15),fill:'both',easing:'ease-out'}); });
-  s.animate([{opacity:1},{opacity:1,offset:.6},{opacity:0}],{duration:460}).onfinish=()=>s.remove();
+/* ---- hit effects: layered blade arcs, sparks and impact bursts ---- */
+const FX_COL={zsebmetszo:['#ff5a4e','#ffd3cc'],kidobo:['#f2a33a','#fff1cf'],magus:['#9d8bff','#efe9ff'],futar:['#f2a33a','#fff6dc']};
+function fxSvg(pw,inner,cls='fx-layer'){ pw.insertAdjacentHTML('beforeend',`<svg class="${cls}" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">${inner}</svg>`); return pw.lastElementChild; }
+// one blade trail: a wide soft glow, a coloured band and a thin white core, drawn on in order
+const bladeArc=(d,c,core,w)=>`<g class="arc"><path d="${d}" pathLength="100" fill="none" stroke="${c}" stroke-opacity=".28" stroke-width="${w*2.2}" stroke-linecap="round"/><path d="${d}" pathLength="100" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/><path d="${d}" pathLength="100" fill="none" stroke="${core}" stroke-width="${Math.max(1.4,w*.3)}" stroke-linecap="round"/></g>`;
+function drawArcs(svgEl,dur,gap){ svgEl.querySelectorAll('.arc').forEach((g,k)=>g.querySelectorAll('path').forEach((p,i)=>{ p.style.strokeDasharray='100 100'; p.animate([{strokeDashoffset:100},{strokeDashoffset:0}],{duration:dur,delay:k*gap+i*12,fill:'both',easing:'cubic-bezier(.2,.8,.3,1)'}); })); }
+function sparks(pw,col,n=7,spread=46,size=1){ if(RM) return;
+  const el=fxSvg(pw,Array.from({length:n},()=>`<line x1="50" y1="50" x2="50" y2="${50-6*size}" stroke="${col}" stroke-width="${2.2*size}" stroke-linecap="round"/>`).join('')+`<circle cx="50" cy="50" r="${9*size}" fill="#fff" opacity=".9"/>`);
+  const ls=el.querySelectorAll('line'); ls.forEach((l,i)=>{ const a=(i/n)*Math.PI*2+Math.random()*.5, d=spread*(.6+Math.random()*.5);
+    l.style.transformOrigin='50px 50px'; l.animate([{transform:`rotate(${a+Math.PI/2}rad) translate(0,0)`,opacity:1},{transform:`rotate(${a+Math.PI/2}rad) translate(0,${-d}px)`,opacity:0}],{duration:380+Math.random()*160,easing:'cubic-bezier(.1,.8,.3,1)',fill:'forwards'}); });
+  el.querySelector('circle').animate([{transform:'scale(.2)',opacity:.9},{transform:'scale(1.5)',opacity:0}],{duration:260,fill:'forwards'}).onfinish=()=>{}; el.querySelector('circle').style.transformOrigin='50px 50px';
+  setTimeout(()=>el.remove(),620); }
+function ring(pw,col,w=3,dur=420){ if(RM) return; const el=fxSvg(pw,`<circle cx="50" cy="50" r="20" fill="none" stroke="${col}" stroke-width="${w}"/><circle cx="50" cy="50" r="12" fill="none" stroke="#fff" stroke-width="${w*.5}" opacity=".8"/>`);
+  el.querySelectorAll('circle').forEach((c,i)=>{ c.style.transformOrigin='50px 50px'; c.animate([{transform:'scale(.3)',opacity:1},{transform:`scale(${2.3-i*.5})`,opacity:0}],{duration:dur+i*60,easing:'ease-out',fill:'forwards'}); });
+  setTimeout(()=>el.remove(),dur+120); }
+function slashFx(pw,cls,mirror,crit){
+  if(RM) return; const [c,core]=FX_COL[cls]||FX_COL.kidobo, k=crit?1.3:1, m=mirror?'transform:scaleX(-1)':'';
+  let inner, dur, gap;
+  if(cls==='zsebmetszo'){ // two curved knife cuts crossing in an X, the second a beat later
+    inner=bladeArc('M16 14 Q40 46 86 86',c,core,5*k)+bladeArc('M86 16 Q58 44 14 86',c,core,5*k)+(crit?bladeArc('M50 6 Q56 50 50 94',c,core,3.5):'');
+    dur=150; gap=110;
+  } else { // the bouncer's big overhead swing: one heavy crescent with an echo
+    inner=bladeArc('M8 76 Q26 10 92 20',c,core,8*k)+bladeArc('M22 88 Q42 34 96 38',c,core,4*k);
+    dur=190; gap=60;
+  }
+  const el=fxSvg(pw,`<g style="${m};transform-origin:50px 50px">${inner}</g>`,'fx-layer fx-slash2'); drawArcs(el,dur,gap);
+  el.animate([{opacity:1,transform:'scale(.92)'},{opacity:1,transform:'scale(1)',offset:.55},{opacity:0,transform:'scale(1.06)'}],{duration:dur+gap*2+260,easing:'ease-out',fill:'forwards'}).onfinish=()=>el.remove();
+  setTimeout(()=>{ if(!pw.isConnected) return; sparks(pw,c,cls==='kidobo'?9:7,cls==='kidobo'?52:42,crit?1.3:1); if(cls==='kidobo') ring(pw,c,4,360); }, cls==='zsebmetszo'?gap+90:dur*.7);
 }
 function shieldFx(pw){
   pw.insertAdjacentHTML('beforeend',`<div class="fx-shield">${svg(`<path d="M32 4l24 9v17c0 15-10 24-24 30C18 54 8 45 8 30V13z" fill="${BU}"/><path d="M32 10l18 7v13c0 11-7 18-18 23z" fill="#6d97e0" stroke="none"/><path d="M32 18v30M20 28h24" stroke="${Y}" stroke-width="3"/>`)}</div>`);
@@ -2953,11 +2976,26 @@ function shieldFx(pw){
 function boltFx(fromPw,toPw,cls='bolt'){
   return new Promise(res=>{
     const v=$('.versus'); if(RM||!v||!fromPw.isConnected||!toPw.isConnected) return res();
-    const vr=v.getBoundingClientRect(), a=fromPw.getBoundingClientRect(), b=toPw.getBoundingClientRect();
+    const vr=v.getBoundingClientRect(), a=fromPw.getBoundingClientRect(), b=toPw.getBoundingClientRect(), shot=cls.includes('shot');
     const d=document.createElement('div'); d.className=cls; v.appendChild(d);
     const x0=a.left+a.width/2-vr.left-11, y0=a.top+a.height/2-vr.top-11, x1=b.left+b.width/2-vr.left-11, y1=b.top+b.height/2-vr.top-11;
-    d.animate([{transform:`translate(${x0}px,${y0}px) scale(.5)`},{transform:`translate(${(x0+x1)/2}px,${Math.min(y0,y1)-34}px) scale(1.3)`},{transform:`translate(${x1}px,${y1}px) scale(1)`}],{duration:280,easing:'ease-in'}).onfinish=()=>{ d.remove(); res(); };
+    const cx=(x0+x1)/2, cy=Math.min(y0,y1)-(shot?14:38), dur=shot?220:320;
+    const P=t=>[(1-t)*(1-t)*x0+2*(1-t)*t*cx+t*t*x1,(1-t)*(1-t)*y0+2*(1-t)*t*cy+t*t*y1];
+    const frames=[0,.25,.5,.75,1].map(t=>{ const [x,y]=P(t); return {transform:`translate(${x}px,${y}px) scale(${shot?1:.6+t*.6})`}; });
+    // trail: little glowing specks left behind along the flight path
+    for(let k=1;k<9;k++){ const t=k/9; setTimeout(()=>{ if(!v.isConnected) return; const [x,y]=P(t), p=document.createElement('div'); p.className='trail '+(shot?'shot':'magic'); p.style.transform=`translate(${x+6+(Math.random()-.5)*6}px,${y+6+(Math.random()-.5)*6}px)`; v.appendChild(p);
+      p.animate([{opacity:.9,transform:p.style.transform+' scale(1)'},{opacity:0,transform:p.style.transform+' scale(.2)'}],{duration:shot?220:420,fill:'forwards'}).onfinish=()=>p.remove(); }, t*dur); }
+    d.animate(frames,{duration:dur,easing:'ease-in'}).onfinish=()=>{ d.remove(); impactFx(toPw,shot?'shot':'magic'); res(); };
   });
+}
+function impactFx(pw,kind){ if(RM||!pw.isConnected) return;
+  if(kind==='magic'){ ring(pw,'#9d8bff',3.5,460); sparks(pw,'#c9b8ff',8,44,1);
+    const el=fxSvg(pw,[0,1,2].map(i=>{ const a=i*2.1+Math.random(); const x=50+Math.cos(a)*30, y=50+Math.sin(a)*30; return `<path d="M50 50 L${(50+x)/2+6} ${(50+y)/2-5} L${(50+x)/2-4} ${(50+y)/2+4} L${x} ${y}" fill="none" stroke="#efe9ff" stroke-width="2" stroke-linejoin="round"/>`; }).join(''));
+    el.animate([{opacity:1},{opacity:0}],{duration:260,fill:'forwards'}).onfinish=()=>el.remove(); }
+  else { ring(pw,'#f2a33a',2.5,300); sparks(pw,'#ffd08a',6,36,.9);
+    const el=fxSvg(pw,Array.from({length:5},()=>`<circle cx="${50+(Math.random()-.5)*16}" cy="${54+(Math.random()-.5)*10}" r="${5+Math.random()*4}" fill="#b9bccb" opacity=".55"/>`).join(''));
+    el.querySelectorAll('circle').forEach(c=>{ c.style.transformOrigin=`${c.getAttribute('cx')}px ${c.getAttribute('cy')}px`; c.animate([{transform:'scale(.4)',opacity:.6},{transform:`scale(1.8) translate(${(Math.random()-.5)*10}px,${-6-Math.random()*8}px)`,opacity:0}],{duration:520,easing:'ease-out',fill:'forwards'}); });
+    setTimeout(()=>el.remove(),560); }
 }
 /* the attacker's own weapon appears and is used: swing, stab, cast or shoot */
 function weaponFx(att,ap,dp,dir){
@@ -2997,7 +3035,7 @@ async function playFx(e){
   if(!e.finish) await weaponFx(att,ap,dp,dir);
   if(att.cls==='magus') await boltFx(ap,dp);
   else if(CLASSES[att.cls].ranged) await boltFx(ap,dp,'bolt shot');
-  else if(!e.dodge&&!e.miss) slashFx(dp,att.cls,dir<0);
+  else if(!e.dodge&&!e.miss) slashFx(dp,att.cls,dir<0,e.crit);
   if(battle!==B||B.ended) return;
   sfx(e.miss?'miss':e.dodge?'dodge':e.block?'block':e.crit?'crit':'hit');
   if(e.miss){
@@ -3005,14 +3043,16 @@ async function playFx(e){
     if(!RM){ aPort.animate([{transform:'none'},{transform:`translateX(${dir*10}px) rotate(${-dir*12}deg)`},{transform:'none'}],{duration:320,delay:180}); }
   } else if(e.dodge){
     floatText(dp,'Kitért!','dodge');
-    if(!RM){ dPort.animate([{transform:'none',opacity:1},{transform:`translateX(${dir*30}px) skewX(${-dir*12}deg)`,opacity:.35,offset:.35},{transform:'none',opacity:1}],{duration:440,easing:'ease-out'}); setTimeout(()=>slashFx(dp,att.cls,dir<0),60); }
+    if(!RM){ const ghost=dPort.cloneNode(true); ghost.classList.add('ghost'); dp.appendChild(ghost); ghost.animate([{opacity:.55,transform:'none'},{opacity:0,transform:`translateX(${-dir*18}px)`}],{duration:420,fill:'forwards'}).onfinish=()=>ghost.remove();
+      dPort.animate([{transform:'none',opacity:1},{transform:`translateX(${dir*30}px) skewX(${-dir*12}deg)`,opacity:.35,offset:.35},{transform:'none',opacity:1}],{duration:440,easing:'ease-out'}); if(!CLASSES[att.cls].ranged&&att.cls!=='magus') setTimeout(()=>slashFx(dp,att.cls,dir<0),60); }
   } else if(e.block){
-    shieldFx(dp); floatText(dp,'Hárítva!','block');
+    shieldFx(dp); sparks(dp,'#9ec0f0',6,34,.8); floatText(dp,'Hárítva!','block');
     if(!RM) dPort.animate([{transform:'none'},{transform:`translateX(${dir*7}px)`},{transform:'none'}],{duration:220});
   } else {
     floatText(dp,`−${e.dmg}${e.crit?' KRIT!':''}`,e.crit?'crit':'dmg');
     if(!RM){
       dPort.animate([{transform:'none',filter:'none'},{transform:`translateX(${dir*8}px) rotate(${dir*5}deg)`,filter:'brightness(1.6) sepia(1) hue-rotate(-50deg) saturate(5)',offset:.2},{transform:`translateX(${-dir*5}px)`,offset:.5},{transform:'none',filter:'none'}],{duration:380});
+      if(e.crit){ const fl=document.createElement('div'); fl.className='crit-flash'; dp.appendChild(fl); fl.animate([{opacity:.85},{opacity:0}],{duration:260,fill:'forwards'}).onfinish=()=>fl.remove(); }
       if(e.crit) $('.sheet').animate([{transform:'none'},{transform:'translate(5px,-3px)'},{transform:'translate(-5px,3px)'},{transform:'translate(3px,0)'},{transform:'none'}],{duration:300});
     }
   }
@@ -3413,7 +3453,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 14:16';
+const BUILD='2026.11.02 14:25';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
