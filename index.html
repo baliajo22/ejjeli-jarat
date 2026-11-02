@@ -940,6 +940,30 @@ body::before{background:rgba(12,13,23,.86)}
 .has-bg .fighter b,.has-bg .gw-names b{text-shadow:0 1px 6px rgba(0,0,0,.9)}
 .has-bg .blog{background:rgba(8,9,16,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 @media (prefers-reduced-motion:reduce){.journey .j-scene>svg,.j-me .port{animation:none}}
+
+/* ===== jutalom-buborékok: fényes kapszulák, ikon kis érmében ===== */
+.rw{--c:var(--gold);position:relative;border-radius:999px;padding:3px 12px 3px 3px;gap:7px;font-weight:600;color:var(--c);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c) 22%,#1a1b2c),color-mix(in srgb,var(--c) 9%,#14152a));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 38%,transparent),inset 0 1px 0 rgba(255,255,255,.12),0 4px 12px -6px color-mix(in srgb,var(--c) 70%,transparent)}
+.rw::after{content:"";position:absolute;left:14px;right:14px;top:1px;height:40%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.14),transparent);pointer-events:none}
+.rw>.ic,.rw>.pog-ic,.rw>svg:first-child{width:24px;height:24px;padding:4px;border-radius:50%;flex:none;color:var(--c);
+  background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--c) 55%,#fff 10%),color-mix(in srgb,var(--c) 22%,#0c0d17) 75%);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 60%,transparent),0 0 8px color-mix(in srgb,var(--c) 45%,transparent)}
+.rw>.ic{color:#fff}
+.rw b{color:color-mix(in srgb,var(--c) 70%,#fff);text-shadow:0 0 10px color-mix(in srgb,var(--c) 50%,transparent)}
+.rw-gold{--c:#f2c230} .rw-xp{--c:#9d8bff} .rw-item{--c:#63b0ff} .rw-pog{--c:#f2b86b} .rw-spec{--c:#ffb454}
+.rw-pog,.rw-xp,.rw-gold,.rw-item,.rw-spec{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 22%,#1a1b2c),color-mix(in srgb,var(--c) 9%,#14152a))}
+.quest:hover .rw,.journey .rw{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 50%,transparent),inset 0 1px 0 rgba(255,255,255,.14),0 4px 14px -5px color-mix(in srgb,var(--c) 80%,transparent)}
+.chip.mini.rw,.journey .rw{font-size:12px;padding:2px 10px 2px 2px}
+.journey .rw>.ic,.journey .rw>.pog-ic,.journey .rw>svg:first-child{width:20px;height:20px;padding:3px}
+.journey .rw b{font-size:13.5px}
+/* helyszín és nehézség címkék */
+.district{border:0;border-radius:999px;padding:2px 8px;background:rgba(242,163,58,.12);box-shadow:inset 0 0 0 1px rgba(242,163,58,.45)}
+.diff{border-radius:999px;padding:2px 9px;box-shadow:inset 0 0 0 1px currentColor}
+.diff-0{background:rgba(95,196,139,.14)} .diff-1{background:rgba(242,163,58,.14)} .diff-2{background:rgba(236,101,82,.16);text-shadow:0 0 8px rgba(236,101,82,.6)}
+/* általános chipek (harc utáni jutalmak, felső sáv) */
+.chip{background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));box-shadow:inset 0 0 0 1px rgba(255,255,255,.1),inset 0 1px 0 rgba(255,255,255,.08)}
+.chip>.ic:first-child{filter:drop-shadow(0 0 4px currentColor)}
 </style>
 </head>
 <body>
@@ -2433,7 +2457,7 @@ function renderJourney(){
       <h2>${esc(q.title)}</h2>
       <p class="muted">${esc(q.desc)}</p>
       <div class="j-track"><div class="bigbar"><i id="qprog" style="width:${pct}%"></i></div><span class="j-me" id="qme" style="left:${pct}%">${portrait(CLASS_ART[state.cls])}</span><span class="j-flag">${ic('pin')}</span></div>
-      <div class="row between"><span class="timer" id="qtime">${ready?'Megérkeztél':fmtTime(left)}</span><span class="note">${questRewards(q).replace(/class="chip/g,'class="chip mini')}</span></div>
+      <div class="row between"><span class="timer" id="qtime">${ready?'Megérkeztél':fmtTime(left)}</span><span class="note">${questRewards(q)}</span></div>
       <div class="stack">${ready?`<button class="btn primary pulse big" data-act="fight">${ic('fight')}Harc: ${esc(q.enemy)}</button>`:`<button class="btn pog-btn" data-act="rushquest" ${(state.pog||0)<1?'disabled':''}>${pogIc()}Azonnal ott vagyok · 1</button><button class="btn small ghost" data-act="cancel">${ic('back')}Visszafordulok (kávé vissza)</button>`}</div>
     </div>
   </section>`;
@@ -3736,7 +3760,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 15:51';
+const BUILD='2026.11.02 16:04';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
