@@ -710,7 +710,7 @@ details.install-card ol{margin:10px 0 0;padding-left:20px;display:flex;flex-dire
 .gw-n.r{text-align:right}
 .gw-r{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
 .gw-duel.win .gw-r{color:var(--ok)} .gw-duel.lose .gw-r{color:var(--bad)}
-.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(7,1fr);padding-left:max(6px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);padding-left:max(6px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
 .tab{background:none;border:0;padding:10px 1px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--muted);position:relative}
 .tab svg{width:22px;height:22px}
 .tab[aria-current="page"]{color:var(--sodium)}
@@ -1954,7 +1954,7 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 let mapSig=null, selQuest=null; const LOOT={};
 let pickedEmblem='hold', guildTab='tagok', lastGuildReady=null;
-let state=null, view='terkep', battle=null, lastReady=null, lastArenaReady=null, lvlFx=false, lastDungReady=null, boltTab='kisbolt';
+let state=null, view='karakter', battle=null, lastReady=null, lastArenaReady=null, lvlFx=false, lastDungReady=null, boltTab='kisbolt';
 function xpNeed(l){return Math.round(60*Math.pow(l,1.45))}
 function statCost(n){return Math.round(4+n*1.6+n*n*.08)}
 
@@ -2296,7 +2296,7 @@ function leaveChar(){ save(); flushCloud(); const r=readRoster(); r.current=null
 function enterChar(id){
   const st=readChar(id); if(!st) return;
   state=migrate(st); if(!(state.arena[0]&&state.arena[0].rank)) state.arena=genArena();
-  view='terkep'; lvlFx=false; syncLadder(); save(); render(); window.scrollTo(0,0);
+  view='karakter'; lvlFx=false; syncLadder(); save(); render(); window.scrollTo(0,0);
   const fresh=(state.arenaLog||[]).filter(l=>l.at>(state.seenLog||0));
   if(fresh.length){ state.seenLog=now(); save(); toast(`${fresh.length} támadás ért az arénában, amíg távol voltál. Nézd meg az Arénában!`); }
   loadOnlineLogs(true);
@@ -2318,6 +2318,7 @@ function render(){
   if(!SB){ app.innerHTML=renderNoConfig(); return; }
   if(!ONLINE.user){ app.innerHTML=renderAuth(); return; }
   if(!state){ app.innerHTML=renderCreate(); syncViewBg(); return; }
+  if(view==='terkep') view='karakter';
   { const vk=view+'/'+(view==='bolt'?boltTab:''); if(vk!==BUB_VIEW){ BUB_VIEW=vk; BUB.k=null; } }
   app.innerHTML = renderHud() + `<main class="wrap">${({kocsma:renderKocsma,karakter:renderKarakter,bolt:renderBolt,arena:renderArena,kazamata:renderKazamata,ceh:renderCeh,terkep:renderTerkep})[view]()}</main>` + renderTabs();
   syncViewBg();
@@ -2375,7 +2376,7 @@ function renderHud(){
   </div></header>`;
 }
 function renderTabs(){
-  const t=[['terkep','Térkép'],['kocsma','Kocsma'],['karakter','Karakter'],['bolt','Bolt'],['arena','Aréna'],['kazamata','Kazamata'],['ceh','Céh']];
+  const t=[['karakter','Karakter'],['kocsma','Kocsma'],['bolt','Bolt'],['arena','Aréna'],['kazamata','Kazamata'],['ceh','Céh']];
   const ready = state.active && state.active.endsAt<=now();
   return `<nav class="tabs"><div class="in">${t.map(([k,l])=>`<button class="tab" data-act="view" data-v="${k}" ${view===k?'aria-current="page"':''}>${TAB_ICON[k]}${l}${(k==='kocsma'&&(ready||wheelFreeReady()||tasksClaimable())&&view!=='kocsma')||(k==='karakter'&&view!=='karakter'&&skillOpen()>=0)||(k==='ceh'&&view!=='ceh'&&state.level>=GUILD_UNLOCK&&raidReady())||(k==='arena'&&view!=='arena'&&bossReady())||(k==='bolt'&&state.freeReshop&&view!=='bolt')?'<span class="dot"></span>':''}${(k==='kazamata'&&state.level<DUNGEON_UNLOCK)||(k==='ceh'&&state.level<GUILD_UNLOCK)?`<span class="lock-mini">${ic('lock')}</span>`:''}</button>`).join('')}</div></nav>`;
 }
@@ -3859,7 +3860,7 @@ document.addEventListener('click',e=>{
     case 'pickcls': { pickedClass=el.dataset.cls; const v=$('#nm')?.value||''; render(); $('#nm').value=v; nameCheck(); } break;
     case 'picksex': { pickedSex=el.dataset.s==='f'?'f':'m'; const v=$('#nm')?.value||''; render(); $('#nm').value=v; nameCheck(); } break;
     case 'createtab': createTab=el.dataset.t; render(); break;
-    case 'start': { if(listChars().length>=MAX_CHARS) return; const n=($('#nm').value||'').trim(); if(n.length<3){ $('#nm').focus(); toast('A névnek legalább 3 betűsnek kell lennie.'); return; } newPlayer(n,pickedClass); state.sex=pickedSex; createTab=null; view='terkep'; save(); render(); window.scrollTo(0,0); } break;
+    case 'start': { if(listChars().length>=MAX_CHARS) return; const n=($('#nm').value||'').trim(); if(n.length<3){ $('#nm').focus(); toast('A névnek legalább 3 betűsnek kell lennie.'); return; } newPlayer(n,pickedClass); state.sex=pickedSex; createTab=null; view='karakter'; save(); render(); window.scrollTo(0,0); } break;
     case 'view': view=el.dataset.v; render(); window.scrollTo(0,0); break;
     case 'inspect': hideTip(); openInspect(id); return;
     case 'bosshit': bossAttack(el.dataset.pog); return;
@@ -3989,7 +3990,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 21:22';
+const BUILD='2026.11.02 23:52';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -4260,7 +4261,7 @@ async function doAuth(){
 async function afterLogin(){
   try{ await pullRoster(); }catch(e){ toast('Nem sikerült betölteni a hőseidet. Próbáld újra.'); }
   const st=load(); state=st?migrate(st):null;
-  if(state){ if(!(state.arena[0]&&state.arena[0].rank)) state.arena=genArena(); syncLadder(); view='terkep'; loadOnlineLogs(true); }
+  if(state){ if(!(state.arena[0]&&state.arena[0].rank)) state.arena=genArena(); syncLadder(); view='karakter'; loadOnlineLogs(true); }
   render(); window.scrollTo(0,0);
 }
 async function boot(){
