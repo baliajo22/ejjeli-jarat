@@ -898,6 +898,48 @@ body::before{background:rgba(12,13,23,.86)}
 .quest:has(.diff-1){--qc:var(--sodium)} .quest:has(.diff-2){--qc:var(--bad)}
 .quest.sel{border-color:rgba(242,163,58,.55);box-shadow:var(--edge),0 0 24px -8px rgba(242,163,58,.55)}
 @media (prefers-reduced-transparency:reduce){.hud,.tabs .in{background:#14152a;-webkit-backdrop-filter:none;backdrop-filter:none}}
+
+/* ===== háttérképek: oldal, út, harc ===== */
+#viewbg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .5s}
+#viewbg.on{opacity:1}
+#viewbg svg{width:100%;height:100%;display:block}
+#viewbg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,13,23,.15),rgba(12,13,23,.55) 45%,rgba(12,13,23,.8))}
+.app{position:relative;z-index:1}
+.journey{display:flex;flex-direction:column;border-radius:18px;overflow:hidden;background:var(--surf);border:1px solid rgba(120,126,190,.2);box-shadow:var(--edge),0 18px 40px -20px rgba(0,0,0,.9)}
+.j-scene{position:relative;aspect-ratio:360/230;overflow:hidden}
+.j-scene>svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.journey.onway .j-scene>svg{animation:jpan 26s ease-in-out infinite alternate}
+@keyframes jpan{from{transform:scale(1.08) translateX(-2.5%)}to{transform:scale(1.08) translateX(2.5%)}}
+.j-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,13,23,.35),transparent 30%,transparent 60%,rgba(23,24,42,.95))}
+.j-tags{position:absolute;left:12px;top:12px;display:flex;gap:6px}
+.j-tags .district,.j-tags .diff{background:rgba(10,11,20,.7);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.j-foe{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:transform .5s,opacity .5s,filter .5s}
+.j-foe .port{width:72px;height:72px;border-radius:14px;box-shadow:0 0 0 2px rgba(255,90,78,.6),0 0 24px rgba(255,90,78,.45)}
+.j-foe span{font-size:11px;font-weight:800;background:rgba(10,11,20,.75);padding:2px 8px;border-radius:999px}
+.journey.onway .j-foe{opacity:.55;filter:brightness(.35) blur(1px);transform:scale(.85)}
+.journey.arrived .j-foe{animation:foein .6s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes foein{from{transform:scale(.5) translateY(20px);opacity:0}}
+.j-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.j-body h2{font-size:21px}
+.j-body p{margin:0}
+.j-track{position:relative;padding:14px 18px 2px 0}
+.j-track .bigbar{height:8px}
+.j-me{position:absolute;top:0;transform:translateX(-50%);transition:left 1s linear}
+.j-me .port{width:30px;height:30px;border-radius:50%;box-shadow:0 0 0 2px var(--sodium),0 0 12px rgba(242,163,58,.7)}
+.journey.onway .j-me .port{animation:walk .5s ease-in-out infinite alternate}
+@keyframes walk{to{transform:translateY(-3px)}}
+.j-flag{position:absolute;right:0;top:12px;color:var(--bad)}
+.journey .timer{font-family:var(--f-mono);font-size:26px;font-weight:700}
+.chip.mini{font-size:11.5px;padding:2px 8px 2px 6px}
+.btn.big{padding:15px;font-size:16px}
+.btn.ghost{background:transparent;box-shadow:inset 0 0 0 1px var(--line);color:var(--muted)}
+.sheet.has-bg{position:relative;isolation:isolate}
+.b-bg{position:absolute;left:0;right:0;top:0;height:270px;z-index:-1;overflow:hidden;border-radius:16px 16px 0 0;-webkit-mask-image:linear-gradient(#000 50%,transparent);mask-image:linear-gradient(#000 50%,transparent)}
+.b-bg svg{width:100%;height:100%;display:block}
+.b-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,13,23,.35),rgba(12,13,23,.7))}
+.has-bg .fighter b,.has-bg .gw-names b{text-shadow:0 1px 6px rgba(0,0,0,.9)}
+.has-bg .blog{background:rgba(8,9,16,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+@media (prefers-reduced-motion:reduce){.journey .j-scene>svg,.j-me .port{animation:none}}
 </style>
 </head>
 <body>
@@ -1188,6 +1230,149 @@ function cehSvg(){
    <path d="M140 104v-10h10v10zM186 104v-12h9v12z" fill="#f6d58a" stroke-width="1.5"/><path d="M160 100h18v6h-18z" fill="${WH}" stroke-width="1.2"/>
    <rect x="60" y="96" width="26" height="40" rx="4" fill="${RD}"/><rect x="262" y="96" width="26" height="40" rx="4" fill="${TL}"/>`,'0 0 360 140','preserveAspectRatio="xMidYMid slice"');
 }
+/* ===== helyszín-jelenetek (360×200): a küldetés útja és a harc háttere ===== */
+let SCN_ID=0;
+function scnSky(a,b){ const id='sk'+(++SCN_ID); return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="360" height="200" fill="url(#${id})"/>`; }
+function scnGlow(cx,cy,r,c,o=.35){ const id='gl'+(++SCN_ID); return `<defs><radialGradient id="${id}"><stop offset="0" stop-color="${c}" stop-opacity="${o}"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient></defs><circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${id})"/>`; }
+function scnStars(seed,n=26,ymax=90){ const r=seeded(seed); let o=''; for(let i=0;i<n;i++) o+=`<circle cx="${(r()*360).toFixed(1)}" cy="${(r()*ymax).toFixed(1)}" r="${(r()*1.1+.3).toFixed(2)}" fill="#fff" opacity="${(r()*.5+.25).toFixed(2)}"/>`; return o; }
+function scnMoon(cx,cy,r=16){ return scnGlow(cx,cy,r*3.4,'#fff3c8',.3)+`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#f6efd5"/><circle cx="${cx-r*.35}" cy="${cy-r*.2}" r="${r*.22}" fill="#e2d8b6"/><circle cx="${cx+r*.3}" cy="${cy+r*.35}" r="${r*.15}" fill="#e2d8b6"/>`; }
+function scnWins(x,y,cols,rows,w,h,gx,gy,seed,lit='#f6d58a',dark='#1f2238',p=.35){ const r=seeded(seed); let o=''; for(let i=0;i<cols;i++) for(let j=0;j<rows;j++) o+=`<rect x="${x+i*(w+gx)}" y="${y+j*(h+gy)}" width="${w}" height="${h}" fill="${r()<p?lit:dark}"/>`; return o; }
+function scnSkyline(seed,y0,col,lit){ const r=seeded(seed); let o='',x=-5,k=0; while(x<365){ const w=18+r()*30, h=24+r()*56; o+=`<rect x="${x.toFixed(1)}" y="${(y0-h).toFixed(1)}" width="${w.toFixed(1)}" height="${(h+80).toFixed(1)}" fill="${col}"/>`; if(lit) o+=scnWins(x+4,y0-h+6,Math.max(1,Math.floor((w-6)/8)),Math.max(1,Math.floor(h/10)),3,4,5,6,seed*7+(++k),lit,col,.22); x+=w+r()*5; } return o; }
+const scnLamp=(x,y,h=60,c='#ffb347')=>scnGlow(x+10,y,46,c,.42)+`<path d="M${x} ${y+h}V${y}h12" fill="none" stroke="#2c2f44" stroke-width="3"/><path d="M${x+6} ${y-2}h10l-2 5h-6z" fill="#3a3d55"/><ellipse cx="${x+11}" cy="${y+4}" rx="4" ry="2" fill="#ffe3a8"/>`;
+const scnPigeon=(x,y,s=1,f='#0b0c14')=>`<path d="M${x} ${y}c${3*s} ${-4*s} ${9*s} ${-4*s} ${12*s} 0c${-3*s} ${-1*s} ${-5*s} ${2*s} ${-6*s} ${4*s}c${-1*s} ${-2*s} ${-3*s} ${-5*s} ${-6*s} ${-4*s}z" fill="${f}"/>`;
+const scnEyes=(x,y,c='#ff5a4e',s=1)=>scnGlow(x,y,26*s,c,.4)+`<path d="M${x-9*s} ${y}l${6*s} ${-3*s}-${1*s} ${4*s}zM${x+9*s} ${y}l-${6*s} ${-3*s} ${1*s} ${4*s}z" fill="${c}"/>`;
+const SCN={
+ 'Liftakna-sárkány':()=>`<rect width="360" height="200" fill="#1a1c2b"/>${[0,1,2,3,4,5].map(i=>`<rect x="0" y="${i*34}" width="360" height="1" fill="#22253a"/>`).join('')}
+  <rect x="0" y="120" width="360" height="80" fill="#2a3b35"/><rect x="0" y="118" width="360" height="3" fill="#3f5a50"/>
+  <rect x="116" y="30" width="128" height="178" fill="#30334b"/><rect x="128" y="36" width="104" height="164" fill="#05060a"/>
+  <path d="M160 36V200M200 36V200" stroke="#2a2c3c" stroke-width="2"/>${scnEyes(180,118,'#ff4d3d',1.3)}
+  <path d="M150 150q30-14 60 0q-8 14-30 16q-22-2-30-16z" fill="#2a0f12" opacity=".8"/>
+  <rect x="128" y="36" width="30" height="164" fill="#666b84"/><rect x="202" y="36" width="30" height="164" fill="#666b84"/><path d="M158 36V200M202 36V200" stroke="#4a4e66" stroke-width="2"/>
+  <rect x="158" y="14" width="44" height="14" rx="3" fill="#0b0c12"/><text x="180" y="25" text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="700" font-size="11" fill="#ff5a4e">-2</text>
+  <rect x="254" y="92" width="16" height="30" rx="3" fill="#30334b"/>${scnGlow(262,102,12,'#ff5a4e',.6)}<circle cx="262" cy="102" r="3.5" fill="#ff8a7a"/><circle cx="262" cy="114" r="3.5" fill="#444862"/>
+  <text x="56" y="80" font-family="Unbounded,sans-serif" font-weight="900" font-size="15" fill="#5fd17a" opacity=".35" transform="rotate(-8 56 80)">NE NYOMD</text>
+  <rect y="186" width="360" height="14" fill="#121320"/>`,
+ 'Tetőtéri vámpír':()=>scnSky('#1c1236','#3a2147')+scnStars(5,34,110)+scnMoon(272,52,22)+
+  `<path d="M-10 200V128l70-38 70 38v72z" fill="#241a35"/><path d="M110 200V112l84-48 84 48v88z" fill="#1a1428"/><path d="M270 200V140l60-30 60 30v60z" fill="#241a35"/>
+  ${[0,1,2,3,4,5].map(i=>`<path d="M${120+i*0} ${118+i*13}H${268}" stroke="#2c2340" stroke-width="2"/>`).join('')}
+  <rect x="146" y="58" width="12" height="28" fill="#2c2340"/><rect x="143" y="54" width="18" height="6" fill="#3a2f52"/><rect x="238" y="72" width="10" height="22" fill="#2c2340"/>
+  <path d="M176 104l18-14 18 14v26h-36z" fill="#2c2340"/>${scnGlow(194,116,36,'#ff3b4e',.55)}<rect x="184" y="106" width="20" height="22" fill="#ff5a6a"/><path d="M194 106v22M184 117h20" stroke="#2c2340" stroke-width="2"/>
+  <path d="M188 128c2-8 10-8 12 0z" fill="#1a0b12"/>
+  ${scnPigeon(60,92,1.2)}${scnPigeon(80,96,1)}${scnPigeon(300,114,1.1)}
+  <path d="M96 42c6-6 10-2 14-8 4 6 8 2 14 8-6-2-10 2-14 6-4-4-8-8-14-6z" fill="#0b0c14"/><path d="M216 26c4-4 7-1 10-6 3 5 6 2 10 6-4-1-7 1-10 4-3-3-6-5-10-4z" fill="#0b0c14"/>`,
+ 'Villamosdémon':()=>scnSky('#141a33','#2b2440')+scnStars(9,20,60)+scnSkyline(11,120,'#1b1f36','#f6d58a')+
+  `<path d="M0 34Q180 46 360 30M0 40Q180 52 360 36" fill="none" stroke="#3a3e58" stroke-width="1.5"/>
+  <rect y="150" width="360" height="50" fill="#1a1b28"/><path d="M0 172H360M0 182H360" stroke="#4a4d62" stroke-width="2"/>
+  ${scnLamp(26,96,56)}${scnLamp(318,96,56)}
+  <path d="M188 58l14-22M206 58l-6-20" stroke="#4a4d62" stroke-width="2"/>
+  <rect x="64" y="96" width="236" height="62" rx="12" fill="#f2c230"/><rect x="64" y="140" width="236" height="10" fill="#e09a1f"/>
+  ${[0,1,2,3,4,5].map(i=>`<rect x="${76+i*36}" y="104" width="28" height="22" rx="3" fill="#ffe7a8"/>`).join('')}${scnGlow(180,116,110,'#ffd36a',.18)}
+  <rect x="64" y="96" width="236" height="6" rx="3" fill="#ffd34d"/><rect x="270" y="88" width="26" height="10" rx="2" fill="#0b0c12"/><text x="283" y="96" text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="700" font-size="8" fill="#ff8a3a">4·6</text>
+  <path d="M136 104l4-8 4 8M148 104l4-8 4 8" fill="#c8323a"/><circle cx="146" cy="113" r="6" fill="#c8323a"/><circle cx="143" cy="112" r="1.4" fill="#fff"/><circle cx="149" cy="112" r="1.4" fill="#fff"/>
+  <circle cx="98" cy="158" r="7" fill="#11121a"/><circle cx="266" cy="158" r="7" fill="#11121a"/>`,
+ 'Lépcsőházi kobold':()=>`<rect width="360" height="200" fill="#d9d3c0"/><rect y="0" width="360" height="200" fill="#1a1c28" opacity=".55"/><rect y="104" width="360" height="96" fill="#2f5a46"/><rect y="102" width="360" height="3" fill="#1d3a2d"/>
+  ${scnGlow(180,30,120,'#ffe6a0',.35)}<path d="M180 0v18" stroke="#2a2c3c" stroke-width="2"/><circle cx="180" cy="24" r="7" fill="#fff4c8"/>
+  <path d="M20 200L150 92H360V200z" fill="#3a3d4c"/>${[0,1,2,3,4,5,6,7].map(i=>`<path d="M${20+i*16} ${200-i*13.5}h16" stroke="#585b6c" stroke-width="2"/>`).join('')}
+  <path d="M30 168L160 60" stroke="#121320" stroke-width="3"/>${[0,1,2,3,4,5,6,7,8].map(i=>`<path d="M${36+i*14} ${163-i*11.7}v28" stroke="#121320" stroke-width="2"/>`).join('')}
+  <rect x="238" y="40" width="96" height="50" rx="3" fill="#4a4d5e"/>${[0,1,2,3].map(i=>[0,1].map(j=>`<rect x="${244+i*22}" y="${46+j*22}" width="18" height="18" rx="1" fill="#6a6e82"/><rect x="${248+i*22}" y="${50+j*22}" width="10" height="2" fill="#2a2c3c"/>`).join('')).join('')}
+  <rect x="250" y="108" width="40" height="80" fill="#5a3a2a"/><circle cx="284" cy="150" r="2.5" fill="#f2c230"/><rect x="258" y="116" width="24" height="18" fill="#3a2a20"/>
+  <path d="M120 160c4-10 14-10 18 0l-2 14h-14z" fill="#3e8a4e"/><circle cx="124" cy="156" r="2" fill="#ffe14d"/><circle cx="134" cy="156" r="2" fill="#ffe14d"/><path d="M118 150l-6-8M140 150l6-8" stroke="#3e8a4e" stroke-width="3"/>`,
+ 'Aluljárói troll':()=>`<rect width="360" height="200" fill="#20222f"/>${Array.from({length:18},(_,i)=>Array.from({length:8},(_,j)=>`<rect x="${i*20}" y="${30+j*16}" width="19" height="15" fill="${(i+j)%5?'#2c3040':'#34394c'}"/>`).join('')).join('')}
+  <rect width="360" height="30" fill="#14151f"/>${[40,150,260].map(x=>scnGlow(x+30,24,60,'#bfe7ff',.3)+`<rect x="${x}" y="20" width="60" height="5" rx="2" fill="#e8f6ff"/>`).join('')}
+  <path d="M200 170L330 40h30v130z" fill="#3a3e52"/><path d="M200 170L330 40" stroke="#9aa0b8" stroke-width="3"/><path d="M220 170L350 40" stroke="#141520" stroke-width="2"/>${[0,1,2,3,4,5,6,7].map(i=>`<path d="M${212+i*16} ${158-i*16}l14 0" stroke="#5c6178" stroke-width="2"/>`).join('')}
+  <rect x="30" y="86" width="80" height="70" rx="3" fill="#3a2f2a"/><rect x="38" y="96" width="64" height="34" fill="#f6d58a"/>${scnGlow(70,112,50,'#f6d58a',.25)}<rect x="30" y="76" width="80" height="14" fill="#c8323a"/><text x="70" y="86.5" text-anchor="middle" font-family="Unbounded,sans-serif" font-weight="900" font-size="9" fill="#fff">TRAFIK</text>
+  <rect y="170" width="360" height="30" fill="#17181f"/><path d="M0 172H360" stroke="#30334a" stroke-width="2"/>
+  <path d="M150 170c-4-30 6-52 26-52s30 22 26 52z" fill="#4a5a3a"/>${scnEyes(176,136,'#ffd34d',.8)}<path d="M168 150q8 5 16 0" stroke="#1b1f12" stroke-width="2" fill="none"/>`,
+ 'Parkolóőr-gólem':()=>scnSky('#17192d','#262a3c')+scnStars(13,18,50)+scnSkyline(17,110,'#1d2033','#f6d58a')+
+  `<rect y="110" width="360" height="90" fill="#24252e"/>${[0,1,2,3,4,5,6].map(i=>`<path d="M${30+i*52} 200L${80+i*34} 120" stroke="#e8e4d6" stroke-width="2.5" opacity=".55"/>`).join('')}
+  ${scnLamp(40,58,60,'#ffa63a')}${scnLamp(300,58,60,'#ffa63a')}${scnGlow(60,170,90,'#ffa63a',.15)}
+  <rect x="226" y="114" width="40" height="40" rx="3" fill="#3a3e52"/><rect x="232" y="120" width="28" height="14" fill="#9fd8ff" opacity=".7"/>
+  <path d="M266 136H350" stroke="#e8e4d6" stroke-width="5"/><path d="M276 136h12M300 136h12M324 136h12" stroke="#d9383a" stroke-width="5"/><rect x="262" y="130" width="8" height="30" fill="#55596e"/>
+  <rect x="112" y="98" width="56" height="70" rx="10" fill="#7a7d8a"/><rect x="124" y="80" width="32" height="24" rx="6" fill="#8a8d9a"/><path d="M118 112h44M118 132h44" stroke="#5e616d" stroke-width="2"/>
+  ${scnEyes(140,92,'#ff8a3a',.7)}<rect x="104" y="106" width="10" height="40" rx="4" fill="#6a6d7a"/><rect x="166" y="106" width="10" height="40" rx="4" fill="#6a6d7a"/><rect x="128" y="112" width="24" height="14" fill="#f2c230"/><text x="140" y="122" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" font-weight="700" fill="#1b1206">BÍRSÁG</text>`,
+ 'Kopogószellem':()=>``,
+ 'Lomis kopogószellem':()=>scnSky('#16182c','#2a2a40')+scnStars(19,20,40)+
+  `<rect x="20" y="20" width="240" height="140" fill="#3a3f5a"/>${scnWins(30,30,10,6,14,12,8,9,23,'#f6d58a','#262a40',.3)}<rect x="20" y="20" width="240" height="4" fill="#4a5070"/>
+  <rect x="270" y="60" width="100" height="100" fill="#2e3248"/>${scnWins(278,68,4,4,14,12,8,9,29,'#f6d58a','#22263a',.25)}
+  <rect y="160" width="360" height="40" fill="#2a2b34"/><rect y="158" width="360" height="4" fill="#4a4c58"/>${scnLamp(310,104,56)}
+  <rect x="40" y="132" width="96" height="30" rx="6" fill="#8a4a3a"/><rect x="40" y="122" width="96" height="16" rx="6" fill="#a05a48"/><rect x="34" y="128" width="14" height="30" rx="5" fill="#a05a48"/><rect x="128" y="128" width="14" height="30" rx="5" fill="#a05a48"/>
+  ${scnGlow(88,134,60,'#9fe8ff',.35)}<path d="M74 114c0-14 28-14 28 0v14l-4-4-5 4-5-4-5 4-5-4-4 4z" fill="#d8f4ff" opacity=".85"/><circle cx="84" cy="114" r="2" fill="#1a2030"/><circle cx="92" cy="114" r="2" fill="#1a2030"/>
+  <rect x="160" y="112" width="18" height="50" rx="4" fill="#c9c3b0" transform="rotate(-12 169 137)"/><rect x="190" y="136" width="34" height="26" rx="3" fill="#3a3d4c"/><rect x="194" y="140" width="22" height="16" fill="#5f8fa8"/>
+  <path d="M236 162l6-34h10l6 34" fill="#8a7a5a"/><path d="M236 128h22l-11-12z" fill="#e2c36a"/>
+  <rect x="150" y="80" width="90" height="16" rx="2" fill="#f2c230"/><text x="195" y="91.5" text-anchor="middle" font-family="Unbounded,sans-serif" font-weight="900" font-size="7.5" fill="#1b1206">LOMTALANÍTÁS</text>`,
+ 'A pince patkánykirálya':()=>`<rect width="360" height="200" fill="#1c1716"/>${Array.from({length:12},(_,j)=>Array.from({length:13},(_,i)=>`<rect x="${i*30-(j%2)*15}" y="${j*17}" width="28" height="15" rx="1" fill="${(i*j)%4?'#2c2220':'#33282a'}"/>`).join('')).join('')}
+  <path d="M0 20H360M0 30H360" stroke="#4a4d58" stroke-width="5"/><path d="M90 20v10M250 20v10" stroke="#5a5d68" stroke-width="7"/>
+  <path d="M180 30v20" stroke="#2a2c3c" stroke-width="1.5"/>${scnGlow(180,56,130,'#ffcf7a',.4)}<circle cx="180" cy="56" r="6" fill="#fff0c0"/>
+  <rect y="168" width="360" height="32" fill="#141012"/>
+  ${[[40,148],[100,152],[290,148]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="16" fill="none" stroke="#0a0a0f" stroke-width="3"/><circle cx="${x+46}" cy="${y}" r="16" fill="none" stroke="#0a0a0f" stroke-width="3"/><path d="M${x} ${y}l16-22h20l10 22M${x+16} ${y-22}l-4-8h-8M${x+36} ${y-22}v-6h8" fill="none" stroke="#0a0a0f" stroke-width="3"/>`).join('')}
+  <rect x="150" y="128" width="60" height="40" fill="#5a3f28"/><path d="M150 140h60M150 154h60M170 128v40" stroke="#3a2818" stroke-width="2"/>
+  <path d="M164 128l4-12 6 8 6-10 6 10 6-8 4 12z" fill="#f2c230"/>${scnEyes(180,118,'#ff5a4e',.6)}
+  ${scnEyes(240,176,'#ff5a4e',.35)}${scnEyes(330,182,'#ff5a4e',.3)}`,
+ 'Kísértetfutár':()=>scnSky('#101a2c','#1e2a3a')+scnStars(31,30,80)+scnMoon(60,40,14)+
+  `<path d="M150 120V70l10-14 10 14v-30l12-18 12 18v30l10-14 10 14v50z" fill="#1a2234"/><path d="M220 120V84h40v36z" fill="#1a2234"/><path d="M230 84l10-16 10 16z" fill="#1a2234"/>${scnWins(160,80,3,2,6,8,10,10,37,'#f6d58a','#121828',.5)}
+  ${[0,1,2,3,4,5,6,7].map(i=>`<circle cx="${i*50-10}" cy="${118+(i%3)*4}" r="${26+(i%2)*8}" fill="#13202a"/>`).join('')}
+  <rect y="132" width="360" height="68" fill="#0f1c26"/><path d="M0 150Q180 140 360 152" stroke="#2a4a5a" stroke-width="1.5" fill="none" opacity=".6"/>
+  <path d="M60 152h-20M70 160h-34M310 158h-24" stroke="#f6efd5" stroke-width="1.5" opacity=".35"/>
+  ${scnGlow(260,150,70,'#6ef0d6',.38)}<path d="M240 168l10-22h22l8 12-4 10z" fill="#bff6ea" opacity=".75"/><circle cx="246" cy="170" r="7" fill="none" stroke="#bff6ea" stroke-width="2.5" opacity=".8"/><circle cx="282" cy="170" r="7" fill="none" stroke="#bff6ea" stroke-width="2.5" opacity=".8"/>
+  <rect x="252" y="128" width="20" height="16" rx="2" fill="#e2c36a" opacity=".85"/><path d="M258 124c0-12 16-12 16 0v10h-16z" fill="#d8fff6" opacity=".6"/>${scnGlow(220,160,40,'#fff4c8',.35)}`,
+ 'Galambraj-szellem':()=>scnSky('#1a1c34','#3a3048')+scnStars(41,24,70)+
+  `<path d="M20 150V110h120v40M220 150V110h120v40" fill="#2a2a3c"/>${[0,1,2,3,4,5,6,7].map(i=>`<rect x="${26+i*15}" y="114" width="6" height="36" fill="#3c3c52"/><rect x="${226+i*15}" y="114" width="6" height="36" fill="#3c3c52"/>`).join('')}
+  <rect x="16" y="104" width="128" height="8" fill="#3c3c52"/><rect x="216" y="104" width="128" height="8" fill="#3c3c52"/>
+  <rect x="172" y="34" width="16" height="116" fill="#4a4a62"/><rect x="164" y="146" width="32" height="12" fill="#3c3c52"/><path d="M180 34l-8-14 8-6 8 6z" fill="#c9a24a"/><path d="M172 22l-14-6M188 22l14-6" stroke="#c9a24a" stroke-width="3"/>
+  ${scnGlow(180,24,40,'#ffd86a',.3)}<rect y="156" width="360" height="44" fill="#26283a"/><path d="M0 172H360M0 188H360" stroke="#30334a" stroke-width="1.5"/>
+  ${(()=>{ const r=seeded(98765); return Array.from({length:22},()=>scnPigeon(40+r()*280,36+r()*84,.6+r()*.6,'#0b0c14')).join(''); })()}
+  ${scnGlow(110,70,60,'#cfd8ff',.18)}`,
+ 'Csatornanimfa':()=>scnSky('#0f1a2a','#1c2a36')+scnStars(53,26,60)+scnMoon(290,34,13)+scnSkyline(59,96,'#141f2c','#f6d58a')+
+  `<path d="M0 104L80 120H280L360 104V200H0z" fill="#3a3f4a"/><path d="M60 200L100 124H260L300 200z" fill="#122a33"/>${scnGlow(220,160,70,'#6ef0d6',.3)}
+  <path d="M120 140q60 6 120 0M110 160q70 8 140 0M96 182q84 8 168 0" stroke="#3a6a78" stroke-width="1.5" fill="none" opacity=".6"/><path d="M286 132l-4 60" stroke="#f6efd5" stroke-width="3" opacity=".18"/>
+  ${Array.from({length:14},(_,i)=>`<path d="M${20+i*7} 200q${(i%3)-1*4} -30 ${(i%2?6:-4)} -${40+(i%4)*8}" stroke="#2f4a32" stroke-width="2.5" fill="none"/>`).join('')}${Array.from({length:12},(_,i)=>`<path d="M${296+i*6} 200q-4 -30 ${(i%2?5:-5)} -${34+(i%3)*10}" stroke="#2f4a32" stroke-width="2.5" fill="none"/>`).join('')}
+  <path d="M206 170c-2-16 4-30 14-30s16 14 14 30z" fill="#9fe8d8" opacity=".55"/><circle cx="220" cy="134" r="8" fill="#bff6ea" opacity=".7"/><path d="M212 130q-10 20-4 40M228 130q10 20 4 40" stroke="#5fc4b4" stroke-width="2" fill="none" opacity=".6"/>
+  <rect y="120" width="360" height="14" fill="#cfe7ff" opacity=".05"/>`,
+ 'Hivatali lidérc':()=>`<rect width="360" height="200" fill="#c8c6b8"/><rect width="360" height="200" fill="#1a1c2a" opacity=".62"/><rect y="0" width="360" height="22" fill="#2a2c3a"/>
+  ${[30,140,250].map(x=>scnGlow(x+40,22,70,'#e8fff4',.28)+`<rect x="${x}" y="16" width="80" height="5" rx="2" fill="#effff6"/>`).join('')}
+  <rect x="0" y="40" width="360" height="70" fill="#4a5a58"/>${[0,1,2].map(i=>`<rect x="${30+i*110}" y="48" width="80" height="48" fill="#9fc8c0" opacity=".45"/><rect x="${60+i*110}" y="40" width="20" height="10" fill="#1b1d28"/><text x="${70+i*110}" y="48" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" font-weight="700" fill="#ff8a3a">${i+1}</text>`).join('')}
+  <rect x="0" y="108" width="360" height="12" fill="#3a3f48"/>
+  <rect x="140" y="62" width="80" height="30" rx="3" fill="#0b0c12"/>${scnGlow(180,77,60,'#ff3b30',.4)}<text x="180" y="84" text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="700" font-size="20" fill="#ff4d3d">666</text>
+  <rect y="150" width="360" height="50" fill="#2e3036"/>${[0,1,2,3,4,5,6,7].map(i=>`<rect x="${20+i*42}" y="140" width="32" height="10" rx="2" fill="#5a7ab8"/><rect x="${20+i*42}" y="124" width="32" height="18" rx="3" fill="#4a6aa8"/><path d="M${24+i*42} 150v14M${48+i*42} 150v14" stroke="#2a2c3a" stroke-width="2"/>`).join('')}
+  <rect x="300" y="110" width="40" height="40" rx="4" fill="#d7d2c0"/><rect x="306" y="120" width="28" height="8" fill="#2a2c3a"/><path d="M314 150v-6h12v6" fill="#e8e4d6"/>
+  <path d="M8 150c4-30 20-30 24 0z" fill="#3e8a4e"/><rect x="12" y="148" width="16" height="16" fill="#8a5a3a"/>`,
+ 'Jegyellenőr-árny':()=>`<rect width="360" height="200" fill="#1a1c28"/>
+  <rect x="0" y="20" width="360" height="90" fill="#0f1220"/>${scnSkyline(61,108,'#161a2c','#f6d58a')}${[0,1,2,3].map(i=>`<rect x="${i*90}" y="20" width="8" height="90" fill="#2a2d40"/>`).join('')}
+  <rect width="360" height="22" fill="#2a2d40"/>${scnGlow(180,14,120,'#e8f0ff',.22)}<rect x="40" y="10" width="280" height="4" rx="2" fill="#dfe8ff" opacity=".8"/>
+  <rect x="140" y="26" width="80" height="14" rx="2" fill="#0b0c12"/><text x="180" y="36.5" text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="700" font-size="9" fill="#ff8a3a">907 · ÉJSZAKAI</text>
+  <rect y="110" width="360" height="90" fill="#22252f"/>
+  ${[0,1,2,3].map(i=>`<rect x="${10+i*90}" y="116" width="56" height="44" rx="6" fill="#2f5a8a"/><rect x="${10+i*90}" y="150" width="56" height="16" rx="4" fill="#244a74"/>`).join('')}
+  <path d="M80 22V200M260 22V200" stroke="#f2c230" stroke-width="5"/><circle cx="80" cy="120" r="5" fill="#c8323a"/>
+  ${scnGlow(170,120,60,'#7d6bff',.3)}<path d="M150 200c-6-50 2-96 20-96s26 46 20 96z" fill="#07080d"/><rect x="152" y="80" width="36" height="8" rx="2" fill="#07080d"/><rect x="158" y="70" width="24" height="12" rx="2" fill="#07080d"/>
+  ${scnEyes(170,106,'#cfd8ff',.5)}<rect x="188" y="130" width="14" height="20" rx="2" fill="#d7d2c0"/>`
+};
+SCN['Kopogószellem']=SCN['Lomis kopogószellem'];
+const SCN_CACHE={};
+function questScene(title){ const f=SCN[title]||SCN['Villamosdémon']; return svg(`<g stroke="none">${f()}</g>`,'0 0 360 200','preserveAspectRatio="xMidYMid slice"'); }
+/* harc háttere: küldetésnél a helyszín, máskor a hely jellegű kép */
+let BATTLE_BG=null;
+function battleScene(k){ if(k&&k.startsWith('q:')) return questScene(k.slice(2)); if(k==='kazamata') return kazamataSvg(); if(k==='ceh') return cehSvg(); if(k==='varos') return skylineSvg(); return arenaFightSvg(); }
+function arenaFightSvg(){ const r=seeded(71); let crowd=''; for(let row=0;row<4;row++) for(let x=-6;x<370;x+=11+row){ const y=54+row*16+r()*3; crowd+=`<circle cx="${x+r()*4}" cy="${y}" r="${4.2+row*.5}" fill="${['#0d0e18','#141526','#1a1b30','#202238'][row]}"/><rect x="${x-6}" y="${y+4}" width="12" height="10" rx="4" fill="${['#0d0e18','#141526','#1a1b30','#202238'][row]}"/>`; }
+  let flashes=''; for(let i=0;i<9;i++) flashes+=`<circle cx="${r()*360}" cy="${50+r()*60}" r="1.6" fill="#fff" opacity="${.5+r()*.5}"/>`;
+  return svg(`<g stroke="none">${scnSky('#0b0c16','#1a1530')}
+   <path d="M40 0L110 200H0V0zM320 0L250 200H360V0z" fill="#ff4f8b" opacity=".06"/><path d="M90 -10l60 210h-90zM270 -10l-60 210h90z" fill="#f2a33a" opacity=".1"/><path d="M180 -10l-40 210h80z" fill="#7d6bff" opacity=".1"/>
+   ${scnGlow(30,10,60,'#fff1c8',.6)}${scnGlow(330,10,60,'#fff1c8',.6)}<rect x="14" y="4" width="32" height="10" rx="2" fill="#e8e4d6"/><rect x="314" y="4" width="32" height="10" rx="2" fill="#e8e4d6"/>
+   ${crowd}${flashes}<rect y="124" width="360" height="76" fill="#14121f"/>
+   <ellipse cx="180" cy="168" rx="190" ry="40" fill="#241f38"/><ellipse cx="180" cy="168" rx="150" ry="28" fill="none" stroke="#f2a33a" stroke-width="2" stroke-dasharray="8 7" opacity=".6"/>${scnGlow(180,168,140,'#f2a33a',.18)}
+   <path d="M0 128H360" stroke="#ff4f8b" stroke-width="2" opacity=".7"/><text x="180" y="40" text-anchor="middle" font-family="Unbounded,sans-serif" font-weight="900" font-size="22" fill="none" stroke="#ff4f8b" stroke-width="1.2" opacity=".55">NÉPLIGET</text></g>`,'0 0 360 200','preserveAspectRatio="xMidYMid slice"'); }
+/* álló háttérkép az Aréna oldalhoz */
+function arenaPageBg(){ const r=seeded(83); let rows=''; for(let row=0;row<9;row++){ const y=170+row*26, c=['#0e0f1b','#111222','#141528','#17182e','#1a1b33','#1d1e38','#20213c','#232440','#262744'][row]; rows+=`<rect x="0" y="${y+10}" width="360" height="30" fill="${c}"/>`; for(let x=-6;x<370;x+=12+row*.6){ rows+=`<circle cx="${x+r()*4}" cy="${y+4}" r="${4+row*.25}" fill="${c}"/>`; } }
+  let fl=''; for(let i=0;i<26;i++) fl+=`<circle cx="${r()*360}" cy="${170+r()*220}" r="${1+r()*1.2}" fill="#fff" opacity="${.3+r()*.6}"/>`;
+  return svg(`<g stroke="none">${scnSky('#08090f','#151229')}
+   <path d="M30 0L150 640H0V0z" fill="#f2a33a" opacity=".06"/><path d="M330 0L210 640H360V0z" fill="#7d6bff" opacity=".07"/><path d="M180 0L120 640h120z" fill="#ff4f8b" opacity=".04"/>
+   ${scnGlow(40,30,90,'#fff1c8',.5)}${scnGlow(320,30,90,'#fff1c8',.5)}${[0,1,2].map(i=>`<rect x="${14+i*14}" y="16" width="10" height="8" rx="2" fill="#f4efe0"/><rect x="${294+i*14}" y="16" width="10" height="8" rx="2" fill="#f4efe0"/>`).join('')}
+   <path d="M40 24v60M320 24v60" stroke="#24263a" stroke-width="4"/>
+   ${rows}${fl}<rect y="400" width="360" height="240" fill="#100e1c"/>${scnGlow(180,470,200,'#f2a33a',.12)}<ellipse cx="180" cy="470" rx="200" ry="50" fill="none" stroke="#f2a33a" stroke-width="2" stroke-dasharray="10 9" opacity=".35"/></g>`,'0 0 360 640','preserveAspectRatio="xMidYMin slice"'); }
+const VIEW_BG={arena:arenaPageBg};
+function syncViewBg(){ let el=$('#viewbg'); if(!el){ el=document.createElement('div'); el.id='viewbg'; el.setAttribute('aria-hidden','true'); document.body.prepend(el); }
+  const k=state&&VIEW_BG[view]?view:''; if(el.dataset.k===k) return; el.dataset.k=k;
+  if(k){ el.innerHTML=VIEW_BG[k](); requestAnimationFrame(()=>el.classList.add('on')); } else { el.classList.remove('on'); } }
+
 const BANNERS={}; const banner=k=>`<figure class="banner">${BANNERS[k]||(BANNERS[k]={skyline:skylineSvg,kocsma:kocsmaSvg,bolt:boltSvg,arena:arenaSvg,kazamata:kazamataSvg,garazs:garazsSvg,ceh:cehSvg}[k]())}</figure>`;
 
 /* ================= UI icons ================= */
@@ -1898,6 +2083,7 @@ function render(){
   if(!ONLINE.user){ app.innerHTML=renderAuth(); return; }
   if(!state){ app.innerHTML=renderCreate(); return; }
   app.innerHTML = renderHud() + `<main class="wrap">${({kocsma:renderKocsma,karakter:renderKarakter,bolt:renderBolt,arena:renderArena,kazamata:renderKazamata,ceh:renderCeh,terkep:renderTerkep})[view]()}</main>` + renderTabs();
+  syncViewBg();
   if(lvlFx && !battle){ const L=lvlFx; lvlFx=false; showLevelUp(L); }
   tick(true);
   maybeShowLogin();
@@ -2234,21 +2420,27 @@ function minigameCard(){
     <button class="mg-tile" data-act="openpoker"><span class="mg-art">${svg(`<rect x="6" y="20" width="26" height="26" rx="5" fill="${WH}"/><circle cx="13" cy="27" r="2.5" fill="${K}" stroke="none"/><circle cx="25" cy="39" r="2.5" fill="${K}" stroke="none"/><circle cx="19" cy="33" r="2.5" fill="${K}" stroke="none"/><rect x="30" y="12" width="26" height="26" rx="5" fill="${WH}" transform="rotate(14 43 25)"/><circle cx="38" cy="20" r="2.5" fill="${RD}" stroke="none"/><circle cx="48" cy="30" r="2.5" fill="${RD}" stroke="none"/>`)}</span><b>Kockapóker</b><span class="note">forintért vagy pogácsáért · ${POKER_DAILY-state.pokerCount} kör</span></button></div></section>`;
 }
 
+function journeyPct(){ const a=state.active; return a?Math.min(100,Math.max(0,(1-Math.max(0,a.endsAt-now())/((a.dur||a.q.dur)*1000))*100)):0; }
+function renderJourney(){
+  const q=state.active.q, left=Math.max(0,state.active.endsAt-now()), ready=left<=0, pct=journeyPct(), veh=state.vehicle&&VEHICLES?(VEHICLES.find(v=>v.id===state.vehicle.id)||{}).name:'';
+  return `<section class="journey ${ready?'arrived':'onway'}">
+    <div class="j-scene">${questScene(q.title)}<div class="j-shade"></div>
+      <div class="j-tags"><span class="district">${ic('pin')}${q.district} ker.</span><span class="diff diff-${q.diff}">${DIFF[q.diff]}</span></div>
+      <div class="j-foe">${portrait(ENEMY_ART[q.enemy])}<span>${esc(q.enemy)}</span></div>
+    </div>
+    <div class="j-body">
+      <span class="label">${ic(ready?'fight':'clock')}${ready?'Megérkeztél · ott van előtted':'Úton a helyszínre'}</span>
+      <h2>${esc(q.title)}</h2>
+      <p class="muted">${esc(q.desc)}</p>
+      <div class="j-track"><div class="bigbar"><i id="qprog" style="width:${pct}%"></i></div><span class="j-me" id="qme" style="left:${pct}%">${portrait(CLASS_ART[state.cls])}</span><span class="j-flag">${ic('pin')}</span></div>
+      <div class="row between"><span class="timer" id="qtime">${ready?'Megérkeztél':fmtTime(left)}</span><span class="note">${questRewards(q).replace(/class="chip/g,'class="chip mini')}</span></div>
+      <div class="stack">${ready?`<button class="btn primary pulse big" data-act="fight">${ic('fight')}Harc: ${esc(q.enemy)}</button>`:`<button class="btn pog-btn" data-act="rushquest" ${(state.pog||0)<1?'disabled':''}>${pogIc()}Azonnal ott vagyok · 1</button><button class="btn small ghost" data-act="cancel">${ic('back')}Visszafordulok (kávé vissza)</button>`}</div>
+    </div>
+  </section>`;
+}
 function renderKocsma(){
+  if(state.active) return renderJourney();
   let html=`${minigameBar()}${banner('kocsma')}<section class="scene"><span class="label">${ic('pin')}Romkocsma · VII. kerület · 23:47</span><h2>Ica a pult mögül int</h2><p>„Megint gyűlnek a bejelentések, drágám. Válassz egyet, de előtte igyál egy kávét.”</p></section>${vehicleCard()}`;
-  if(state.active){
-    const q=state.active.q, left=Math.max(0,state.active.endsAt-now()), ready=left<=0;
-    html+=`<section class="card active stack ${ready?'arrived':'depart'}">
-      <div class="active-top">${portrait(ENEMY_ART[q.enemy])}
-        <div style="min-width:0;flex:1" class="stack" >
-          <div class="row"><span class="district">${ic('pin')}${q.district} ker.</span><span class="diff diff-${q.diff}">${DIFF[q.diff]}</span></div>
-          <h3 style="font-size:17px">${esc(q.title)}</h3>
-          <div class="timer" id="qtime">${ready?'Megérkeztél':fmtTime(left)}</div>
-        </div></div>
-      <div class="bigbar"><i id="qprog" style="width:${(1-left/((state.active.dur||q.dur)*1000))*100}%"></i></div>
-      <div class="row">${ready?`<button class="btn primary pulse" data-act="fight">${ic('fight')}Harc: ${esc(q.enemy)}</button>`:`<button class="btn small pog-btn" data-act="rushquest" ${(state.pog||0)<1?'disabled':''}>${pogIc()}Azonnal ott vagyok · 1</button><button class="btn small" data-act="cancel">${ic('back')}Visszafordulok (kávé vissza)</button>`}</div>
-    </section>`;
-  }
   html+=`<section class="stack"><div class="row between"><span class="label">${ic('box')}Bejelentések</span><span class="note with-ic">${ic('coffee','ic-coffee')}Éjfélkor újratöltődik</span></div>`;
   if(selQuest&&!state.quests.some(q=>q.id===selQuest)) selQuest=null;
   for(const q of state.quests){
@@ -2523,7 +2715,7 @@ function bossAttack(pay){
   const g=Math.round((5+state.level*3)*goldMult()), x=Math.max(5,Math.round(xpNeed(state.level)*.015*xpMult()));
   state.gold+=g; gainXp(x); recordBossHit(dealt); track('boss',1);
   const disp={...boss,hp:Math.max(1,pool)};
-  openBattle(me,disp,{log,win:true,boss:true,dealt,dead:dealt>=pool},`<span class="chip">${ic('coin','ic-gold')}+${fmt(g)} Ft</span><span class="chip">${ic('xp','ic-xp')}+${fmt(x)} XP</span>`);
+  BATTLE_BG='varos'; openBattle(me,disp,{log,win:true,boss:true,dealt,dead:dealt>=pool},`<span class="chip">${ic('coin','ic-gold')}+${fmt(g)} Ft</span><span class="chip">${ic('xp','ic-xp')}+${fmt(x)} XP</span>`);
 }
 function bossReward(rank){ return {pog:rank===0?10:rank<3?5:rank<10?3:1, gold:Math.round((200+state.level*50)*goldMult())}; }
 function claimBoss(){ const wk=weekKey(), board=bossBoard(); state.bossClaimed=state.bossClaimed||{}; if(!board.dead||board.meIdx<0||state.bossClaimed[wk]) return;
@@ -2717,7 +2909,7 @@ function raidAttack(pay){
     t=1-t; }
   dealt=Math.min(dealt,pool); const bots=raidBots(); RAID_KC.at=0;
   const x=Math.max(5,Math.round(xpNeed(state.level)*.02*xpMult())); gainXp(x); recordRaidHit(dealt); track('raid',1); save();
-  openBattle(me,{...boss,hp:Math.max(1,pool)},{log,win:true,boss:true,dealt,dead:dealt>=pool},`<span class="chip">${ic('xp','ic-xp')}+${fmt(x)} XP</span>${bots?`<span class="chip">${ic('user')}a gépi tagok is odavertek: ${fmt(bots)}</span>`:''}`);
+  BATTLE_BG='ceh'; openBattle(me,{...boss,hp:Math.max(1,pool)},{log,win:true,boss:true,dealt,dead:dealt>=pool},`<span class="chip">${ic('xp','ic-xp')}+${fmt(x)} XP</span>${bots?`<span class="chip">${ic('user')}a gépi tagok is odavertek: ${fmt(bots)}</span>`:''}`);
 }
 function raidClaimable(){ if(!state.guild) return 0; const st=raidState(), got=(state.raidClaim||{})[guildChannel()]||0; return st.me&&st.me.dmg>0?Math.max(0,st.idx-got):0; }
 function raidTreasury(n){ return Math.round((200+state.level*40)*n); }
@@ -2998,8 +3190,8 @@ function stateSig(){ if(!state) return ''; return [state.gold,state.pog,state.en
 /* ================= battle ================= */
 function openBattle(a,b,res,rewardsHtml){
   if(state&&a&&a.name===state.name){ let c=0,dg=0,bl=0; for(const e of res.log){ if(e.side===0&&e.crit) c++; if(e.side===1&&e.dodge) dg++; if(e.side===1&&e.block) bl++; } track('crit',c); track('dodge',dg); track('block',bl); save(); }
-  battle={a,b,res,i:0,rewardsHtml,timer:null};
-  $('#overlay-root').innerHTML=`<div class="overlay" role="dialog" aria-label="Harc"><div class="sheet wrap">
+  battle={a,b,res,i:0,rewardsHtml,timer:null}; const bgk=BATTLE_BG; BATTLE_BG=null;
+  $('#overlay-root').innerHTML=`<div class="overlay" role="dialog" aria-label="Harc"><div class="sheet wrap has-bg"><div class="b-bg" aria-hidden="true">${battleScene(bgk)}</div>
     <div class="versus">
       <div class="fighter" id="fa"><div class="pw">${portrait(a.art)}</div><b>${esc(a.name)}</b><div class="bar hp"><i id="ha" style="width:100%"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hna">${a.hp}/${a.hp}</span></span></div>
       <span class="vs">VS</span>
@@ -3215,7 +3407,7 @@ function showDawn(){
 
 /* ================= actions ================= */
 function doFight(){
-  const q=state.active.q, me=playerFighter(), foe=genFighter(q.enemy, state.level, q.mult); foe.art=ENEMY_ART[q.enemy];
+  const q=state.active.q, me=playerFighter(), foe=genFighter(q.enemy, state.level, q.mult); foe.art=ENEMY_ART[q.enemy]; BATTLE_BG='q:'+q.title;
   const res=simulate(me,foe); let rw='';
   track('quest',1); track('quest_dist',1,q.district); if(res.win){ track('quest_win',1); if(q.diff===2) track('quest_hard',1); if(q.diff===0) track('quest_easy',1); }
   if(res.win){
@@ -3276,7 +3468,7 @@ function doDungeon(id,pay){
     rw+=`<span class="chip">${ic('down')}${fl+1>=10?'Kazamata teljesítve!':`Nyitva: ${fl+2}. emelet`}</span>`;
     gainXp(f.xp);
   } else rw=`<span class="note">${esc(d.floors[fl])} még túl erős. Erősödj meg, és pihenő után próbáld újra.</span>`;
-  state.dungeonReadyAt=now()+DUNGEON_CD; save();
+  state.dungeonReadyAt=now()+DUNGEON_CD; save(); BATTLE_BG='kazamata';
   openBattle(me,foe,res,rw);
 }
 /* ---- drag & drop: equipment <-> bag ---- */
@@ -3353,7 +3545,7 @@ function openGuildBattle(e,duels,won,rw,nA,nB,allA,allB){
   const g=state.guild, mine=allA?[...allA]:[], theirs=allB?[...allB]:[];
   duels.forEach(d=>{ if(!mine.includes(d.a)) mine.push(d.a); if(!theirs.includes(d.b)) theirs.push(d.b); });
   battle={guild:true,e,duels,won,rw,k:-1,alive:[nA,nB],mine,theirs,i:0,timer:null,ended:true,a:duels[0].a,b:duels[0].b,res:duels[0].res,rewardsHtml:''};
-  $('#overlay-root').innerHTML=`<div class="overlay" role="dialog" aria-label="Céhharc"><div class="sheet wrap">
+  $('#overlay-root').innerHTML=`<div class="overlay" role="dialog" aria-label="Céhharc"><div class="sheet wrap has-bg"><div class="b-bg" aria-hidden="true">${battleScene('ceh')}</div>
     <div class="gw-head"><div class="g-emb sm">${svg(emblemSvg(g.emblem))}</div><div class="gw-score"><span id="gw-w">${nA}</span><i>:</i><span id="gw-l">${nB}</span></div><div class="g-emb sm">${svg(emblemSvg(e.emblem))}</div></div>
     <div class="gw-names"><b>${esc(g.name)}</b><span class="note" id="gw-round">talpon maradt</span><b>${esc(e.name)}</b></div>
     <div class="versus">
@@ -3544,7 +3736,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 15:40';
+const BUILD='2026.11.02 15:51';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -3833,7 +4025,7 @@ function tick(force){
   const ready = state.active ? state.active.endsAt<=t : null;
   if(!force && ready!==lastReady && !battle){ if(ready===true&&lastReady===false) sfx('arrive'); lastReady=ready; render(); return; }
   lastReady=ready;
-  if(state.active && !ready){ const left=state.active.endsAt-t, qt=$('#qtime'), qp=$('#qprog'); if(qt) qt.textContent=fmtTime(left); if(qp) qp.style.width=(1-left/((state.active.dur||state.active.q.dur)*1000))*100+'%'; }
+  if(state.active && !ready){ const left=state.active.endsAt-t, qt=$('#qtime'), qp=$('#qprog'); if(qt) qt.textContent=fmtTime(left); if(qp) qp.style.width=(1-left/((state.active.dur||state.active.q.dur)*1000))*100+'%'; const qm=$('#qme'); if(qm) qm.style.left=journeyPct()+'%'; }
   const aLeft=Math.max(0,state.arenaReadyAt-t), aReady=aLeft===0;
   const acd=$('#acd'); if(acd) acd.textContent=aLeft?fmtTime(aLeft):'Most';
   if(view==='terkep'){ const mq=$('#m-q'), ma=$('#m-a'), md=$('#m-d');
