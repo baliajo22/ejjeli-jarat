@@ -190,3 +190,23 @@ create policy "msg insert" on public.messages for insert to authenticated with c
   from_user = auth.uid() and exists (select 1 from public.characters c where c.id = from_char and c.user_id = auth.uid()));
 create policy "msg delete" on public.messages for delete to authenticated using (from_user = auth.uid() or to_user = auth.uid());
 grant select, insert, delete on public.messages to authenticated;
+
+-- ===== Céhes rajtaütés: a céh tagjainak csapásai a céhes főgonoszra =====
+create table if not exists public.guild_raid_hits (
+  id         bigint generated always as identity primary key,
+  channel    text not null,
+  char_id    text not null references public.characters(id) on delete cascade,
+  user_id    uuid not null default auth.uid(),
+  name       text,
+  cls        text,
+  dmg        int not null check (dmg >= 0 and dmg <= 1000000),
+  created_at timestamptz not null default now()
+);
+create index if not exists guild_raid_channel_idx on public.guild_raid_hits(channel);
+alter table public.guild_raid_hits enable row level security;
+drop policy if exists "gr read"   on public.guild_raid_hits;
+drop policy if exists "gr insert" on public.guild_raid_hits;
+create policy "gr read"   on public.guild_raid_hits for select to authenticated using (true);
+create policy "gr insert" on public.guild_raid_hits for insert to authenticated with check (
+  user_id = auth.uid() and exists (select 1 from public.characters c where c.id = char_id and c.user_id = auth.uid()));
+grant select, insert on public.guild_raid_hits to authenticated;
