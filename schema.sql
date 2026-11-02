@@ -210,3 +210,8 @@ create policy "gr read"   on public.guild_raid_hits for select to authenticated 
 create policy "gr insert" on public.guild_raid_hits for insert to authenticated with check (
   user_id = auth.uid() and exists (select 1 from public.characters c where c.id = char_id and c.user_id = auth.uid()));
 grant select, insert on public.guild_raid_hits to authenticated;
+
+-- ===== Pogácsa befizetése a céh kasszájába =====
+alter table public.guild_donations add column if not exists currency text not null default 'ft';
+alter table public.guild_donations drop constraint if exists guild_donations_currency_check;
+alter table public.guild_donations add constraint guild_donations_currency_check check (currency in ('ft','pog'));

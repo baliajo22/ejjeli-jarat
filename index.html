@@ -619,6 +619,8 @@ body.modal-open{overflow:hidden}
 .raid-chip{color:var(--hex)}
 .raid-bonus{font-size:13px;color:var(--hex);margin-top:8px;display:flex;align-items:center;gap:6px}
 .raid-card{border-color:rgba(157,139,255,.5)}
+.kassza{display:flex;gap:16px;align-items:baseline;font-size:20px;font-weight:700;margin-top:2px}
+.kassza span{display:inline-flex;align-items:center;gap:6px}
 .upg-btn{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
@@ -1389,7 +1391,7 @@ function xpMult(){ return 1+.02*gUpg('edzo')+.01*raidKills()+((state&&skillFx(st
 function guildCap(){ return 5+2*gUpg('klub'); }
 // no level cap: every level costs more forint, and from level 10 on pogácsa too
 function upgCost(l){ return Math.round(250*Math.pow(l+1,2)/10)*10; }
-function upgPog(l){ return l>=10?1+Math.floor((l-10)/2):0; }
+function upgPog(l){ return l>=10?l-9:0; }
 function memberLevel(m){ if(m.real){ const d=realData(m.cid); return d?d.level:(m.lvl||1); } return Math.max(1,state.level+m.off); }
 /* real players in a guild. Offline these are your other heroes on this device; the online build swaps in server data */
 function realData(cid){ if(!cid) return null; return listChars().find(c=>c.cid===cid)||null; }
@@ -1402,10 +1404,12 @@ function leaveGuild(){ const L=realData(state.memberOf.leaderCid); if(L&&L.guild
 function memberGuild(){ if(!state||!state.memberOf) return null; const L=realData(state.memberOf.leaderCid); return L&&L.guild&&L.guild.members.some(m=>m.cid===state.cid)?{g:L.guild,leader:L}:null; }
 function invitesCard(){ return ''; }
 /* members pay into the leader's treasury; offline straight into the leader's save */
-function pendingDonations(){ return 0; }
-function donateToGuild(a){ const L=realData(state.memberOf&&state.memberOf.leaderCid); if(!L||!L.guild||state.gold<a) return;
-  state.gold-=a; L.guild.treasury+=a; L.guild.contrib=L.guild.contrib||{}; L.guild.contrib[state.name]=(L.guild.contrib[state.name]||0)+a; writeOther(L); save(); render(); sfx('coins'); toast(`+${fmt(a)} Ft a céh kasszájába. Köszi!`); }
-function contribList(g){ const c=Object.entries(g.contrib||{}).sort((a,b)=>b[1]-a[1]); return c.length?`<div class="contrib">${c.map(([n,v])=>`<span><b>${esc(n)}</b> ${fmt(v)} Ft</span>`).join('')}</div>`:''; }
+function pendingDonations(cur='ft'){ return 0; }
+function giveLocal(g,name,a,cur){ if(cur==='pog'){ g.pog=(g.pog||0)+a; g.contribPog=g.contribPog||{}; g.contribPog[name]=(g.contribPog[name]||0)+a; } else { g.treasury+=a; g.contrib=g.contrib||{}; g.contrib[name]=(g.contrib[name]||0)+a; } }
+function donateToGuild(a,cur='ft'){ const L=realData(state.memberOf&&state.memberOf.leaderCid); if(!L||!L.guild) return; if(cur==='pog'?(state.pog||0)<a:state.gold<a) return;
+  if(cur==='pog') state.pog-=a; else state.gold-=a; giveLocal(L.guild,state.name,a,cur); writeOther(L); save(); render(); sfx('coins'); toast(cur==='pog'?`+${a} pogácsa a céh kasszájába. Köszi!`:`+${fmt(a)} Ft a céh kasszájába. Köszi!`); }
+function contribList(g){ const names=new Set([...Object.keys(g.contrib||{}),...Object.keys(g.contribPog||{})]); const c=[...names].map(n=>[n,(g.contrib||{})[n]||0,(g.contribPog||{})[n]||0]).sort((a,b)=>b[1]-a[1]||b[2]-a[2]);
+  return c.length?`<div class="contrib">${c.map(([n,v,p])=>`<span><b>${esc(n)}</b> ${v?fmt(v)+' Ft':''}${v&&p?' · ':''}${p?p+' pogácsa':''}</span>`).join('')}</div>`:''; }
 function memberPending(){ return false; }
 function renderMemberGuild(){
   const mg=memberGuild(), mo=state.memberOf;
@@ -2661,7 +2665,7 @@ function openGuildView(lc){
 function gDescHtml(g,lead){
   if(lead&&GDESC_EDIT) return `<div class="g-desc edit"><textarea id="gdesc" maxlength="300" rows="3" placeholder="pl. Napi 3 küldetés kötelező. Kincstár +15% pénz, Edzőterem +12% XP. Aktív, magyar céh.">${esc(g.desc||'')}</textarea><div class="row between"><span class="note">Ezt látják azok is, akiket meghívsz.</span><span class="row" style="gap:6px"><button class="btn small" data-act="gdesccancel">Mégse</button><button class="btn small primary" data-act="gdescsave">Mentés</button></span></div></div>`;
   return `<div class="g-desc">${g.desc?`<p>${esc(g.desc)}</p>`:`<p class="muted">${lead?'Még nincs leírás. Írd ide, milyen a céhetek, és mit kaptok a fejlesztésekből.':'A vezető még nem írt leírást.'}</p>`}${lead?`<button class="btn small" data-act="gdescedit">${ic('chat')}${g.desc?'Szerkesztés':'Leírás írása'}</button>`:''}</div>`; }
-function gHead(g,o){ return `<section class="card g-head-wrap"><div class="g-head"><div class="g-emb">${svg(emblemSvg(g.emblem))}</div><div class="g-info"><div class="label">Céhszint ${1+Object.values(g.upg).reduce((a,b)=>a+b,0)}${o.member?' · tag vagy':''}</div><h3>${esc(g.name)}</h3><div class="g-stats">${o.rank?`<span class="with-ic">${ic('trophy','ic-fame')}#${o.rank} / ${o.ladLen}</span>`:''}<span class="with-ic">${ic('user')}${g.members.length+1}${o.cap?'/'+o.cap:''} fő</span><span class="with-ic">${ic('fame','ic-fame')}${g.honor} becsület</span><span class="with-ic">${ic('coin','ic-gold')}${fmt(o.treasury)} Ft kassza</span></div></div></div>
+function gHead(g,o){ return `<section class="card g-head-wrap"><div class="g-head"><div class="g-emb">${svg(emblemSvg(g.emblem))}</div><div class="g-info"><div class="label">Céhszint ${1+Object.values(g.upg).reduce((a,b)=>a+b,0)}${o.member?' · tag vagy':''}</div><h3>${esc(g.name)}</h3><div class="g-stats">${o.rank?`<span class="with-ic">${ic('trophy','ic-fame')}#${o.rank} / ${o.ladLen}</span>`:''}<span class="with-ic">${ic('user')}${g.members.length+1}${o.cap?'/'+o.cap:''} fő</span><span class="with-ic">${ic('fame','ic-fame')}${g.honor} becsület</span><span class="with-ic">${ic('coin','ic-gold')}${fmt(o.treasury)} Ft${g.pog?` · ${g.pog} pogácsa`:''} kassza</span></div></div></div>
   <div class="g-bonus">${GUILD_UPG.filter(u=>g.upg[u.id]).map(u=>`<span class="chip">${ic(u.icon)}${u.fx(g.upg[u.id])}</span>`).join('')}${o.view||!raidKills()?'':`<span class="chip raid-chip">${ic('fame')}rajtaütés: +${raidKills()}% Ft és XP</span>`}${!GUILD_UPG.some(u=>g.upg[u.id])&&(o.view||!raidKills())?'<span class="note">Még nincs fejlesztés.</span>':''}</div>${gDescHtml(g,!o.member&&!o.view)}</section>`; }
 const G_TABS=[['tagok','Tagok','user'],['fejlesztes','Fejlesztés','refresh'],['harc','Harc','fight'],['chat','Chat','chat']];
 function raidReady(){ if(!state||!guildChannel()) return false; return raidDay().used<RAID_FREE||raidClaimable()>0; }
@@ -2704,10 +2708,13 @@ function renderGuildMembers(){
   return html+`</section><p class="note">Nem mindenki fogadja el a meghívást. A tagjaid minden sikeres küldetésed után beadnak a közös kasszába, és veled harcolnak a céhharcban.</p>`;
 }
 function renderGuildUpg(g=state.guild,ro=false){
-  let html=`<section class="card"><div class="row between"><div><div class="label">${ic('coin')}Közös kassza</div><div class="mono" style="font-size:20px;font-weight:700">${fmt(g.treasury+(ro?pendingDonations():0))} Ft</div></div><div class="row" style="gap:6px">${[50,200,1000].map(a=>`<button class="btn small" data-act="${ro?'gdonatem':'gdonate'}" data-a="${a}" ${state.gold<a?'disabled':''}>+${fmt(a)} Ft</button>`).join('')}</div></div><p class="note" style="margin:6px 0 0">A saját forintodból fizethetsz be, és a céhtagjaid is befizethetnek. A fejlesztések a kasszából fizetődnek, és a céh minden tagjának szólnak.</p>${contribList(g)}</section><section class="card">`;
+  const act=ro?'gdonatem':'gdonate', ft=g.treasury+(ro?pendingDonations('ft'):0), pg=(g.pog||0)+(ro?pendingDonations('pog'):0);
+  let html=`<section class="card"><div class="label">${ic('coin')}Közös kassza</div><div class="kassza"><span class="mono">${fmt(ft)} Ft</span><span class="mono">${pg} ${pogIc()}</span></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px">${[50,200,1000].map(a=>`<button class="btn small" data-act="${act}" data-a="${a}" ${state.gold<a?'disabled':''}>+${fmt(a)} Ft</button>`).join('')}${[1,5].map(a=>`<button class="btn small pog-btn" data-act="${act}" data-cur="pog" data-a="${a}" ${(state.pog||0)<a?'disabled':''}>+${a} ${pogIc()}</button>`).join('')}</div>
+    <p class="note" style="margin:6px 0 0">Forintot és pogácsát is befizethet bárki a céhből. A fejlesztések a kasszából fizetődnek, a 10. szinttől pogácsa is kell hozzájuk. A fejlesztések a céh minden tagjának szólnak.${ro&&(pendingDonations('ft')||pendingDonations('pog'))?' A befizetésed a vezető következő belépésekor kerül a kasszába.':''}</p>${contribList(g)}</section><section class="card">`;
   for(const u of GUILD_UPG){
     const l=g.upg[u.id]||0, c=upgCost(l), pg=upgPog(l), price=`${fmt(c)} Ft${pg?` + ${pg} ${pogIc()}`:''}`, tens=l%10;
-    html+=`<div class="upg"><div class="stat-ic">${ic(u.icon)}</div><div><div class="item-name">${u.name} <span class="mono muted" style="font-weight:500">${l}. szint</span></div><div class="pips small">${Array.from({length:10},(_,i)=>`<i class="${i<tens||(l>0&&tens===0)?'done':''}"></i>`).join('')}</div><div class="note">${u.desc}</div><div class="eff"><span class="vals"><b>${u.fx(l)}</b><span class="eff-next">→ ${u.fx(l+1)}</span></span></div></div>${ro?`<span class="chip">${price}</span>`:`<button class="btn small primary upg-btn" data-act="gupg" data-id="${u.id}" ${g.treasury<c||(state.pog||0)<pg?'disabled':''}>${price}</button>`}</div>`;
+    html+=`<div class="upg"><div class="stat-ic">${ic(u.icon)}</div><div><div class="item-name">${u.name} <span class="mono muted" style="font-weight:500">${l}. szint</span></div><div class="pips small">${Array.from({length:10},(_,i)=>`<i class="${i<tens||(l>0&&tens===0)?'done':''}"></i>`).join('')}</div><div class="note">${u.desc}</div><div class="eff"><span class="vals"><b>${u.fx(l)}</b><span class="eff-next">→ ${u.fx(l+1)}</span></span></div></div>${ro?`<span class="chip">${price}</span>`:`<button class="btn small primary upg-btn" data-act="gupg" data-id="${u.id}" ${g.treasury<c||(g.pog||0)<pg?'disabled':''}>${price}</button>`}</div>`;
   }
   return html+`</section>${ro?'<p class="note">Fejleszteni csak a vezető tud. Te a kasszába fizetéssel segíthetsz, a fejlesztések neked is szólnak.</p>':''}`;
 }
@@ -3342,10 +3349,10 @@ document.addEventListener('click',e=>{
     case 'ginvreal': inviteReal(id); break;
     case 'gleave': leaveGuild(); break;
     case 'gkick': { const g=state.guild, m=g.members.find(x=>x.id===id); if(!m) return; if(m.real) onKickReal(m); g.members=g.members.filter(x=>x!==m); save(); render(); toast(`${m.name} kilépett a céhből.`); } break;
-    case 'gdonate': { const a=+el.dataset.a; if(state.gold<a) return; state.gold-=a; state.guild.treasury+=a; state.guild.contrib=state.guild.contrib||{}; state.guild.contrib[state.name]=(state.guild.contrib[state.name]||0)+a; save(); render(); } break;
-    case 'gdonatem': donateToGuild(+el.dataset.a); break;
-    case 'gupg': { const g=state.guild, u=GUILD_UPG.find(x=>x.id===id), l=g.upg[id]||0, c=upgCost(l), pg=upgPog(l); if(!u||g.treasury<c) return; if(pg&&!spendPog(pg)) return;
-      g.treasury-=c; g.upg[id]=l+1; save(); render(); toast(`${u.name}: ${l+1}. szint (${u.fx(l+1)}).`); } break;
+    case 'gdonate': { const a=+el.dataset.a, cur=el.dataset.cur||'ft'; if(cur==='pog'?(state.pog||0)<a:state.gold<a) return; if(cur==='pog') state.pog-=a; else state.gold-=a; giveLocal(state.guild,state.name,a,cur); save(); render(); } break;
+    case 'gdonatem': donateToGuild(+el.dataset.a,el.dataset.cur||'ft'); break;
+    case 'gupg': { const g=state.guild, u=GUILD_UPG.find(x=>x.id===id), l=g.upg[id]||0, c=upgCost(l), pg=upgPog(l); if(!u||g.treasury<c) return; if((g.pog||0)<pg){ toast(`Ehhez ${pg} pogácsa kell a céh kasszájában.`); return; }
+      g.treasury-=c; g.pog=(g.pog||0)-pg; g.upg[id]=l+1; save(); render(); toast(`${u.name}: ${l+1}. szint (${u.fx(l+1)}).`); } break;
     case 'gwar': doGuildWar(id,el.dataset.pog); break;
     case 'gwskip': gwFinal(); break;
     case 'gwnext': gwNext(); break;
@@ -3390,7 +3397,7 @@ document.addEventListener('click',e=>{
     case 'delchar': if(el.dataset.confirm){ deleteChar(id); } else { el.dataset.confirm='1'; el.textContent='Biztosan törlöd? Újra koppints.'; el.classList.add('danger'); } break;
     case 'reset': if(el.dataset.confirm){ try{localStorage.removeItem(SAVE_KEY)}catch(e){} state=null; render(); } else { el.dataset.confirm='1'; el.textContent='Biztos? A mostani karakter elvész. Kattints újra.'; el.classList.add('primary'); } break;
   }
-  { const TR={buy:'buy',sell:'sell',train:'train',equip:'equip'}; if(TR[a]&&stateSig()!==sig0){ track(TR[a],1); save(); } if((a==='gdonate'||a==='gdonatem')&&stateSig()!==sig0){ track('donate',+el.dataset.a); save(); } }
+  { const TR={buy:'buy',sell:'sell',train:'train',equip:'equip'}; if(TR[a]&&stateSig()!==sig0){ track(TR[a],1); save(); } if((a==='gdonate'||a==='gdonatem')&&!el.dataset.cur&&stateSig()!==sig0){ track('donate',+el.dataset.a); save(); } }
   // sound feedback: places when you arrive, actions only when they actually changed something
   if(view!==view0||boltTab!==btab0||a==='view'){ if(view==='bolt') sfx(boltTab==='garazs'?'garage':'bell'); else if(view!==view0) sfx(VIEW_SFX[view]||'tick'); else if(a==='view') sfx('tick'); }
   else if(ACT_SFX[a] && (stateSig()!==sig0 || ['pickcls','pickemb','gtab','start','enterchar','switchchar','closelvl','ginvite','gcand'].includes(a))) sfx(ACT_SFX[a]);
@@ -3406,7 +3413,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 14:06';
+const BUILD='2026.11.02 14:11';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -3501,12 +3508,12 @@ async function inviteReal(cid){ const p=(ONLINE.all||[]).find(x=>x.id===cid), g=
   const {error}=await SB.from('guild_invites').insert({from_char:state.cid,from_user:ONLINE.user.id,to_char:cid,to_user:p.user_id,guild_name:g.name,guild_emblem:g.emblem,leader_name:state.name,to_name:p.name});
   if(error) return giErr(error);
   toast(`Meghívó elküldve: ${p.name}. Ha elfogadja, belép a céhbe.`); GI.at=0; loadInvites(true); }
-function pendingDonations(){ const mo=state.memberOf; return mo?GI.myDon.filter(d=>d.leader_char===mo.leaderCid&&d.from_char===state.cid).reduce((a,d)=>a+d.amount,0):0; }
-async function donateToGuild(a){ const mo=state.memberOf, L=(ONLINE.all||[]).find(p=>p.id===(mo&&mo.leaderCid)); if(!mo||!L||state.gold<a||GI.donBusy) return; GI.donBusy=true;
+function pendingDonations(cur='ft'){ const mo=state.memberOf; return mo?GI.myDon.filter(d=>d.leader_char===mo.leaderCid&&d.from_char===state.cid&&(d.currency||'ft')===cur).reduce((a,d)=>a+d.amount,0):0; }
+async function donateToGuild(a,cur='ft'){ const mo=state.memberOf, L=(ONLINE.all||[]).find(p=>p.id===(mo&&mo.leaderCid)); if(!mo||!L||GI.donBusy||(cur==='pog'?(state.pog||0)<a:state.gold<a)) return; GI.donBusy=true;
   try{ await flushCloud();
-    const {data,error}=await SB.from('guild_donations').insert({from_char:state.cid,from_user:ONLINE.user.id,from_name:state.name,leader_char:mo.leaderCid,leader_user:L.user_id,amount:a}).select('*');
+    const {data,error}=await SB.from('guild_donations').insert({from_char:state.cid,from_user:ONLINE.user.id,from_name:state.name,leader_char:mo.leaderCid,leader_user:L.user_id,amount:a,currency:cur}).select('*');
     if(error){ console.warn(error); return toast(/relation|does not exist|schema cache|guild_donations/i.test(error.message||'')?'A befizetéshez frissíteni kell az adatbázist (guild_donations tábla).':'Nem sikerült befizetni, próbáld újra.'); }
-    state.gold-=a; GI.myDon.push(...(data&&data.length?data:[{leader_char:mo.leaderCid,from_char:state.cid,amount:a}])); save(); render(); sfx('coins'); toast(`+${fmt(a)} Ft a céh kasszájába. Köszi!`);
+    if(cur==='pog') state.pog-=a; else state.gold-=a; GI.myDon.push(...(data&&data.length?data:[{leader_char:mo.leaderCid,from_char:state.cid,amount:a,currency:cur}])); save(); render(); sfx('coins'); toast(cur==='pog'?`+${a} pogácsa a céh kasszájába. Köszi!`:`+${fmt(a)} Ft a céh kasszájába. Köszi!`);
   } finally{ GI.donBusy=false; } }
 function onKickReal(m){ SB.from('guild_invites').delete().eq('from_char',state.cid).eq('to_char',m.cid).then(()=>{}); }
 async function leaveGuild(){ const mo=state.memberOf; state.memberOf=null; save(); render(); toast('Kiléptél a céhből.');
@@ -3530,7 +3537,7 @@ async function loadInvites(force){
     if(!dm.error) GI.myDon=dm.data||[];
     if(g&&!dl.error) for(const d of (dl.data||[]).filter(d=>d.leader_char===state.cid)){
       const del=await SB.from('guild_donations').delete().eq('id',d.id); if(del.error) continue;
-      g.treasury+=d.amount; g.contrib=g.contrib||{}; g.contrib[d.from_name]=(g.contrib[d.from_name]||0)+d.amount; changed=true; toast(`${d.from_name} befizetett ${fmt(d.amount)} Ft-ot a kasszába.`); }
+      giveLocal(g,d.from_name,d.amount,d.currency||'ft'); changed=true; toast((d.currency||'ft')==='pog'?`${d.from_name} befizetett ${d.amount} pogácsát a kasszába.`:`${d.from_name} befizetett ${fmt(d.amount)} Ft-ot a kasszába.`); }
     if(g) for(const r of GI.sent.filter(r=>r.from_char===state.cid)){
       const has=g.members.some(m=>m.cid===r.to_char);
       if(r.status==='accepted'&&!has&&g.members.length+1<guildCap()){ const p=(ONLINE.all||[]).find(x=>x.id===r.to_char);
