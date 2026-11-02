@@ -2620,20 +2620,22 @@ function raidAttack(pay){
   openBattle(me,{...boss,hp:Math.max(1,pool)},{log,win:true,boss:true,dealt,dead:dealt>=pool},`<span class="chip">${ic('xp','ic-xp')}+${fmt(x)} XP</span>${bots?`<span class="chip">${ic('user')}a gépi tagok is odavertek: ${fmt(bots)}</span>`:''}`);
 }
 function raidClaimable(){ if(!guildChannel()) return 0; const st=raidState(), got=(state.raidClaim||{})[guildChannel()]||0; return st.me&&st.me.dmg>0?Math.max(0,st.idx-got):0; }
+function raidTreasury(n){ return Math.round((200+state.level*40)*n); }
 function raidClaim(){ const n=raidClaimable(); if(!n) return; const ch=guildChannel(), st=raidState();
-  state.raidClaim=state.raidClaim||{}; state.raidClaim[ch]=st.idx; const pog=2*n, gold=Math.round((150+state.level*40)*n*goldMult());
-  state.chests=(state.chests||0)+n; state.pog=(state.pog||0)+pog; state.gold+=gold;
-  if(state.guild){ state.guild.treasury+=Math.round((100+state.level*20)*n); state.guild.honor+=15*n; }
-  save(); render(); sfx('levelup'); toast(`Céhes győzelem! ${n} Heti láda, +${pog} pogácsa, +${fmt(gold)} Ft.`); }
+  state.raidClaim=state.raidClaim||{}; state.raidClaim[ch]=st.idx;
+  // the reward is permanent: +1 to every attribute per boss; the leader's treasury gets forint
+  for(const [k] of STATS) state.stats[k]+=n; state.raidStats=(state.raidStats||0)+n;
+  let t=''; if(state.guild){ const f=raidTreasury(n); state.guild.treasury+=f; state.guild.honor+=15*n; t=`, +${fmt(f)} Ft a közös kasszába`; }
+  save(); render(); sfx('levelup'); toast(`Céhes győzelem! +${n} minden tulajdonságra${t}.`); }
 function raidCard(){
   if(!guildChannel()) return ''; const st=raidState(), B=st.boss, d=raidDay(), free=RAID_FREE-d.used, paid=RAID_PAID-d.paid, cl=raidClaimable();
   let h=`<section class="card boss-card raid-card"><div class="boss-head">${portrait(ENEMY_ART[B.art],'boss-port')}<div><span class="label">${ic('fame')}Céhes rajtaütés · ${B.i+1}. főgonosz</span><h2>${esc(B.name)}</h2><p class="muted">Együtt verjétek le! Ha ledől, jön a következő, még erősebb.${st.idx?` Eddig ${st.idx} főgonoszt győztetek le.`:''}</p></div></div>
     <div class="boss-hp"><i style="width:${Math.max(0,st.hp/B.hp*100)}%"></i><span class="mono">${fmt(st.hp)} / ${fmt(B.hp)}</span></div></section>`;
-  if(cl) h+=`<section class="card boss-win"><h3>${ic('trophy')}Ledőlt ${cl>1?cl+' főgonosz':'a főgonosz'}!</h3><p>A jutalmad: <b>${cl} Heti láda</b>, <b>+${2*cl} pogácsa</b> és forint${state.guild?', a kasszába is jut':''}.</p><button class="btn primary" data-act="raidclaim" style="width:100%">Jutalom átvétele</button></section>`;
+  if(cl) h+=`<section class="card boss-win"><h3>${ic('trophy')}Ledőlt ${cl>1?cl+' főgonosz':'a főgonosz'}!</h3><p>A jutalmad: <b>+${cl} minden tulajdonságra</b> (Erő, Ügyesség, Ész, Kitartás, Szerencse), végleg.${state.guild?` A közös kasszába <b>${fmt(raidTreasury(cl))} Ft</b> kerül.`:' A közös kasszába a vezető átvételekor kerül forint.'}</p><button class="btn primary" data-act="raidclaim" style="width:100%">Jutalom átvétele</button></section>`;
   h+=`<section class="card row between"><div><div class="label">${ic('fight')}Csapások ma</div><div class="note">${free>0?`${free}/${RAID_FREE} ingyen`:`pogácsáért még ${paid}/${RAID_PAID}`}</div></div>
     ${free>0?`<button class="btn primary" data-act="raidhit">${ic('fight')}Lecsapok</button>`:`<button class="btn pog-btn" data-act="raidhit" data-pog="1" ${paid<=0||(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Lecsapok</button>`}</section>`;
   if(st.rows.length) h+=`<section class="card"><div class="row between" style="margin-bottom:6px"><span class="label">${ic('trophy')}Ki mennyit ütött</span><span class="note">összesen ${fmt(st.total)}</span></div>${st.rows.slice(0,8).map((r,i)=>`<div class="lad-row ${r.me?'me':''}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(CLASS_ART[r.cls]||CLASS_ART.kidobo,'lad-port')}<span class="lad-name">${esc(r.name)}${r.me?' <em>te</em>':''}</span><span class="lad-lvl mono">${fmt(r.dmg)}</span></div>`).join('')}</section>`;
-  return h+`<p class="note">Naponta ${RAID_FREE} ingyen csapás jár, utána még ${RAID_PAID} pogácsáért. Minden ledöntött főgonoszért mindenki, aki ütött, kap egy Heti ládát, 2 pogácsát és forintot. A gépi céhtagok a vezető csapásaival együtt ütnek.</p>`;
+  return h+`<p class="note">Naponta ${RAID_FREE} ingyen csapás jár, utána még ${RAID_PAID} pogácsáért. Minden ledöntött főgonoszért mindenki, aki ütött, végleg +1-et kap minden tulajdonságára, a céh kasszája pedig forintot.${state.raidStats?` Eddig összesen +${state.raidStats} jött így.`:''} A gépi céhtagok a vezető csapásaival együtt ütnek.</p>`;
 }
 
 let GDESC_EDIT=false;
@@ -3395,7 +3397,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 13:26';
+const BUILD='2026.11.02 13:38';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
