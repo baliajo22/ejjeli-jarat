@@ -215,3 +215,7 @@ grant select, insert on public.guild_raid_hits to authenticated;
 alter table public.guild_donations add column if not exists currency text not null default 'ft';
 alter table public.guild_donations drop constraint if exists guild_donations_currency_check;
 alter table public.guild_donations add constraint guild_donations_currency_check check (currency in ('ft','pog'));
+
+-- ===== A céh minden tagja azonnal látja a befizetéseket =====
+drop policy if exists "gd read" on public.guild_donations;
+create policy "gd read" on public.guild_donations for select to authenticated using (true);
