@@ -710,7 +710,7 @@ details.install-card ol{margin:10px 0 0;padding-left:20px;display:flex;flex-dire
 .gw-n.r{text-align:right}
 .gw-r{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
 .gw-duel.win .gw-r{color:var(--ok)} .gw-duel.lose .gw-r{color:var(--bad)}
-.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);padding-left:max(6px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(7,1fr);padding-left:max(6px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
 .tab{background:none;border:0;padding:10px 1px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--muted);position:relative}
 .tab svg{width:22px;height:22px}
 .tab[aria-current="page"]{color:var(--sodium)}
@@ -1113,6 +1113,24 @@ h3{letter-spacing:.04em}
 .hud::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(14,15,27,.92),rgba(16,17,30,.8));-webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3);
   -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 16%,#000 84%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 16%,#000 84%,transparent 100%)}
 .hud::after{background:linear-gradient(90deg,transparent 4%,var(--neon-b) 25%,var(--neon-a) 50%,var(--neon-c) 75%,transparent 96%)}
+
+/* ===== ranglétra ===== */
+.rang-card{display:flex;flex-direction:column;gap:10px}
+.rang-me{display:flex;align-items:baseline;gap:8px;padding:10px 12px;border-radius:12px;background:radial-gradient(120% 140% at 0% 0%,rgba(242,163,58,.16),transparent 60%),rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(242,163,58,.28)}
+.rang-me .label{margin-right:auto}
+.rang-me b{font-size:24px;color:#ffd08a;text-shadow:0 0 12px rgba(242,163,58,.5)}
+.rang-me small{color:var(--muted)}
+.rang-search{position:relative;display:flex;align-items:center}
+.rang-search>.ic{position:absolute;left:12px;width:18px;height:18px;color:var(--muted);pointer-events:none}
+.rang-search input{width:100%;background:rgba(10,11,20,.6);border:1px solid rgba(120,126,190,.25);border-radius:12px;padding:12px 40px 12px 40px;color:var(--text);font:inherit;font-size:16px}
+.rang-search input:focus{outline:none;border-color:var(--sodium);box-shadow:0 0 0 3px rgba(242,163,58,.18)}
+.rang-search input::-webkit-search-cancel-button{display:none}
+.rang-x{position:absolute;right:6px;width:32px;height:32px;border:0;border-radius:50%;background:rgba(255,255,255,.08);color:var(--text);font-size:18px;line-height:1}
+.rang-none{margin:6px 0}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.tab{font-size:9.5px;letter-spacing:-.01em}
+.tab[data-v="rang"] svg{color:#ffd08a}
+.tab[data-v="rang"]:not([aria-current]) svg{filter:drop-shadow(0 0 4px rgba(242,163,58,.45))}
 </style>
 </head>
 <body>
@@ -1542,7 +1560,7 @@ function arenaPageBg(){ const r=seeded(83); let rows=''; for(let row=0;row<9;row
    <path d="M40 24v60M320 24v60" stroke="#24263a" stroke-width="4"/>
    ${rows}${fl}<rect y="400" width="360" height="240" fill="#100e1c"/>${scnGlow(180,470,200,'#f2a33a',.12)}<ellipse cx="180" cy="470" rx="200" ry="50" fill="none" stroke="#f2a33a" stroke-width="2" stroke-dasharray="10 9" opacity=".35"/></g>`,'0 0 360 640','preserveAspectRatio="xMidYMin slice"'); }
 const VIEW_BG={arena:()=>bgPic('arena','page')};
-function viewBgKey(){ if(!state) return ''; if(view==='bolt') return boltTab==='garazs'?'garazs':boltTab==='muhely'?'muhely':'bolt'; return {arena:'arena',kocsma:'kocsma',kazamata:'kazamata',ceh:'ceh',karakter:'room',terkep:'skyline'}[view]||''; }
+function viewBgKey(){ if(!state) return ''; if(view==='bolt') return boltTab==='garazs'?'garazs':boltTab==='muhely'?'muhely':'bolt'; return {arena:'arena',kocsma:'kocsma',kazamata:'kazamata',ceh:'ceh',karakter:'room',terkep:'skyline',rang:'skyline'}[view]||''; }
 function syncViewBg(){ let el=$('#viewbg'); if(!el){ el=document.createElement('div'); el.id='viewbg'; el.setAttribute('aria-hidden','true'); document.body.prepend(el); }
   const k=viewBgKey(); if(el.dataset.k===k) return; el.dataset.k=k;
   if(k){ el.innerHTML=bgPic(k,'page'); requestAnimationFrame(()=>el.classList.add('on')); } else { el.classList.remove('on'); } }
@@ -1630,6 +1648,7 @@ const I={
  shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
  sword:'<path d="M14 4h6v6L9 21l-3-3zM5 15l4 4M3 21l2-2"/>',
  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+ search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
  trophy:'<path d="M8 4h8v5a4 4 0 01-8 0zM8 6H4c0 3 2 5 4 5M16 6h4c0 3-2 5-4 5M12 13v4M8 21h8M10 17h4v4h-4z"/>',
  fame:'<path d="M3 18l2-10 5 5 2-7 2 7 5-5 2 10z"/>',
  bag:'<path d="M6 8h12l1 13H5zM9 8V6a3 3 0 016 0v2"/>',
@@ -1651,6 +1670,7 @@ const TAB_ICON={
 };
 
 TAB_ICON.terkep='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>';
+TAB_ICON.rang='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 01-8 0zM8 6H4c0 3 2 5 4 5M16 6h4c0 3-2 5-4 5M12 13v4M8 21h8M10 17h4v4h-4z"/></svg>';
 TAB_ICON.ceh='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>';
 TAB_ICON.kazamata='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V11a8 8 0 0116 0v10M2 21h20M9 21v-6a3 3 0 016 0v6"/></svg>';
 Object.assign(I,{
@@ -2320,7 +2340,7 @@ function render(){
   if(!state){ app.innerHTML=renderCreate(); syncViewBg(); return; }
   if(view==='terkep') view='karakter';
   { const vk=view+'/'+(view==='bolt'?boltTab:''); if(vk!==BUB_VIEW){ BUB_VIEW=vk; BUB.k=null; } }
-  app.innerHTML = renderHud() + `<main class="wrap">${({kocsma:renderKocsma,karakter:renderKarakter,bolt:renderBolt,arena:renderArena,kazamata:renderKazamata,ceh:renderCeh,terkep:renderTerkep})[view]()}</main>` + renderTabs();
+  app.innerHTML = renderHud() + `<main class="wrap">${({kocsma:renderKocsma,karakter:renderKarakter,bolt:renderBolt,arena:renderArena,kazamata:renderKazamata,ceh:renderCeh,rang:renderRang,terkep:renderTerkep})[view]()}</main>` + renderTabs();
   syncViewBg();
   if(lvlFx && !battle){ const L=lvlFx; lvlFx=false; showLevelUp(L); }
   tick(true);
@@ -2376,9 +2396,9 @@ function renderHud(){
   </div></header>`;
 }
 function renderTabs(){
-  const t=[['karakter','Karakter'],['kocsma','Kocsma'],['bolt','Bolt'],['arena','Aréna'],['kazamata','Kazamata'],['ceh','Céh']];
+  const t=[['karakter','Karakter'],['kocsma','Kocsma'],['bolt','Bolt'],['rang','Ranglétra'],['arena','Aréna'],['kazamata','Kazamata'],['ceh','Céh']];
   const ready = state.active && state.active.endsAt<=now();
-  return `<nav class="tabs"><div class="in">${t.map(([k,l])=>`<button class="tab" data-act="view" data-v="${k}" ${view===k?'aria-current="page"':''}>${TAB_ICON[k]}${l}${(k==='kocsma'&&(ready||wheelFreeReady()||tasksClaimable())&&view!=='kocsma')||(k==='karakter'&&view!=='karakter'&&skillOpen()>=0)||(k==='ceh'&&view!=='ceh'&&state.level>=GUILD_UNLOCK&&raidReady())||(k==='arena'&&view!=='arena'&&bossReady())||(k==='bolt'&&state.freeReshop&&view!=='bolt')?'<span class="dot"></span>':''}${(k==='kazamata'&&state.level<DUNGEON_UNLOCK)||(k==='ceh'&&state.level<GUILD_UNLOCK)?`<span class="lock-mini">${ic('lock')}</span>`:''}</button>`).join('')}</div></nav>`;
+  return `<nav class="tabs"><div class="in">${t.map(([k,l])=>`<button class="tab" data-act="view" data-v="${k}" ${view===k?'aria-current="page"':''}>${TAB_ICON[k]}${l}${(k==='kocsma'&&(ready||wheelFreeReady()||tasksClaimable())&&view!=='kocsma')||(k==='karakter'&&view!=='karakter'&&skillOpen()>=0)||(k==='ceh'&&view!=='ceh'&&state.level>=GUILD_UNLOCK&&raidReady())||(k==='kazamata'&&view!=='kazamata'&&bossReady())||(k==='bolt'&&state.freeReshop&&view!=='bolt')?'<span class="dot"></span>':''}${(k==='kazamata'&&state.level<DUNGEON_UNLOCK)||(k==='ceh'&&state.level<GUILD_UNLOCK)?`<span class="lock-mini">${ic('lock')}</span>`:''}</button>`).join('')}</div></nav>`;
 }
 function questCost(q){
   return `<span class="with-ic">${ic('clock','ic-time')}${effDur(q)} mp${mountRed()?` <s class="muted">${q.dur}</s>`:''}</span><span class="with-ic">${ic('coffee','ic-coffee')}−${qCost(q)} kávé</span>`;
@@ -2976,7 +2996,7 @@ function bossReady(){ if(!state||state.level<1) return false; const B=bossBoard(
 function renderBoss(){
   const B=cityBoss(), board=bossBoard(), b=bossDay(), free=BOSS_FREE-b.used, paid=BOSS_PAID-b.paid, wk=weekKey(), claimed=(state.bossClaimed||{})[wk];
   const pct=Math.max(0,board.hp/board.max*100), me=board.meIdx>=0?board.rows[board.meIdx]:null;
-  let html=arenaBar()+`<section class="card boss-card ${board.dead?'dead':''}"><div class="boss-head">${portrait(ENEMY_ART[B.art],'boss-port')}<div><span class="label">${ic('pin')}A heti városi főgonosz</span><h2>${esc(B.name)}</h2><p class="muted">${esc(B.desc)}</p></div></div>
+  let html=kazBar()+`<section class="card boss-card ${board.dead?'dead':''}"><div class="boss-head">${portrait(ENEMY_ART[B.art],'boss-port')}<div><span class="label">${ic('pin')}A heti városi főgonosz</span><h2>${esc(B.name)}</h2><p class="muted">${esc(B.desc)}</p></div></div>
     <div class="boss-hp"><i style="width:${pct}%"></i><span class="mono">${board.dead?'LEGYŐZVE!':`${fmt(board.hp)} / ${fmt(board.max)}`}</span></div>
     <div class="row between note"><span>${ic('user')} ${board.rows.length} hős harcol ellene</span><span>${ic('clock')} még ${fmtLeft(weekLeft())}</span></div></section>`;
   if(board.dead){
@@ -3043,7 +3063,7 @@ function renderMail(){
     const F=(state.friends||[]).map(friendInfo), left=state.arenaReadyAt>now();
     body=tabs+(F.length?F.map(f=>`<div class="opp">${portrait(artOf(f.cls,f.sex,f.name)).replace('<div','<div data-act="inspect" data-id="'+f.key+'"')}<div data-act="inspect" data-id="${f.key}" class="insp"><div class="item-name">${esc(f.name)}</div><div class="item-stats"><span>${f.level?f.level+'. szint · ':''}${CLASSES[f.cls]?CLASSES[f.cls].name:''}</span></div></div>
         <div class="row" style="gap:6px"><button class="btn small primary" data-act="mailthread" data-k="${f.key}" data-n="${esc(f.name)}" aria-label="Üzenet">${ic('mail')}</button><button class="btn small" data-act="unfriend" data-id="${f.cid}" aria-label="Törlés a barátok közül">×</button></div></div>`).join('')
-      :`<p class="muted">Még nincsenek barátaid. Az Arénában a Ranglétrán koppints egy játékosra, és jelöld barátnak.</p>`);
+      :`<p class="muted">Még nincsenek barátaid. A Ranglétrán koppints egy játékosra, és jelöld barátnak.</p>`);
   } else {
     const M=mailItems(), seen=MAIL.seenBefore||0;
     body=tabs+(M.length?M.slice(0,40).map(m=>{
@@ -3082,6 +3102,45 @@ function renderRealLadder(){
   L.forEach((p,i)=>{ html+=`<div class="lad-row rl-row ${p.me?'me':''}" role="button" tabindex="0" data-act="inspect" data-id="${p.key}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(artOf(p.cls,p.sex,p.name),'lad-port')}<span class="lad-name">${esc(p.name)}${p.me?' <em>te</em>':''}<small class="note">${p.level}. szint · ${CLASSES[p.cls]?CLASSES[p.cls].name:''}</small></span><span class="lad-lvl mono">${fmt(p.score)} <small>${REAL_SCORE_LABEL}</small></span>${p.me?'':`<button class="btn small ${left?'pog-btn':'primary'}" data-act="${p.pduel?'pduel':'duel'}" data-id="${p.pduel||p.duel}" ${left?`data-pog="1" ${(state.pog||0)<1?'disabled':''}`:''}>${left?pogIc()+'1':ic('fight')}</button>`}</div>`; });
   return html+`</div></section>`;
 }
+/* ================= leaderboard: players and guilds, with search ================= */
+const RANG={tab:'jatekos',q:''};
+const fold=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+// every guild led by a real player, your own included, best first
+function rankGuilds(){ if(!state) return [];
+  const seen=new Set(), out=[];
+  const mine=state.guild?[{...state,cid:state.cid}]:[];
+  for(const d of mine.concat(realGuildLeaders())){ if(!d||!d.guild||seen.has(d.cid)) continue; seen.add(d.cid);
+    out.push({lc:d.cid,name:d.guild.name,emblem:d.guild.emblem,size:d.guild.members.length+1,honor:d.guild.honor||0,leader:d.name,lvl:d.level,
+      mine:d.cid===state.cid||d.cid===guildChannel()}); }
+  return out.sort((a,b)=>b.honor-a.honor||b.size-a.size||a.name.localeCompare(b.name,'hu')); }
+function rangSearchRemote(){}   // the online build also asks the server
+const RANG_EMPTY_P='Még nincs más játékos.', RANG_EMPTY_G='Még nincs játékos által vezetett céh. Alapíts egyet a Céh fülön!';
+function rangPlayerRows(){ const L=realPlayers(), q=fold(RANG.q).trim(), left=Math.max(0,state.arenaReadyAt-now());
+  const hit=L.map((p,i)=>({p,i})).filter(({p})=>!q||fold(p.name).includes(q)||fold(CLASSES[p.cls]?CLASSES[p.cls].name:'').includes(q));
+  if(!L.length) return `<p class="muted">Betöltés…</p>`;
+  if(!hit.length) return `<p class="muted rang-none">Nincs „${esc(RANG.q)}” nevű játékos.</p>`;
+  return hit.slice(0,q?40:100).map(({p,i})=>`<div class="lad-row rl-row ${p.me?'me':''}" role="button" tabindex="0" data-act="inspect" data-id="${p.key}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(artOf(p.cls,p.sex,p.name),'lad-port')}<span class="lad-name">${esc(p.name)}${p.me?' <em>te</em>':''}<small class="note">${p.level}. szint · ${CLASSES[p.cls]?CLASSES[p.cls].name:''}</small></span><span class="lad-lvl mono">${fmt(p.score)} <small>${REAL_SCORE_LABEL}</small></span>${p.me?'':`<button class="btn small ${left?'pog-btn':'primary'}" data-act="${p.pduel?'pduel':'duel'}" data-id="${p.pduel||p.duel}" ${left?`data-pog="1" ${(state.pog||0)<1?'disabled':''}`:''} aria-label="Kihívás">${left?pogIc()+'1':ic('fight')}</button>`}</div>`).join(''); }
+function rangGuildRows(){ const G=rankGuilds(), q=fold(RANG.q).trim();
+  const hit=G.map((g,i)=>({g,i})).filter(({g})=>!q||fold(g.name).includes(q)||fold(g.leader).includes(q));
+  if(!G.length) return `<p class="muted">${RANG_EMPTY_G}</p>`;
+  if(!hit.length) return `<p class="muted rang-none">Nincs „${esc(RANG.q)}” nevű céh.</p>`;
+  return hit.slice(0,q?40:100).map(({g,i})=>`<div class="lad-row rl-row ${g.mine?'me':''}" role="button" tabindex="0" data-act="viewguild" data-id="${g.lc}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span><div class="port lad-port g-mini">${svg(emblemSvg(g.emblem))}</div><span class="lad-name">${esc(g.name)}${g.mine?' <em>ti</em>':''}<small class="note">${g.size} fő · vezető: ${esc(g.leader)}</small></span><span class="lad-lvl mono">${fmt(g.honor)} <small>becsület</small></span></div>`).join(''); }
+function rangList(){ return RANG.tab==='ceh'?rangGuildRows():rangPlayerRows(); }
+function rangCount(){ return RANG.tab==='ceh'?`${rankGuilds().length} céh`:`${realPlayers().length} játékos`; }
+function rangRefresh(){ const l=$('#rlist'); if(l) l.innerHTML=rangList(); const x=$('#rclear'); if(x) x.hidden=!RANG.q; }
+function renderRang(){
+  if(typeof syncLadder==='function') syncLadder();
+  const P=realPlayers(), myP=P.findIndex(p=>p.me), G=rankGuilds(), myG=G.findIndex(g=>g.mine), gt=RANG.tab==='ceh';
+  const seg=`<div class="seg" role="tablist">${[['jatekos','Játékosok','user'],['ceh','Céhek','fame']].map(([k,l,i])=>`<button role="tab" data-act="rangtab" data-t="${k}" aria-selected="${RANG.tab===k}">${ic(i)}${l}</button>`).join('')}</div>`;
+  const me=gt?(myG>=0?`<div class="rang-me"><span class="label">${ic('fame')}A céhetek helye</span><b class="mono">#${myG+1}</b><small>/ ${G.length}</small></div>`:`<div class="rang-me"><span class="label">${ic('fame')}A céhetek helye</span><span class="note">${state.memberOf?'A céhed még nem került fel a listára.':'Még nem vagy céhben.'}</span></div>`)
+    :(myP>=0?`<div class="rang-me"><span class="label">${ic('trophy')}A helyezésed</span><b class="mono">#${myP+1}</b><small>/ ${P.length}</small></div>`:'');
+  return `<section class="scene"><span class="label">${ic('trophy')}Népliget · eredményjelző tábla</span><h2>A város legjobbjai</h2><p>${gt?'A játékosok céhei, becsület szerint. Koppints egy céhre, és megnézheted a tagjait.':REAL_NOTE}</p></section>
+    ${seg}
+    <section class="card rang-card">${me}
+      <label class="rang-search"><span class="sr-only">${gt?'Céh keresése':'Játékos keresése'}</span>${ic('search')}<input id="rsearch" type="search" maxlength="30" autocomplete="off" enterkeyhint="search" placeholder="${gt?'Céh vagy vezető neve…':'Játékos neve…'}" value="${esc(RANG.q)}"><button class="rang-x" id="rclear" data-act="rangclear" aria-label="Keresés törlése" ${RANG.q?'':'hidden'}>×</button></label>
+      <div class="row between" style="margin:2px 0 6px"><span class="label">${ic('trophy')}${gt?'Céhek ranglétrája':'Játékosok ranglétrája'}</span><span class="note" id="rcount">${rangCount()}</span></div>
+      <div class="ladder" id="rlist">${rangList()}</div></section>`;
+}
 function onlinePlayersCard(left){
   if(!ONLINE.playersAt||now()-ONLINE.playersAt>20000) setTimeout(loadPlayers,0);
   const myR=ONLINE.myRating;
@@ -3093,12 +3152,10 @@ function onlinePlayersCard(left){
   return h+`</section>`;
 }
 function renderArena(){
-  if(arenaTab==='rang') return arenaBar()+renderRealLadder();
-  if(arenaTab==='boss') return renderBoss();
   syncLadder();
   const left=Math.max(0,state.arenaReadyAt-now()), myI=state.ladder.findIndex(e=>e.me), mv=state.rankMove&&state.rankMove.fresh?state.rankMove:null;
   if(mv&&!battle) setTimeout(()=>{ if(state.rankMove) state.rankMove.fresh=false; },6000);
-  let html=`${arenaBar()}${banner('arena')}<section class="scene"><span class="label">${ic('pin')}Népliget · régi buszgarázs</span><h2>Más hősök is erre járnak</h2><p>Hívj ki valakit, aki előtted áll a ranglétrán. Ha legyőzöd, átveszed a helyét. Ha kikapsz, két helyet csúszol.</p></section>
+  let html=`${banner('arena')}<section class="scene"><span class="label">${ic('pin')}Népliget · régi buszgarázs</span><h2>Más hősök is erre járnak</h2><p>Hívj ki valakit, aki előtted áll a ranglétrán. Ha legyőzöd, átveszed a helyét. Ha kikapsz, két helyet csúszol.</p></section>
   <section class="card rank-card">
     <div class="rank-big"><span class="label">${ic('trophy')}Rangod</span><div class="rank-num">#${myI+1}<small>/ ${state.ladder.length}</small></div>${mv&&mv.from!==mv.to?`<span class="rank-delta ${mv.to<mv.from?'up':'down'}">${mv.to<mv.from?'▲':'▼'} ${Math.abs(mv.from-mv.to)} hely</span>`:''}</div>
     <div class="rank-side"><div><div class="label">Mérleg</div><div class="mono">${state.wins} gy · ${state.losses} v</div></div><div><div class="label">${ic('clock')}Következő meccs</div><div class="mono" id="acd">${left?fmtTime(left):'Most'}</div></div></div>
@@ -3360,10 +3417,13 @@ function dungList(list,left){
   if(firstLocked>=0&&firstLocked<list.length-1) html+=`<p class="note" style="text-align:center">${ic('lock')} További ${list.length-1-firstLocked} kazamata vár rád a ${list[list.length-1].unlock}. szintig.</p>`;
   return html;
 }
+let kazTab='kaz';
+function kazBar(){ return `<div class="mg-bar" role="tablist">${[['kaz','Kazamaták','kazamata'],['boss','Főgonosz','fame']].map(([k,l,i])=>`<button class="mg-chip ${kazTab===k?'on':''}" role="tab" data-act="kaztab" data-t="${k}" aria-selected="${kazTab===k}"><span class="mg-ic">${k==='kaz'?TAB_ICON.kazamata:ic(i)}</span>${l}${k==='boss'&&bossReady()?'<span class="mg-dot"></span>':''}</button>`).join('')}</div>`; }
 function renderKazamata(){
+  if(kazTab==='boss') return renderBoss();
   const left=Math.max(0,(state.dungeonReadyAt||0)-now()), open=state.level>=DUNGEON_UNLOCK;
   const frags=NIGHT.filter(d=>(state.dungeons[d.id]||0)>=10).length;
-  let html=`${banner('kazamata')}<section class="scene"><span class="label">${ic('pin')}A város alatt</span><h2>${state.dawn?'A város kivilágosodott':'Ahová a metró sem jár'}</h2><p>Emeletről emeletre egyre mélyebbre. Minden lejutás után pihenned kell, a tizedik emeleten pedig egy főgonosz vár.</p></section>`;
+  let html=`${kazBar()}${banner('kazamata')}<section class="scene"><span class="label">${ic('pin')}A város alatt</span><h2>${state.dawn?'A város kivilágosodott':'Ahová a metró sem jár'}</h2><p>Emeletről emeletre egyre mélyebbre. Minden lejutás után pihenned kell, a tizedik emeleten pedig egy főgonosz vár.</p></section>`;
   html+=`<section class="card story ${state.dawn?'dawn':''}"><div class="row between"><span class="label">${ic('clock')}${state.dawn?'Hajnal':'Az éjféli óra'}</span><span class="mono note">${frags}/${NIGHT.length} darab</span></div>
     <p>${state.dawn?'Éjfél legyőzve, az óra újra jár, és a városra hajnal virradt. A fény azonban új lényeket is felébresztett: a Hajnal kazamatái még nehezebb ellenfeleket rejtenek.':'Valaki összetörte a város nagy óráját, és azóta minden éjszaka éjfélkor ragad meg. Minden kazamata főgonosza őriz belőle egy darabot. Gyűjtsd össze mindet, és a 100. szinten szállj szembe magával Éjféllel.'}</p>
     <div class="pips">${NIGHT.map((d,i)=>`<i class="${(state.dungeons[d.id]||0)>=10?'done':''}${d.id===FINAL_ID?' boss':''}"></i>`).join('')}</div></section>`;
@@ -3866,6 +3926,9 @@ document.addEventListener('click',e=>{
     case 'bosshit': bossAttack(el.dataset.pog); return;
     case 'bossclaim': claimBoss(); return;
     case 'arenatab': arenaTab=el.dataset.t; render(); window.scrollTo(0,0); return;
+    case 'kaztab': kazTab=el.dataset.t; render(); window.scrollTo(0,0); return;
+    case 'rangtab': RANG.tab=el.dataset.t; render(); return;
+    case 'rangclear': RANG.q=''; render(); { const i=$('#rsearch'); if(i) i.focus(); } return;
     case 'openwheel': openWheel(); return;
     case 'opentasks': openTasks(); return;
     case 'openlogin': renderLogin(); return;
@@ -3874,7 +3937,7 @@ document.addEventListener('click',e=>{
     case 'mailtab': if(el.dataset.t==='posta'){ state.mailSeen=now(); save(); } MAIL={tab:el.dataset.t}; renderMail(); return;
     case 'mailthread': INSPECT=null; MAIL={tab:'thread',key:el.dataset.k,name:el.dataset.n}; renderMail(); setTimeout(()=>$('#mmsg')?.focus(),50); return;
     case 'mailsend': doMailSend(); return;
-    case 'mailgo': $('#overlay-root').innerHTML=''; view=el.dataset.v; if(view==='arena') arenaTab='arena'; render(); window.scrollTo(0,0); return;
+    case 'mailgo': $('#overlay-root').innerHTML=''; view=el.dataset.v; render(); window.scrollTo(0,0); return;
     case 'unfriend': removeFriend(id); renderMail(); return;
     case 'addfriend': { const x=INSPECT; if(x) addFriend(el.dataset.k,x.name,x.cls); if(INSPECT) renderInspect(); } return;
     case 'gsend': doGuildSend(); return;
@@ -3981,7 +4044,7 @@ document.addEventListener('click',e=>{
 });
 
 function nameCheck(){ const b=$('#startbtn'), i=$('#nm'); if(!b||!i) return; b.disabled=!!b.dataset.full||i.value.trim().length<3; }
-document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); });
+document.addEventListener('input',e=>{ if(e.target.id==='nm') nameCheck(); if(e.target.id==='rsearch'){ RANG.q=e.target.value; rangRefresh(); rangSearchRemote(RANG.q); } });
 (()=>{ const root=document.getElementById('overlay-root'); if(!root) return; let y=0, locked=false;
   const sync=()=>{ const open=!!root.firstElementChild; if(open&&!locked){ y=window.scrollY; locked=true; document.body.classList.add('modal-open'); Object.assign(document.body.style,{position:'fixed',top:`-${y}px`,left:'0',right:'0',width:'100%'}); }
     else if(!open&&locked){ locked=false; document.body.classList.remove('modal-open'); Object.assign(document.body.style,{position:'',top:'',left:'',right:'',width:''}); window.scrollTo(0,y); } };
@@ -3990,7 +4053,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 23:52';
+const BUILD='2026.11.03 00:32';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -4044,7 +4107,7 @@ async function loadPlayers(){
   if(!SB||!ONLINE.user||ONLINE.loadingPlayers) return; ONLINE.loadingPlayers=true;
   try{ const {data,error}=await SB.from('characters').select('id,user_id,name,cls,level,rating,data').order('rating',{ascending:false}).limit(150); if(error) throw error;
     ONLINE.all=data.filter(p=>p.data&&p.data.stats); ONLINE.all.forEach(p=>{ p.sex=p.data.sex||'m'; }); ONLINE.players=ONLINE.all.filter(p=>p.user_id!==ONLINE.user.id); const me=data.find(p=>state&&p.id===state.cid); ONLINE.myRating=me?me.rating:1000; ONLINE.playersAt=now();
-    if((view==='arena'||view==='ceh')&&!battle) render(); }
+    if((view==='arena'||view==='ceh')&&!battle) render(); if(view==='rang'&&!battle){ if($('#rsearch')===document.activeElement) rangRefresh(); else render(); } }
   catch(e){ ONLINE.playersAt=now(); console.warn(e); } finally{ ONLINE.loadingPlayers=false; }
 }
 async function loadOnlineLogs(announce){
@@ -4072,6 +4135,14 @@ async function doOnlineDuel(id,pay){
 /* ---------- guilds with real players: invites live in the guild_invites table ---------- */
 const GI={sent:[],got:[],at:0,busy:false,sig:'',myDon:[]};
 function realGuildLeaders(){ if(!ONLINE.playersAt||now()-ONLINE.playersAt>20000) setTimeout(loadPlayers,0); return (ONLINE.all||[]).filter(p=>p.data&&p.data.guild).map(p=>onlineChar(p.id)); }
+let RS_T=null, RS_Q='';
+function rangSearchRemote(q){ q=String(q||'').trim(); clearTimeout(RS_T); if(q.length<2||q===RS_Q) return;
+  RS_T=setTimeout(async()=>{ RS_Q=q; if(!SB||!ONLINE.user) return; const pat='%'+q.replace(/[%_,()]/g,' ')+'%';
+    try{ const cols='id,user_id,name,cls,level,rating,data';
+      const [a,g]=await Promise.all([SB.from('characters').select(cols).ilike('name',pat).limit(30), SB.from('characters').select(cols).ilike('data->guild->>name',pat).limit(30)]);
+      const rows=[...((a&&a.data)||[]),...((g&&g.data)||[])].filter(p=>p.data&&p.data.stats); if(!rows.length) return;
+      ONLINE.all=ONLINE.all||[]; for(const p of rows){ if(ONLINE.all.some(x=>x.id===p.id)) continue; p.sex=p.data.sex||'m'; ONLINE.all.push(p); if(p.user_id!==ONLINE.user.id) ONLINE.players.push(p); }
+      if(view==='rang') rangRefresh(); }catch(e){ console.warn(e); } },350); }
 function onlineChar(cid){ const p=(ONLINE.all||[]).find(x=>x.id===cid); return p&&p.data?{...p.data,cid:p.id,name:p.name,cls:p.cls,level:p.level}:null; }
 function realData(cid){ if(!cid) return null; if(state&&cid===state.cid) return state; return onlineChar(cid)||listChars().find(c=>c.cid===cid)||null; }
 function stalePlayers(){ if(!ONLINE.playersAt||now()-ONLINE.playersAt>20000) setTimeout(loadPlayers,0); }
@@ -4158,7 +4229,7 @@ const BB={wk:null,rows:[],at:0,busy:false};
 async function loadBoss(){ if(!SB||!ONLINE.user||!state||BB.busy) return; BB.busy=true;
   try{ const wk=weekKey(); const {data,error}=await SB.from('world_boss_hits').select('char_id,name,cls,level,dmg').eq('week',wk).limit(20000); BB.at=now(); if(error){ console.warn(error); return; }
     const m={}; for(const h of data){ const r=m[h.char_id]||(m[h.char_id]={key:'p-'+h.char_id,cid:h.char_id,name:h.name,cls:h.cls,level:h.level,dmg:0}); r.dmg+=h.dmg; r.level=Math.max(r.level,h.level); }
-    BB.rows=Object.values(m); BB.wk=wk; if(view==='arena'&&arenaTab==='boss'&&!battle) render(); }
+    BB.rows=Object.values(m); BB.wk=wk; if(view==='kazamata'&&kazTab==='boss'&&!battle) render(); }
   finally{ BB.busy=false; } }
 function bossBoard(){ const wk=weekKey(); if(BB.wk!==wk||now()-BB.at>20000) setTimeout(loadBoss,0);
   const rows=(BB.wk===wk?BB.rows:[]).map(r=>({...r,me:r.cid===state.cid})), local=(state.bossDmg&&state.bossDmg[wk])||0, mine=rows.find(r=>r.me);
