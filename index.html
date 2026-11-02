@@ -1095,6 +1095,14 @@ h3{letter-spacing:.04em}
 .ros2-info{min-width:0;display:flex;flex-direction:column;gap:3px}.ros2-info h3{font-size:21px}
 .ros2-acts{display:flex;gap:8px;align-items:center}.ros2-acts .btn.primary{flex:1}
 @media (max-width:360px){.hero-stage{grid-template-columns:1fr}.hs-art{max-width:60%;margin:0 auto}.hs-info{padding:0 14px 14px}}
+
+/* ===== a felső képek széle elhalványul, beleolvad a háttérbe ===== */
+.banner.pic{border:0;border-radius:0;box-shadow:none;background:none;overflow:visible;margin-inline:-16px;max-width:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 12%,#000 88%,transparent 100%),linear-gradient(180deg,transparent 0,#000 14%,#000 72%,transparent 100%);
+  -webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent 0,#000 12%,#000 88%,transparent 100%),linear-gradient(180deg,transparent 0,#000 14%,#000 72%,transparent 100%);mask-composite:intersect}
+.banner.pic::after{display:none}
+.banner.pic .bgpic{filter:saturate(1.08)}
+.banner.pic .npc-clip{overflow:hidden}
 </style>
 </head>
 <body>
@@ -3970,7 +3978,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 20:57';
+const BUILD='2026.11.02 21:15';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
