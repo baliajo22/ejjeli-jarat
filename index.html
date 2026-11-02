@@ -3004,7 +3004,7 @@ function chatBox(){ setTimeout(()=>{ const el=$('#gchat'); if(el) el.scrollTop=1
   return `<section class="card gchat"><div class="row between" style="margin-bottom:6px"><span class="label">${ic('chat')}Céhes chat</span></div><div class="gchat-list" id="gchat">${chatMsgs()}</div>
     <div class="chat-in"><input id="gmsg" maxlength="300" placeholder="Írj a céhnek…" autocomplete="off"><button class="btn small primary" data-act="gsend" aria-label="Küldés">${ic('send')}</button></div></section>`; }
 function refreshChat(){ const el=$('#gchat'); if(el){ const atEnd=el.scrollHeight-el.scrollTop-el.clientHeight<40; el.innerHTML=chatMsgs(); if(atEnd) el.scrollTop=1e6; } const th=$('#mthread'); if(th&&MAIL.tab==='thread'){ th.innerHTML=threadHtml(); th.scrollTop=1e6; } }
-async function doGuildSend(){ const i=$('#gmsg'); if(!i||!i.value.trim()) return; const v=i.value; i.value=''; const ok=await sendGuildMsg(v); if(ok===false){ i.value=v; return toast('Nem sikerült elküldeni.'); } refreshChat(); const el=$('#gchat'); if(el) el.scrollTop=1e6; i.focus(); }
+async function doGuildSend(){ const i=$('#gmsg'); if(!i||!i.value.trim()) return; const v=i.value; i.value=''; const ok=await sendGuildMsg(v); if(ok!==true){ i.value=v; if(ok===false&&!(typeof MB!=='undefined'&&now()-(MB.errShown||0)<1500)) toast('Nem sikerült elküldeni.'); return; } refreshChat(); const el=$('#gchat'); if(el) el.scrollTop=1e6; i.focus(); }
 /* ---- mailbox ---- */
 let MAIL={tab:'posta'};
 function mailBtn(){ const n=mailUnread(); return `<button class="chip snd mail-btn" data-act="openmail" title="Postaláda" aria-label="Postaláda${n?`, ${n} új`:''}">${ic('mail')}${n?`<span class="mail-badge" id="mailbadge">${n>9?'9+':n}</span>`:''}</button>`; }
@@ -3035,7 +3035,7 @@ function renderMail(){
   $('#overlay-root').innerHTML=`<div class="overlay" data-act="closemg"><div class="mg-card mail-card" data-act="noop" role="dialog" aria-label="Postaláda"><button class="ins-x" data-act="closemg" aria-label="Bezárás">×</button>
     <span class="label">${ic('mail')}Postaláda</span><h2>${MAIL.tab==='thread'?'Üzenetek':MAIL.tab==='baratok'?'Barátok':'Posta'}</h2>${body}${MAIL.tab!=='thread'?`<p class="note" style="margin:0">${MAIL_NOTE}</p>`:''}</div></div>`;
 }
-async function doMailSend(){ const i=$('#mmsg'); if(!i||!i.value.trim()) return; const v=i.value; i.value=''; const ok=await sendMsg(MAIL.key,v,'dm'); if(ok===false){ i.value=v; return toast('Nem sikerült elküldeni.'); } refreshChat(); i.focus(); }
+async function doMailSend(){ const i=$('#mmsg'); if(!i||!i.value.trim()) return; const v=i.value; i.value=''; const ok=await sendMsg(MAIL.key,v,'dm'); if(ok!==true){ i.value=v; if(ok===false&&!(typeof MB!=='undefined'&&now()-(MB.errShown||0)<1500)) toast('Nem sikerült elküldeni.'); return; } refreshChat(); i.focus(); }
 
 let arenaTab='arena';
 function arenaBar(){ return `<div class="mg-bar" role="tablist">${[['arena','Aréna','fight'],['rang','Ranglétra','trophy'],['boss','Főgonosz','fame']].map(([k,l,i])=>`<button class="mg-chip ${arenaTab===k?'on':''}" role="tab" data-act="arenatab" data-t="${k}" aria-selected="${arenaTab===k}"><span class="mg-ic">${ic(i)}</span>${l}${k==='boss'&&bossReady()?'<span class="mg-dot"></span>':''}</button>`).join('')}</div>`; }
@@ -3970,7 +3970,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 17:35';
+const BUILD='2026.11.02 20:57';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -4151,8 +4151,8 @@ async function recordBossHit(dealt){ const wk=weekKey(); state.bossDmg=state.bos
   BB.at=0; loadBoss(); }
 /* ---------- mailbox, friends and guild chat on the server: messages table ---------- */
 const MB={items:[],sent:[],at:0,busy:false,gc:[],gcAt:0,gcCh:null,gcSig:'',seenIds:null};
-function msgErr(error){ console.warn(error); toast(/relation|does not exist|schema cache|messages/i.test(error.message||'')?'Az üzenetekhez frissíteni kell az adatbázist (messages tábla).':'Nem sikerült elküldeni, próbáld újra.'); }
-const mapMsg=r=>({id:r.id,at:Date.parse(r.created_at),kind:r.kind,k:r.kind,fromCid:r.from_char,fromKey:(r.from_user===ONLINE.user.id?'c-':'p-')+r.from_char,from:r.from_name,fromCls:r.from_cls,toCid:r.to_char,toKey:'p-'+r.to_char,to:r.to_name,body:r.body});
+function msgErr(error){ console.warn(error); toast(/relation|does not exist|schema cache|messages/i.test(error.message||'')?'Az üzenetekhez frissíteni kell az adatbázist (messages tábla).':/row-level|policy|permission/i.test(error.message||'')?'Nem sikerült elküldeni: lépj ki és be újra, hogy a hősöd mentése frissüljön.':'Nem sikerült elküldeni: '+(error.message||'hálózati hiba')+'.'); MB.errShown=now(); }
+const mapMsg=r=>({fromUser:r.from_user,id:r.id,at:Date.parse(r.created_at),kind:r.kind,k:r.kind,fromCid:r.from_char,fromKey:(r.from_user===ONLINE.user.id?'c-':'p-')+r.from_char,from:r.from_name,fromCls:r.from_cls,toCid:r.to_char,toKey:'p-'+r.to_char,to:r.to_name,body:r.body});
 function updateMailBadge(){ const b=$('.mail-btn'); if(b) b.outerHTML=mailBtn(); }
 async function loadMail(){ if(!SB||!ONLINE.user||!state||MB.busy) return; MB.busy=true;
   try{ const a=await SB.from('messages').select('*').eq('to_user',ONLINE.user.id).order('created_at',{ascending:false}).limit(100);
@@ -4168,7 +4168,11 @@ function mailItems(){ if(!MB.at||now()-MB.at>30000) setTimeout(loadMail,0);
   (GI.got||[]).filter(r=>r.to_char===state.cid&&r.status==='pending').forEach(r=>out.push({id:'g'+r.id,at:Date.parse(r.created_at),k:'invite',from:r.leader_name||'Valaki',body:`meghívott a(z) ${r.guild_name} céhbe. A Céh oldalon válaszolhatsz.`}));
   return out.sort((a,b)=>b.at-a.at); }
 function threadWith(key){ const cid=key.replace(/^[cp]-/,''); return [...MB.items.filter(m=>m.kind==='dm'&&m.fromCid===cid),...MB.sent.filter(m=>m.toCid===cid)].sort((a,b)=>a.at-b.at); }
-async function sendMsg(toKey,body,kind='dm'){ body=String(body||'').trim().slice(0,500); if(!body) return false; const cid=toKey.replace(/^[cp]-/,''), p=(ONLINE.all||[]).find(x=>x.id===cid); if(!p){ toast('Ez a játékos most nem érhető el.'); return false; }
+async function sendMsg(toKey,body,kind='dm'){ body=String(body||'').trim().slice(0,500); if(!body) return false; const cid=toKey.replace(/^[cp]-/,''); let p=(ONLINE.all||[]).find(x=>x.id===cid);
+  // a címzett még nincs betöltve (pl. a postából válaszolsz): lekérjük közvetlenül
+  if(!p){ try{ const r=await SB.from('characters').select('id,user_id,name').eq('id',cid).maybeSingle(); if(r.data) p=r.data; }catch(e){} }
+  if(!p){ const m=MB.items.find(x=>x.fromCid===cid&&x.fromUser); if(m) p={id:cid,user_id:m.fromUser,name:m.from}; }
+  if(!p){ toast('Ez a játékos most nem érhető el.'); return null; }
   await flushCloud();
   const {error}=await SB.from('messages').insert({kind,from_char:state.cid,from_user:ONLINE.user.id,from_name:state.name,from_cls:state.cls+(state.sex==='f'?':f':''),to_char:cid,to_user:p.user_id,to_name:p.name,body});
   if(error){ msgErr(error); return false; }
