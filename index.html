@@ -619,6 +619,7 @@ body.modal-open{overflow:hidden}
 .raid-chip{color:var(--hex)}
 .raid-bonus{font-size:13px;color:var(--hex);margin-top:8px;display:flex;align-items:center;gap:6px}
 .raid-card{border-color:rgba(157,139,255,.5)}
+.upg-btn{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 .install-card{display:flex;align-items:center;gap:12px}
 .install-card img{border-radius:12px;flex:none}
 .install-card>div{flex:1;min-width:0}
@@ -1375,18 +1376,20 @@ const GUILD_UNLOCK=10, GUILD_COST=300, GUILD_CD=60000, GUILD_N=20, GUILD_ACCEPT=
 const G_A=['Csepeli','Zuglói','Óbudai','Kőbányai','Ferencvárosi','Angyalföldi','Budai','Újpesti','Rákosi','Józsefvárosi','Kelenföldi','Pesterzsébeti'];
 const G_B=['Holdfarkasok','Villamosvadászok','Pincepatkányok','Neonlovagok','Lidércűzők','Panelmágusok Köre','Éjféli Futárok','Kidobók Szövetsége','Gőzlovagok','Rozsdás Kulcsok','Galambsuttogók','Tetőjárók'];
 const GUILD_UPG=[
-  {id:'kincstar',name:'Kincstár',icon:'coin',desc:'Több forint minden küldetésből, kazamatából, arénából.',fx:l=>`+${l*3}% forint`},
-  {id:'edzo',name:'Edzőterem',icon:'xp',desc:'Több XP mindenből.',fx:l=>`+${l*3}% XP`},
+  {id:'kincstar',name:'Kincstár',icon:'coin',desc:'Több forint minden küldetésből, kazamatából, arénából.',fx:l=>`+${l*2}% forint`},
+  {id:'edzo',name:'Edzőterem',icon:'xp',desc:'Több XP mindenből.',fx:l=>`+${l*2}% XP`},
   {id:'klub',name:'Klubhelyiség',icon:'user',desc:'Több férőhely a céhben.',fx:l=>`${5+l*2} fő`},
-  {id:'fegyver',name:'Fegyverraktár',icon:'sword',desc:'Erősebb a céh minden harcosa a céhharcban.',fx:l=>`+${l*5}% sebzés`}
+  {id:'fegyver',name:'Fegyverraktár',icon:'sword',desc:'Erősebb a céh minden harcosa a céhharcban.',fx:l=>`+${l*2}% sebzés`}
 ];
 function genGuildLadder(){ const n=new Set(); while(n.size<GUILD_N-1) n.add(`${pick(G_A)} ${pick(G_B)}`); return [...n].map((name,i)=>({id:uid(),name,emblem:pick(Object.keys(EMBLEMS)),off:Math.round(6-i*9/(GUILD_N-2)),size:Math.max(4,12-Math.floor(i/2))})).concat([{me:true}]); }
 function genCandidates(){ return Array.from({length:5},()=>({id:uid(),name:`${pick(EPI)} ${pick(FIRST)}`,cls:pick(Object.keys(CLASSES)),off:rand(-3,1)})); }
 function gUpg(k){ const G=state.guild||(memberGuild()||{}).g; return G?G.upg[k]||0:0; }
-function goldMult(){ return 1+.03*gUpg('kincstar')+.01*raidKills()+((state&&skillFx(state).gold)||0); }
-function xpMult(){ return 1+.03*gUpg('edzo')+.01*raidKills()+((state&&skillFx(state).xp)||0); }
+function goldMult(){ return 1+.02*gUpg('kincstar')+.01*raidKills()+((state&&skillFx(state).gold)||0); }
+function xpMult(){ return 1+.02*gUpg('edzo')+.01*raidKills()+((state&&skillFx(state).xp)||0); }
 function guildCap(){ return 5+2*gUpg('klub'); }
-function upgCost(l){ return Math.round(150*Math.pow(1.6,l)); }
+// no level cap: every level costs more forint, and from level 10 on pogácsa too
+function upgCost(l){ return Math.round(250*Math.pow(l+1,2)/10)*10; }
+function upgPog(l){ return l>=10?1+Math.floor((l-10)/2):0; }
 function memberLevel(m){ if(m.real){ const d=realData(m.cid); return d?d.level:(m.lvl||1); } return Math.max(1,state.level+m.off); }
 /* real players in a guild. Offline these are your other heroes on this device; the online build swaps in server data */
 function realData(cid){ if(!cid) return null; return listChars().find(c=>c.cid===cid)||null; }
@@ -2703,8 +2706,8 @@ function renderGuildMembers(){
 function renderGuildUpg(g=state.guild,ro=false){
   let html=`<section class="card"><div class="row between"><div><div class="label">${ic('coin')}Közös kassza</div><div class="mono" style="font-size:20px;font-weight:700">${fmt(g.treasury+(ro?pendingDonations():0))} Ft</div></div><div class="row" style="gap:6px">${[50,200,1000].map(a=>`<button class="btn small" data-act="${ro?'gdonatem':'gdonate'}" data-a="${a}" ${state.gold<a?'disabled':''}>+${fmt(a)} Ft</button>`).join('')}</div></div><p class="note" style="margin:6px 0 0">A saját forintodból fizethetsz be, és a céhtagjaid is befizethetnek. A fejlesztések a kasszából fizetődnek, és a céh minden tagjának szólnak.</p>${contribList(g)}</section><section class="card">`;
   for(const u of GUILD_UPG){
-    const l=g.upg[u.id]||0, max=l>=10, c=upgCost(l);
-    html+=`<div class="upg"><div class="stat-ic">${ic(u.icon)}</div><div><div class="item-name">${u.name} <span class="mono muted" style="font-weight:500">${l}/10</span></div><div class="pips small">${Array.from({length:10},(_,i)=>`<i class="${i<l?'done':''}"></i>`).join('')}</div><div class="note">${u.desc}</div><div class="eff"><span class="vals"><b>${u.fx(l)}</b>${max?'':`<span class="eff-next">→ ${u.fx(l+1)}</span>`}</span></div></div>${max?`<span class="chip">Max</span>`:ro?`<span class="chip">${fmt(c)} Ft</span>`:`<button class="btn small primary" data-act="gupg" data-id="${u.id}" ${g.treasury<c?'disabled':''}>${fmt(c)} Ft</button>`}</div>`;
+    const l=g.upg[u.id]||0, c=upgCost(l), pg=upgPog(l), price=`${fmt(c)} Ft${pg?` + ${pg} ${pogIc()}`:''}`, tens=l%10;
+    html+=`<div class="upg"><div class="stat-ic">${ic(u.icon)}</div><div><div class="item-name">${u.name} <span class="mono muted" style="font-weight:500">${l}. szint</span></div><div class="pips small">${Array.from({length:10},(_,i)=>`<i class="${i<tens||(l>0&&tens===0)?'done':''}"></i>`).join('')}</div><div class="note">${u.desc}</div><div class="eff"><span class="vals"><b>${u.fx(l)}</b><span class="eff-next">→ ${u.fx(l+1)}</span></span></div></div>${ro?`<span class="chip">${price}</span>`:`<button class="btn small primary upg-btn" data-act="gupg" data-id="${u.id}" ${g.treasury<c||(state.pog||0)<pg?'disabled':''}>${price}</button>`}</div>`;
   }
   return html+`</section>${ro?'<p class="note">Fejleszteni csak a vezető tud. Te a kasszába fizetéssel segíthetsz, a fejlesztések neked is szólnak.</p>':''}`;
 }
@@ -3185,7 +3188,7 @@ document.addEventListener('pointercancel',e=>endDrag(e,true));
 function doGuildWar(id,pay){
   const g=state.guild; if(!g) return; const L=state.guildLadder, ti=L.findIndex(e=>e.id===id); if(ti<0) return;
   if(g.readyAt>now()&&!(pay&&spendPog(1))) return;
-  const e=L[ti], boost=1+.05*gUpg('fegyver'), buff=f=>{ f.wMin=Math.round(f.wMin*boost); f.wMax=Math.round(f.wMax*boost); return f; };
+  const e=L[ti], boost=1+.02*gUpg('fegyver'), buff=f=>{ f.wMin=Math.round(f.wMin*boost); f.wMax=Math.round(f.wMax*boost); return f; };
   const mine=[buff({...playerFighter()}),...g.members.map(m=>buff(memberFighter(m)))].sort((a,b)=>a.level-b.level);
   const theirs=Array.from({length:e.size},()=>{ const c=pick(Object.keys(CLASSES)), f=genFighter(`${pick(EPI)} ${pick(FIRST)}`,Math.max(1,state.level+e.off+rand(-2,1)),.95,c); f.art=CLASS_ART[c]; return f; }).sort((a,b)=>a.level-b.level);
   // relay: the winner fights on with whatever life is left, until someone knocks them out
@@ -3341,7 +3344,7 @@ document.addEventListener('click',e=>{
     case 'gkick': { const g=state.guild, m=g.members.find(x=>x.id===id); if(!m) return; if(m.real) onKickReal(m); g.members=g.members.filter(x=>x!==m); save(); render(); toast(`${m.name} kilépett a céhből.`); } break;
     case 'gdonate': { const a=+el.dataset.a; if(state.gold<a) return; state.gold-=a; state.guild.treasury+=a; state.guild.contrib=state.guild.contrib||{}; state.guild.contrib[state.name]=(state.guild.contrib[state.name]||0)+a; save(); render(); } break;
     case 'gdonatem': donateToGuild(+el.dataset.a); break;
-    case 'gupg': { const g=state.guild, u=GUILD_UPG.find(x=>x.id===id), l=g.upg[id]||0, c=upgCost(l); if(!u||l>=10||g.treasury<c) return;
+    case 'gupg': { const g=state.guild, u=GUILD_UPG.find(x=>x.id===id), l=g.upg[id]||0, c=upgCost(l), pg=upgPog(l); if(!u||g.treasury<c) return; if(pg&&!spendPog(pg)) return;
       g.treasury-=c; g.upg[id]=l+1; save(); render(); toast(`${u.name}: ${l+1}. szint (${u.fx(l+1)}).`); } break;
     case 'gwar': doGuildWar(id,el.dataset.pog); break;
     case 'gwskip': gwFinal(); break;
@@ -3403,7 +3406,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 13:52';
+const BUILD='2026.11.02 14:06';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
