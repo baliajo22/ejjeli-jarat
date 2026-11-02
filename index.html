@@ -1762,6 +1762,7 @@ function save(){
   if(!state) return;
   if(state._g==null) state._g=state.gold; if(state.gold>state._g) track('gold',state.gold-state._g); state._g=state.gold;
   if(!state.cid) state.cid=(crypto.randomUUID?crypto.randomUUID():uid()+uid()+uid());
+  state.rev=(state.rev||0)+1;
   state.savedAt=now();
   try{ localStorage.setItem(CHAR_PREFIX+state.cid, JSON.stringify(state)); }catch(e){}
   const r=readRoster(); if(!r.ids.includes(state.cid)) r.ids.push(state.cid); r.current=state.cid; writeRoster(r);
@@ -3402,7 +3403,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 13:49';
+const BUILD='2026.11.02 13:52';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -3410,21 +3411,47 @@ const SB=(window.supabase&&CFG.url&&CFG.anonKey&&!/IDE_/.test(CFG.url))?window.s
 const ONLINE={user:null, players:[], playersAt:0, myRating:null, logs:[], mode:'login', err:'', busy:false};
 let cloudTimer=null, cloudPending=null;
 function cloudSave(st){ if(!SB||!ONLINE.user||!st) return; cloudPending=st; clearTimeout(cloudTimer); cloudTimer=setTimeout(()=>{ cloudTimer=null; pushChar(cloudPending); },1500); }
+/* sync safety: a device must never overwrite a save that went further on another device */
+const SYNC={};   // cid -> rev the server had when we last read or wrote it
+const progressOf=d=>d?[d.rev||0,d.level||0,d.xp||0]:[0,0,0];
+function newerThan(a,b){ // true if save a went further than save b: level, then XP, then number of saves
+  if(!a) return false; if(!b) return true;
+  if((a.level||0)!==(b.level||0)) return (a.level||0)>(b.level||0);
+  if((a.xp||0)!==(b.xp||0)) return (a.xp||0)>(b.xp||0);
+  return (a.rev||0)>(b.rev||0); }
+async function serverCopy(cid){ const {data,error}=await SB.from('characters').select('id,data').eq('id',cid); if(error) throw error; return data&&data[0]?{...(data[0].data||{}),cid:data[0].id}:null; }
+function adoptServer(sv,why){ // replace the hero in memory with the server copy
+  try{ localStorage.setItem(CHAR_PREFIX+sv.cid, JSON.stringify(sv)); }catch(e){}
+  SYNC[sv.cid]=sv.rev||0;
+  if(state&&state.cid===sv.cid){ state=migrate(sv); syncLadder(); battle=null; $('#overlay-root').innerHTML=''; render(); }
+  toast(why||'Egy másik eszközön tovább jutottál ezzel a hőssel, betöltöttük azt a mentést.'); }
 async function pushChar(st){ if(!SB||!ONLINE.user||!st) return; const snap=JSON.parse(JSON.stringify(st));
   const fields={name:String(snap.name||'Hős').slice(0,24),cls:snap.cls,level:snap.level,data:snap,updated_at:new Date().toISOString()};
   try{
-    const up=await SB.from('characters').update(fields).eq('id',snap.cid).select('id'); if(up.error) throw up.error;
-    if(!up.data||!up.data.length){ const ins=await SB.from('characters').insert({...fields,id:snap.cid,user_id:ONLINE.user.id}); if(ins.error) throw ins.error; }
-    ONLINE.saveErr=false;
+    const sv=await serverCopy(snap.cid);
+    if(sv&&newerThan(sv,snap)&&(sv.rev||0)!==(SYNC[snap.cid]||0)){ adoptServer(sv); return; }   // someone else went further: don't overwrite
+    if(sv){ const up=await SB.from('characters').update(fields).eq('id',snap.cid).select('id'); if(up.error) throw up.error; }
+    else { const ins=await SB.from('characters').insert({...fields,id:snap.cid,user_id:ONLINE.user.id}); if(ins.error) throw ins.error; }
+    SYNC[snap.cid]=snap.rev||0; ONLINE.saveErr=false;
   }catch(e){ console.warn('mentés hiba',e); if(!ONLINE.saveErr){ ONLINE.saveErr=true; toast('Nem sikerült menteni a szerverre. Ellenőrizd az internetet.'); } } }
 function flushCloud(){ if(cloudTimer){ clearTimeout(cloudTimer); cloudTimer=null; return pushChar(cloudPending); } return Promise.resolve(); }
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') flushCloud(); });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') flushCloud(); else checkRemote(); });
+window.addEventListener('focus',()=>checkRemote());
+let lastRemoteCheck=0;
+async function checkRemote(){ if(!SB||!ONLINE.user||!state||now()-lastRemoteCheck<15000) return; lastRemoteCheck=now(); try{ const sv=await serverCopy(state.cid); if(sv&&newerThan(sv,state)&&(sv.rev||0)!==(SYNC[state.cid]||0)) adoptServer(sv); }catch(e){} }
+setInterval(()=>{ if(document.visibilityState==='visible') checkRemote(); },60000);
 window.addEventListener('pagehide',()=>flushCloud());
 async function pullRoster(){
   const {data,error}=await SB.from('characters').select('id,data').eq('user_id',ONLINE.user.id); if(error) throw error;
-  const r=readRoster(); r.ids.forEach(id=>{ try{ localStorage.removeItem(CHAR_PREFIX+id); }catch(e){} });
-  const ids=[]; for(const row of data){ const st=row.data||{}; st.cid=row.id; try{ localStorage.setItem(CHAR_PREFIX+row.id, JSON.stringify(st)); }catch(e){} ids.push(row.id); }
+  const r=readRoster(), local={}; r.ids.forEach(id=>{ const c=readChar(id); if(c) local[id]=c; });
+  const ids=[], push=[];
+  for(const row of data){ const sv={...(row.data||{}),cid:row.id}, lc=local[row.id];
+    // keep whichever save went further; a newer local save (e.g. this phone) is sent back up
+    const keep=lc&&newerThan(lc,sv)?lc:sv; if(keep===lc) push.push(lc); SYNC[row.id]=sv.rev||0;
+    try{ localStorage.setItem(CHAR_PREFIX+row.id, JSON.stringify(keep)); }catch(e){} ids.push(row.id); }
+  for(const id of r.ids) if(!ids.includes(id)){ try{ localStorage.removeItem(CHAR_PREFIX+id); }catch(e){} }
   writeRoster({current: ids.includes(r.current)?r.current:null, ids});
+  for(const st of push){ SYNC[st.cid]=null; await pushChar(st); if(st.level) toast(`${st.name}: ezen az eszközön újabb mentés volt, azt tartottuk meg.`); }
 }
 async function loadPlayers(){
   if(!SB||!ONLINE.user||ONLINE.loadingPlayers) return; ONLINE.loadingPlayers=true;
