@@ -1407,6 +1407,17 @@ function inviteReal(cid){ const h=realData(cid), g=state.guild; if(!h||!g||g.mem
   g.members.push({id:uid(),real:true,cid,name:h.name,cls:h.cls,lvl:h.level}); h.memberOf={leaderCid:state.cid,name:g.name,emblem:g.emblem,leader:state.name}; writeOther(h); save(); render(); toast(`${h.name} belépett a céhbe.`); }
 function onKickReal(m){ const h=realData(m.cid); if(h&&h.memberOf&&h.memberOf.leaderCid===state.cid){ delete h.memberOf; writeOther(h); } }
 function leaveGuild(){ const L=realData(state.memberOf.leaderCid); if(L&&L.guild){ L.guild.members=L.guild.members.filter(m=>m.cid!==state.cid); writeOther(L); } state.memberOf=null; save(); render(); toast('Kiléptél a céhből.'); }
+/* guilds led by real players (offline: your other heroes on this device; online: everyone in the database) */
+function realGuildLeaders(){ return otherHeroes(); }
+function realGuilds(){ if(!state) return []; const mine=state.guild?state.cid:null;
+  return realGuildLeaders().filter(d=>d&&d.guild&&d.cid!==mine&&d.stats).map(d=>({id:'r-'+d.cid,lc:d.cid,real:true,name:d.guild.name,emblem:d.guild.emblem,size:d.guild.members.length+1,honor:d.guild.honor||0,leader:d.name,lvl:d.level}))
+    .sort((a,b)=>b.honor-a.honor||b.size-a.size); }
+function realGuildFighters(lc){ const d=realData(lc); if(!d||!d.guild) return [];
+  const boost=1+.02*((d.guild.upg||{}).fegyver||0), buff=f=>{ f.wMin=Math.round(f.wMin*boost); f.wMax=Math.round(f.wMax*boost); return f; };
+  const lead=heroFighter(d); lead.name=d.name; lead.art=CLASS_ART[d.cls];
+  const mem=d.guild.members.map(m=>{ if(m.real){ const md=realData(m.cid); if(md&&md.stats){ const f=heroFighter(md); f.name=md.name; f.art=CLASS_ART[md.cls]; return f; } }
+    const f=genFighter(m.name,Math.max(1,d.level+(m.off||0)),.95,m.cls); f.art=CLASS_ART[m.cls]; return f; });
+  return [lead,...mem].map(buff); }
 function memberGuild(){ if(!state||!state.memberOf) return null; const L=realData(state.memberOf.leaderCid); return L&&L.guild&&L.guild.members.some(m=>m.cid===state.cid)?{g:L.guild,leader:L}:null; }
 function invitesCard(){ return ''; }
 /* members pay into the leader's treasury; offline straight into the leader's save */
@@ -2522,7 +2533,7 @@ function renderMail(){
   } else {
     const M=mailItems(), seen=MAIL.seenBefore||0;
     body=tabs+(M.length?M.slice(0,40).map(m=>{
-      const icon=m.k==='arena'?ic('fight'):m.k==='friend'?ic('friend'):m.k==='invite'?ic('user'):ic('mail');
+      const icon=m.k==='arena'||(m.k==='friend'&&/céhharc/.test(m.body||''))?ic('fight'):m.k==='friend'?ic('friend'):m.k==='invite'?ic('user'):ic('mail');
       const click=m.k==='dm'?`data-act="mailthread" data-k="${m.fromKey}" data-n="${esc(m.from)}"`:m.k==='invite'?`data-act="mailgo" data-v="ceh"`:m.k==='arena'?`data-act="mailgo" data-v="arena"`:'';
       return `<div class="mrow ${m.k} ${m.won===false?'lost':''}" ${click} role="${click?'button':'listitem'}" tabindex="0"><span class="mrow-ic">${icon}</span><div><div class="mrow-h"><b>${esc(m.from||'')}</b><span class="note">${tAgo(m.at)}</span></div><div class="mrow-b">${esc(m.k==='dm'?m.body:m.body)}</div></div></div>`; }).join('')
       :`<p class="muted">Üres a postaládád.</p>`);
@@ -2724,6 +2735,7 @@ function renderGuildUpg(g=state.guild,ro=false){
   }
   return html+`</section>${ro?'<p class="note">Fejleszteni csak a vezető tud. Te a kasszába fizetéssel segíthetsz, a fejlesztések neked is szólnak.</p>':''}`;
 }
+const REAL_GUILD_EMPTY='Még nincs másik játékos által vezetett céh. Ha valaki alapít egyet, itt megjelenik, és megtámadhatjátok.';
 function renderGuildWar(){
   const g=state.guild, left=Math.max(0,g.readyAt-now()), L=state.guildLadder, myI=L.findIndex(e=>e.me), tg=[];
   const raid=raidCard();
@@ -2734,6 +2746,11 @@ function renderGuildWar(){
   for(const j of tg){ const e=L[j];
     html+=`<div class="opp"><div class="port g-mini">${svg(emblemSvg(e.emblem))}</div><div><div class="item-name"><span class="rank-tag">#${j+1}</span> ${esc(e.name)}</div><div class="item-stats"><span>${e.size} tag · kb. ${Math.max(1,state.level+e.off)}. szint</span><span>ti: ${g.members.length+1} fő</span></div></div>
       ${left?`<button class="btn small pog-btn" data-act="gwar" data-pog="1" data-id="${e.id}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Most</button>`:`<button class="btn small primary" data-act="gwar" data-id="${e.id}">${ic('fight')}Támadás</button>`}</div>`; }
+  const RG=realGuilds();
+  html+=`</section><section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Játékosok céhei</span><span class="note">${RG.length?'Valódi játékosok, becsület szerint':''}</span></div>`;
+  html+=RG.length?RG.slice(0,15).map((e,i)=>`<div class="opp"><div class="port g-mini" data-act="viewguild" data-id="${e.lc}">${svg(emblemSvg(e.emblem))}</div><div data-act="viewguild" data-id="${e.lc}" class="insp"><div class="item-name"><span class="rank-tag">#${i+1}</span> ${esc(e.name)}</div><div class="item-stats"><span>${e.size} tag · vezető: ${esc(e.leader)} (${e.lvl}.)</span><span class="with-ic">${ic('fame','ic-fame')}${e.honor}</span></div></div>
+      ${left?`<button class="btn small pog-btn" data-act="gwar" data-pog="1" data-id="${e.id}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Most</button>`:`<button class="btn small primary" data-act="gwar" data-id="${e.id}">${ic('fight')}Támadás</button>`}</div>`).join('')
+    :`<p class="muted" style="margin:6px 0 0">${REAL_GUILD_EMPTY}</p>`;
   html+=`</section><p class="note">Váltóharc: a gyengébbek kezdenek, a győztes a megmaradt életével küzd tovább a következő ellenféllel, amíg el nem esik. Az a céh nyer, amelyiknek utoljára marad talpon harcosa.</p>
   <section class="card"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('trophy')}Céhek ranglétrája</span><span class="note">${L.length} céh a városban</span></div><div class="ladder">${guildLadderRows(myI)}</div></section>`;
   return html;
@@ -3233,11 +3250,13 @@ document.addEventListener('pointerup',e=>endDrag(e,false));
 document.addEventListener('pointercancel',e=>endDrag(e,true));
 
 function doGuildWar(id,pay){
-  const g=state.guild; if(!g) return; const L=state.guildLadder, ti=L.findIndex(e=>e.id===id); if(ti<0) return;
+  const g=state.guild; if(!g) return; const L=state.guildLadder, real=String(id).startsWith('r-'), ti=real?-1:L.findIndex(e=>e.id===id);
+  const e=real?realGuilds().find(x=>x.id===id):L[ti]; if(!e) return;
+  if(real&&!realGuildFighters(e.lc).length) return toast('Ez a céh most nem érhető el.');
   if(g.readyAt>now()&&!(pay&&spendPog(1))) return;
-  const e=L[ti], boost=1+.02*gUpg('fegyver'), buff=f=>{ f.wMin=Math.round(f.wMin*boost); f.wMax=Math.round(f.wMax*boost); return f; };
+  const boost=1+.02*gUpg('fegyver'), buff=f=>{ f.wMin=Math.round(f.wMin*boost); f.wMax=Math.round(f.wMax*boost); return f; };
   const mine=[buff({...playerFighter()}),...g.members.map(m=>buff(memberFighter(m)))].sort((a,b)=>a.level-b.level);
-  const theirs=Array.from({length:e.size},()=>{ const c=pick(Object.keys(CLASSES)), f=genFighter(`${pick(EPI)} ${pick(FIRST)}`,Math.max(1,state.level+e.off+rand(-2,1)),.95,c); f.art=CLASS_ART[c]; return f; }).sort((a,b)=>a.level-b.level);
+  const theirs=real?realGuildFighters(e.lc).sort((a,b)=>a.level-b.level):Array.from({length:e.size},()=>{ const c=pick(Object.keys(CLASSES)), f=genFighter(`${pick(EPI)} ${pick(FIRST)}`,Math.max(1,state.level+e.off+rand(-2,1)),.95,c); f.art=CLASS_ART[c]; return f; }).sort((a,b)=>a.level-b.level);
   // relay: the winner fights on with whatever life is left, until someone knocks them out
   const duels=[]; let i=0,j=0,ha=mine[0].hp,hb=theirs[0]?theirs[0].hp:0;
   while(i<mine.length&&j<theirs.length){ const a=mine[i], b=theirs[j], r=simulate({...a,hp:ha,maxHp:a.hp},{...b,hp:hb,maxHp:b.hp}), last=r.log[r.log.length-1]||{hA:ha,hB:hb};
@@ -3247,19 +3266,20 @@ function doGuildWar(id,pay){
   const w=j, l=i;
   const won=j>=theirs.length, myI=L.findIndex(x=>x.me); let to=myI, rw='';
   if(won){
-    if(ti<myI){ const [m]=L.splice(myI,1); L.splice(ti,0,m); to=ti; }
-    const tg=Math.round((30+state.level*12+g.members.length*6)*goldMult()), x=Math.round(state.level*15*xpMult());
-    g.treasury+=tg; g.honor+=20; gainXp(x);
-    rw=`<span class="chip">${ic('coin','ic-gold')}+${tg} Ft a kasszába</span><span class="chip">${ic('xp','ic-xp')}+${x} XP</span><span class="chip">${ic('fame','ic-fame')}+20 becsület</span>`;
+    if(!real&&ti<myI){ const [m]=L.splice(myI,1); L.splice(ti,0,m); to=ti; }
+    const hon=real?30:20, tg=Math.round((30+state.level*12+g.members.length*6)*(real?1.5:1)*goldMult()), x=Math.round(state.level*(real?22:15)*xpMult());
+    g.treasury+=tg; g.honor+=hon; gainXp(x);
+    rw=`<span class="chip">${ic('coin','ic-gold')}+${tg} Ft a kasszába</span><span class="chip">${ic('xp','ic-xp')}+${x} XP</span><span class="chip">${ic('fame','ic-fame')}+${hon} becsület</span>`;
     if(Math.random()<.1){ state.pog++; rw+=pogChip(1); }
-  } else { const [m]=L.splice(myI,1); to=Math.min(L.length,myI+1); L.splice(to,0,m); g.honor=Math.max(0,g.honor-5); rw=`<span class="chip">${ic('fame','ic-fame')}−5 becsület</span>`; }
+  } else { if(!real){ const [m]=L.splice(myI,1); to=Math.min(L.length,myI+1); L.splice(to,0,m); } g.honor=Math.max(0,g.honor-5); rw=`<span class="chip">${ic('fame','ic-fame')}−5 becsület</span>`; }
+  if(real){ Promise.resolve(sendMsg('p-'+e.lc,`(a(z) ${g.name} vezetője) céhharcban megtámadta a(z) ${e.name} céhet, és ${won?'győzött':'visszavertétek'} (${w}:${l}).`,'friend')).catch(()=>{}); state.gwRealLog=(state.gwRealLog||[]).concat({at:now(),name:e.name,won}).slice(-20); }
   if(to!==myI) rw+=`<span class="chip rank-chip ${to<myI?'up':'down'}">${ic('trophy')}#${myI+1} → #${to+1}</span>`;
   g.readyAt=now()+GUILD_CD; save();
-  track('guild_war',1); save(); openGuildBattle(e,duels,won,rw,mine.length,theirs.length);
+  track('guild_war',1); save(); openGuildBattle(e,duels,won,rw,mine.length,theirs.length,mine,theirs);
 }
 /* guild war plays out like a normal fight, duel after duel: the winner carries their remaining life into the next one */
-function openGuildBattle(e,duels,won,rw,nA,nB){
-  const g=state.guild, mine=[], theirs=[];
+function openGuildBattle(e,duels,won,rw,nA,nB,allA,allB){
+  const g=state.guild, mine=allA?[...allA]:[], theirs=allB?[...allB]:[];
   duels.forEach(d=>{ if(!mine.includes(d.a)) mine.push(d.a); if(!theirs.includes(d.b)) theirs.push(d.b); });
   battle={guild:true,e,duels,won,rw,k:-1,alive:[nA,nB],mine,theirs,i:0,timer:null,ended:true,a:duels[0].a,b:duels[0].b,res:duels[0].res,rewardsHtml:''};
   $('#overlay-root').innerHTML=`<div class="overlay" role="dialog" aria-label="Céhharc"><div class="sheet wrap">
@@ -3453,7 +3473,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.02 14:25';
+const BUILD='2026.11.02 14:35';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -3534,6 +3554,7 @@ async function doOnlineDuel(id,pay){
 }
 /* ---------- guilds with real players: invites live in the guild_invites table ---------- */
 const GI={sent:[],got:[],at:0,busy:false,sig:'',myDon:[]};
+function realGuildLeaders(){ if(!ONLINE.playersAt||now()-ONLINE.playersAt>20000) setTimeout(loadPlayers,0); return (ONLINE.all||[]).filter(p=>p.data&&p.data.guild).map(p=>onlineChar(p.id)); }
 function onlineChar(cid){ const p=(ONLINE.all||[]).find(x=>x.id===cid); return p&&p.data?{...p.data,cid:p.id,name:p.name,cls:p.cls,level:p.level}:null; }
 function realData(cid){ if(!cid) return null; if(state&&cid===state.cid) return state; return onlineChar(cid)||listChars().find(c=>c.cid===cid)||null; }
 function stalePlayers(){ if(!ONLINE.playersAt||now()-ONLINE.playersAt>20000) setTimeout(loadPlayers,0); }
