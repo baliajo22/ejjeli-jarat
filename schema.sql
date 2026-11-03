@@ -219,3 +219,60 @@ alter table public.guild_donations add constraint guild_donations_currency_check
 -- ===== A céh minden tagja azonnal látja a befizetéseket =====
 drop policy if exists "gd read" on public.guild_donations;
 create policy "gd read" on public.guild_donations for select to authenticated using (true);
+
+-- ===== Időzített céhharc: hadüzenet után 12 órával dől el, addig lehet jelentkezni =====
+create table if not exists public.guild_wars (
+  id          bigint generated always as identity primary key,
+  atk_ch      text not null,
+  atk_name    text,
+  atk_emblem  text,
+  def_ch      text,
+  def_name    text,
+  def_emblem  text,
+  def_bot     jsonb,
+  created_by  uuid not null default auth.uid(),
+  created_at  timestamptz not null default now(),
+  starts_at   timestamptz not null,
+  status      text not null default 'pending' check (status in ('pending','done')),
+  result      jsonb
+);
+create index if not exists guild_wars_atk_idx    on public.guild_wars(atk_ch, created_at desc);
+create index if not exists guild_wars_def_idx    on public.guild_wars(def_ch, created_at desc);
+create index if not exists guild_wars_status_idx on public.guild_wars(status);
+alter table public.guild_wars enable row level security;
+drop policy if exists "gw read"   on public.guild_wars;
+drop policy if exists "gw insert" on public.guild_wars;
+drop policy if exists "gw finish" on public.guild_wars;
+create policy "gw read"   on public.guild_wars for select to authenticated using (true);
+create policy "gw insert" on public.guild_wars for insert to authenticated with check (
+  created_by = auth.uid() and status = 'pending' and result is null and starts_at >= now() + interval '11 hours'
+  and exists (select 1 from public.characters c where c.id = atk_ch and c.user_id = auth.uid()));
+-- once the start time has passed, any player may write the (deterministic) result exactly once
+create policy "gw finish" on public.guild_wars for update to authenticated using (status = 'pending' and starts_at <= now()) with check (status = 'done');
+grant select, insert, update on public.guild_wars to authenticated;
+
+create table if not exists public.guild_war_signups (
+  id          bigint generated always as identity primary key,
+  war_id      bigint not null references public.guild_wars(id) on delete cascade,
+  char_id     text not null references public.characters(id) on delete cascade,
+  user_id     uuid not null default auth.uid(),
+  side        text not null check (side in ('a','d')),
+  name        text,
+  cls         text,
+  sex         text,
+  level       int,
+  created_at  timestamptz not null default now(),
+  unique (war_id, char_id)
+);
+create index if not exists guild_war_signups_war_idx on public.guild_war_signups(war_id);
+alter table public.guild_war_signups enable row level security;
+drop policy if exists "gws read"   on public.guild_war_signups;
+drop policy if exists "gws insert" on public.guild_war_signups;
+drop policy if exists "gws delete" on public.guild_war_signups;
+create policy "gws read"   on public.guild_war_signups for select to authenticated using (true);
+create policy "gws insert" on public.guild_war_signups for insert to authenticated with check (
+  user_id = auth.uid()
+  and exists (select 1 from public.characters c where c.id = char_id and c.user_id = auth.uid())
+  and exists (select 1 from public.guild_wars w where w.id = war_id and w.status = 'pending' and w.starts_at > now()));
+create policy "gws delete" on public.guild_war_signups for delete to authenticated using (user_id = auth.uid());
+grant select, insert, delete on public.guild_war_signups to authenticated;
