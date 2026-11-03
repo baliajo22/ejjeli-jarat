@@ -1206,13 +1206,8 @@ h3{letter-spacing:.04em}
 .gw-sg.me{box-shadow:inset 0 0 0 1px var(--sodium)}
 .gw-bal{font-size:13px;font-weight:700;color:var(--muted)} .gw-bal.up{color:#58e38c} .gw-bal.down{color:#ff9a8a}
 
-/* szint a harcban */
-.fighter .pw{position:relative}
-.lv-badge{position:absolute;left:-6px;top:-6px;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 4px;border-radius:9px;
-  background:linear-gradient(160deg,#ffc56a,#f2a33a 55%,#d9811f);color:#1b1206;box-shadow:0 0 0 2px rgba(12,13,23,.85),0 0 12px rgba(242,163,58,.45);line-height:1}
-.lv-badge b{font-family:var(--f-display);font-size:17px;font-weight:400}
-.lv-badge small{font-size:7px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-top:1px}
-.fighter.right .lv-badge{left:auto;right:-6px}
+/* szint a harcban: a név mellett zárójelben */
+.lv-p{font-weight:600;color:var(--muted);font-family:var(--f-body);font-size:.85em}
 </style>
 </head>
 <body>
@@ -3690,15 +3685,15 @@ const ACT_SFX={buy:'buy',sell:'coins',train:'train',equip:'equip',coffee:'coffee
 function stateSig(){ if(!state) return ''; return [state.gold,state.pog,state.energy,state.inv.length,Object.values(state.equip).map(x=>x&&x.id).join(),state.active&&state.active.endsAt,state.shop.map(x=>x.id).join(),state.vehicle&&state.vehicle.until,state.guild&&(JSON.stringify(state.guild.upg)+state.guild.members.length+state.guild.treasury),JSON.stringify(state.stats)].join('|'); }
 
 /* ================= battle ================= */
-const lvBadge=f=>f&&f.level?`<span class="lv-badge" title="${f.level}. szint"><b>${f.level}</b><small>szint</small></span>`:'';
+const lvTxt=f=>f&&f.level?` <span class="lv-p" title="${f.level}. szint">(${f.level})</span>`:'';
 function openBattle(a,b,res,rewardsHtml){
   if(state&&a&&a.name===state.name){ let c=0,dg=0,bl=0; for(const e of res.log){ if(e.side===0&&e.crit) c++; if(e.side===1&&e.dodge) dg++; if(e.side===1&&e.block) bl++; } track('crit',c); track('dodge',dg); track('block',bl); save(); }
   battle={a,b,res,i:0,rewardsHtml,timer:null}; const bgk=BATTLE_BG; BATTLE_BG=null;
   $('#overlay-root').innerHTML=`<div class="overlay" role="dialog" aria-label="Harc"><div class="sheet wrap has-bg"><div class="b-bg" aria-hidden="true">${battleScene(bgk)}</div>
     <div class="versus">
-      <div class="fighter" id="fa"><div class="pw">${portrait(a.art)}${lvBadge(a)}</div><b>${esc(a.name)}</b><div class="bar hp"><i id="ha" style="width:100%"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hna">${a.hp}/${a.hp}</span></span></div>
+      <div class="fighter" id="fa"><div class="pw">${portrait(a.art)}</div><b>${esc(a.name)}${lvTxt(a)}</b><div class="bar hp"><i id="ha" style="width:100%"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hna">${a.hp}/${a.hp}</span></span></div>
       <span class="vs">VS</span>
-      <div class="fighter right" id="fb"><div class="pw">${portrait(b.art)}${lvBadge(b)}</div><b>${esc(b.name)}</b><div class="bar hp" style="--ok:var(--bad)"><i id="hb" style="width:100%;background:var(--bad)"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hnb">${b.hp}/${b.hp}</span></span></div>
+      <div class="fighter right" id="fb"><div class="pw">${portrait(b.art)}</div><b>${esc(b.name)}${lvTxt(b)}</b><div class="bar hp" style="--ok:var(--bad)"><i id="hb" style="width:100%;background:var(--bad)"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hnb">${b.hp}/${b.hp}</span></span></div>
     </div>
     <div class="blog" id="blog" aria-live="polite"></div>
     <div id="bend" class="stack"><button class="btn" data-act="skip">${ic('skip')}Átugrás</button></div>
@@ -4199,8 +4194,8 @@ function gwNext(){
   if(B.k>=B.duels.length-1) return gwFinal();
   const d=B.duels[++B.k]; B.a=d.a; B.b=d.b; B.res=d.res; B.i=0; B.ended=false;
   const fa=$('#fa'), fb=$('#fb');
-  fa.querySelector('.pw').innerHTML=portrait(d.a.art)+lvBadge(d.a); fb.querySelector('.pw').innerHTML=portrait(d.b.art)+lvBadge(d.b);
-  $('#fna').textContent=d.a.name; $('#fnb').textContent=d.b.name; setHp(d.aFrom,d.bFrom);
+  fa.querySelector('.pw').innerHTML=portrait(d.a.art); fb.querySelector('.pw').innerHTML=portrait(d.b.art);
+  $('#fna').innerHTML=esc(d.a.name)+lvTxt(d.a); $('#fnb').innerHTML=esc(d.b.name)+lvTxt(d.b); setHp(d.aFrom,d.bFrom);
   $('#gw-round').textContent=`${B.k+1}. párharc`;
   $('#blog').innerHTML=`<div class="muted">${esc(d.a.name)} ${d.aFrom<d.a.hp?`(${Math.round(d.aFrom/d.a.hp*100)}% élettel) `:''}kiáll ${esc(d.b.name)} ellen${d.bFrom<d.b.hp?` (${Math.round(d.bFrom/d.b.hp*100)}% élettel)`:''}.</div>`;
   gwTeams(); gwBtns(); sfx('bell'); B.timer=setTimeout(stepBattle,RM?200:700);
@@ -4377,7 +4372,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.03 15:53';
+const BUILD='2026.11.03 15:56';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
