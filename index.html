@@ -1190,6 +1190,9 @@ h3{letter-spacing:.04em}
 .gw-sg .port{width:24px;height:24px;border-radius:50%}
 .gw-sg.bots{padding-left:10px;color:var(--muted)}
 .gw-done.won .item-name{color:#58e38c} .gw-done.lost .item-name{color:#ff9a8a}
+.seg.seg5{grid-template-columns:repeat(5,1fr)}
+.seg.seg5 button{font-size:11.5px;padding:8px 2px;flex-direction:column;gap:3px}
+.seg.seg5 button .ic{width:16px;height:16px}
 </style>
 </head>
 <body>
@@ -2083,10 +2086,12 @@ function renderMemberGuild(){
   let html=gHead(g,{member:true,rank,ladLen:L.length,treasury:g.treasury+pendingDonations()})+gTabs();
   if(guildTab==='fejlesztes') return html+renderGuildUpg(g,true)+contribList(g);
   if(guildTab==='chat') return html+chatBox();
-  if(guildTab==='harc') return html+raidCard()+gwStatusCards()+(gwPendingAtk()||gwPendingDef().length?'':`<section class="card row between"><span class="label">${ic('fight')}Céhharc</span><span class="note">${esc(leader.name)} üzen hadat</span></section>`)+`
+  if(guildTab==='boss') return html+raidCard();
+  if(guildTab==='harc') return html+gwStatusCards()+(gwPendingAtk()||gwPendingDef().length?'':`<section class="card row between"><span class="label">${ic('fight')}Céhharc</span><span class="note">${esc(leader.name)} üzen hadat</span></section>`)+`
     <p class="note">A hadüzenetet a vezető küldi. Utána 12 órátok van jelentkezni, és csak az harcol, aki jelentkezett, a jelenlegi felszerelésével. Ha minket támadnak meg, itt tudsz jelentkezni a védekezésre.</p>
     <section class="card"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('trophy')}Céhek ranglétrája</span><span class="note">${L.length} céh a városban</span></div><div class="ladder">${myI>=0?guildLadderRows(myI,L,g):'<p class="muted">A vezető még nem töltötte be a ranglétrát.</p>'}</div></section>`;
   const row=(n,cls,l,role,me,cid)=>`<div class="opp ${cid?'pl-row':''}"${pIns(cid)}>${portrait(artOf(cls,cid&&sexLook(realData(cid)||{}),n))}<div><div class="item-name">${esc(n)} <span class="role-tag ${role==='Vezető'?'lead':role==='Játékos'?'real':''}">${role}</span>${me?' <em class="me-tag">te</em>':''}</div><div class="item-stats"><span>${l}. szint · ${CLASSES[cls]?CLASSES[cls].name:''}</span></div></div></div>`;
+  html+=gwStatusCards(true);
   return html+`<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Tagok</span><span class="note mono">${g.members.length+1} fő</span></div>${row(leader.name,leader.cls,leader.level,'Vezető',false,state.memberOf.leaderCid)}${g.members.map(m=>m.real&&m.cid===state.cid?row(state.name,state.cls,state.level,'Játékos',true,state.cid):row(m.name,m.cls,memberLevel(m),m.real?'Játékos':'Tag',false,m.real?m.cid:null)).join('')}</section>
    <section class="card row between"><span class="note">Ha kilépsz, alapíthatsz saját céhet, vagy más meghívását is elfogadhatod.</span><button class="btn small" data-act="gleave">Kilépés</button></section>`;
 }
@@ -3420,9 +3425,9 @@ function gDescHtml(g,lead){
   return `<div class="g-desc">${g.desc?`<p>${esc(g.desc)}</p>`:`<p class="muted">${lead?'Még nincs leírás. Írd ide, milyen a céhetek, és mit kaptok a fejlesztésekből.':'A vezető még nem írt leírást.'}</p>`}${lead?`<button class="btn small" data-act="gdescedit">${ic('chat')}${g.desc?'Szerkesztés':'Leírás írása'}</button>`:''}</div>`; }
 function gHead(g,o){ return `<section class="card g-head-wrap"><div class="g-head"><div class="g-emb">${svg(emblemSvg(g.emblem))}</div><div class="g-info"><div class="label">Céhszint ${1+Object.values(g.upg).reduce((a,b)=>a+b,0)}${o.member?' · tag vagy':''}</div><h3>${esc(g.name)}</h3><div class="g-stats">${o.rank?`<span class="with-ic">${ic('trophy','ic-fame')}#${o.rank} / ${o.ladLen}</span>`:''}<span class="with-ic">${ic('user')}${g.members.length+1}${o.cap?'/'+o.cap:''} fő</span><span class="with-ic">${ic('fame','ic-fame')}${g.honor} becsület</span><span class="with-ic">${ic('coin','ic-gold')}${fmt(o.treasury)} Ft${g.pog?` · ${g.pog} pogácsa`:''} kassza</span></div></div></div>
   <div class="g-bonus">${GUILD_UPG.filter(u=>g.upg[u.id]).map(u=>`<span class="chip">${ic(u.icon)}${u.fx(g.upg[u.id])}</span>`).join('')}${o.view||!raidKills()?'':`<span class="chip raid-chip">${ic('fame')}rajtaütés: +${raidKills()}% Ft és XP</span>`}${!GUILD_UPG.some(u=>g.upg[u.id])&&(o.view||!raidKills())?'<span class="note">Még nincs fejlesztés.</span>':''}</div>${gDescHtml(g,!o.member&&!o.view)}</section>`; }
-const G_TABS=[['tagok','Tagok','user'],['fejlesztes','Fejlesztés','refresh'],['harc','Harc','fight'],['chat','Chat','chat']];
+const G_TABS=[['tagok','Tagok','user'],['harc','Harc','fight'],['boss','Főgonosz','fame'],['fejlesztes','Fejlesztés','refresh'],['chat','Chat','chat']];
 function raidReady(){ if(!state||!guildChannel()) return false; return raidDay().used<RAID_FREE||raidClaimable()>0; }
-const gTabs=()=>`<div class="seg seg4" role="tablist">${G_TABS.map(([k,l,i])=>`<button role="tab" data-act="gtab" data-t="${k}" aria-selected="${guildTab===k}" style="position:relative">${ic(i)}${l}${k==='harc'&&(raidReady()||gwAttention())?'<span class="mg-dot"></span>':''}</button>`).join('')}</div>`;
+const gTabs=()=>`<div class="seg seg5" role="tablist">${G_TABS.map(([k,l,i])=>`<button role="tab" data-act="gtab" data-t="${k}" aria-selected="${guildTab===k}" style="position:relative">${ic(i)}<span>${l}</span>${(k==='harc'&&gwAttention())||(k==='boss'&&raidReady())?'<span class="mg-dot"></span>':''}</button>`).join('')}</div>`;
 function renderCeh(){
   const g=state.guild;
   let html=`${banner('ceh')}<section class="scene"><span class="label">${ic('pin')}Panelház pincéje · klubhelyiség</span><h2>${g?esc(g.name):state.memberOf?esc(state.memberOf.name):'Egyedül nem megy'}</h2><p>${g?'Közös kassza, közös fejlesztések és közös harc a város többi céhe ellen.':state.memberOf?'Tag vagy. A vezető fejlesztései neked is szólnak, és a céhharcban te is ott vagy.':'Alapíts céhet, hívj be más hősöket, fejlesszétek együtt a klubhelyiséget, és harcoljatok a város többi céhe ellen.'}</p></section>`;
@@ -3432,7 +3437,7 @@ function renderCeh(){
   const rank=state.guildLadder.findIndex(e=>e.me)+1;
   html+=gHead(g,{rank,ladLen:state.guildLadder.length,cap:guildCap(),treasury:g.treasury+pendingDonations('ft')});
   html+=gTabs();
-  return html+(guildTab==='tagok'?renderGuildMembers():guildTab==='fejlesztes'?renderGuildUpg():guildTab==='chat'?chatBox():renderGuildWar());
+  return html+(guildTab==='tagok'?gwStatusCards(true)+renderGuildMembers():guildTab==='fejlesztes'?renderGuildUpg():guildTab==='chat'?chatBox():guildTab==='boss'?raidCard():renderGuildWar());
 }
 function renderGuildCreate(){
   const can=state.gold>=GUILD_COST;
@@ -3474,7 +3479,7 @@ function renderGuildUpg(g=state.guild,ro=false){
 const REAL_GUILD_EMPTY='Még nincs másik játékos által vezetett céh. Ha valaki alapít egyet, itt megjelenik, és megtámadhatjátok.';
 function renderGuildWar(){
   const g=state.guild, left=Math.max(0,g.readyAt-now()), L=state.guildLadder, myI=L.findIndex(e=>e.me), tg=[];
-  const raid=raidCard();
+  const raid='';
   for(let j=Math.max(0,myI-3);j<myI;j++) tg.push(j);
   if(!tg.length) for(let j=myI+1;j<Math.min(L.length,myI+3);j++) tg.push(j);
   const pend=gwPendingAtk(), atkBtn=(key,id)=>pend?`<button class="btn small" disabled>${ic('clock')}Már támadtok</button>`:gwUnderAttack(key)?`<button class="btn small" disabled>${ic('shield')}Már támadják</button>`:`<button class="btn small primary" data-act="gwar" data-id="${id}">${ic('fight')}Hadüzenet</button>`;
@@ -4098,10 +4103,10 @@ function gwCard(w,side){ const left=w.starts-now(), mine=side==='a', signed=gwSi
     <p class="note" style="margin:0">A harc ${new Date(w.starts).toLocaleString(LOCALE(),{weekday:'short',hour:'2-digit',minute:'2-digit'})}-kor kezdődik. ${mine?'Addig bárki jelentkezhet a céhből a támadásra.':'Csak az harcol, aki jelentkezik védekezni. Ha senki nem jelentkezik, harc nélkül kikaptok.'} A gépi tagok mindig harcolnak.</p>
     <div class="label">${ic('user')}${mine?'Támadók':'Védők'}</div>${gwRoster(w,side)}
     ${lead?`<p class="note" style="margin:0">Te indítottad, ezért mindenképp harcolsz.</p>`:`<button class="btn ${signed?'':'primary'}" data-act="gwsign" data-id="${w.id}" data-s="${side}">${signed?`${ic('back')}Visszalépek`:`${ic(mine?'fight':'shield')}${mine?'Jelentkezem a támadásra':'Jelentkezem a védekezésre'}`}</button>`}</section>`; }
-function gwStatusCards(){ if(!gwMyCh()) return ''; gwStale(); const a=gwPendingAtk(); let h='';
+function gwStatusCards(onlyPending){ if(!gwMyCh()) return ''; gwStale(); const a=gwPendingAtk(); let h='';
   for(const w of gwPendingDef()) h+=gwCard(w,'d');
   if(a) h+=gwCard(a,'a');
-  const done=gwMine().filter(w=>w.status==='done'&&w.result).sort((x,y)=>y.starts-x.starts).slice(0,5);
+  const done=onlyPending?[]:gwMine().filter(w=>w.status==='done'&&w.result).sort((x,y)=>y.starts-x.starts).slice(0,5);
   if(done.length){ const ch=gwMyCh();
     h+=`<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('trophy')}Lezajlott céhharcok</span></div>${done.map(w=>{ const atk=w.atk.ch===ch, won=atk?w.result.atkWon:!w.result.atkWon, o=atk?w.def:w.atk;
       return `<div class="opp gw-done ${won?'won':'lost'}"><div class="port g-mini">${svg(emblemSvg(o.emblem))}</div><div><div class="item-name">${won?'Győzelem':'Vereség'} · ${esc(o.name)}</div><div class="item-stats"><span>${atk?'támadás':'védekezés'} · ${atk?w.result.w:w.result.l}:${atk?w.result.l:w.result.w}</span><span class="note">${tAgo(w.starts)}</span></div></div><button class="btn small" data-act="gwreplay" data-id="${w.id}">${ic('fight')}Visszajátszás</button></div>`; }).join('')}</section>`; }
@@ -4343,7 +4348,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.03 14:12';
+const BUILD='2026.11.03 15:42';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
