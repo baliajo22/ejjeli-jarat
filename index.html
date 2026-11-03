@@ -440,9 +440,10 @@ small.up{color:var(--ok)} small.down{color:var(--bad)} small.eq{color:var(--mute
 .gw-qn .port svg{width:100%;height:100%}
 .gw-qn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-align:left}
 .gw-qn small{color:var(--muted);font-size:10px}
-.fighter.right .gw-qn{flex-direction:row-reverse}
-.fighter.right .gw-qn span{text-align:right}
-.fighter.right .gw-queue .label{text-align:right}
+.gw-queues{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start;position:relative}
+.gw-queue.right .gw-qn{flex-direction:row-reverse}
+.gw-queue.right .gw-qn span{text-align:right}
+.gw-queue.right .label{text-align:right}
 .gw-teams{display:flex;justify-content:space-between;gap:10px}
 .gw-teams>div{display:flex;flex-wrap:wrap;gap:4px;max-width:49%}
 .gw-teams>div:last-child{justify-content:flex-end}
@@ -4171,10 +4172,11 @@ function openGuildBattle(e,duels,won,rw,nA,nB,allA,allB,left){
     <div class="gw-head"><div class="g-emb sm">${svg(emblemSvg(g.emblem))}</div><div class="gw-score"><span id="gw-w">${nA}</span><i>:</i><span id="gw-l">${nB}</span></div><div class="g-emb sm">${svg(emblemSvg(e.emblem))}</div></div>
     <div class="gw-names"><b>${esc(g.name)}</b><span class="note" id="gw-round">talpon maradt</span><b>${esc(e.name)}</b></div>
     <div class="versus">
-      <div class="fighter" id="fa"><div class="pw"></div><b id="fna"></b><div class="bar hp"><i id="ha"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hna"></span></span><div class="gw-queue" id="gw-ta"></div></div>
+      <div class="fighter" id="fa"><div class="pw"></div><b id="fna"></b><div class="bar hp"><i id="ha"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hna"></span></span></div>
       <span class="vs">VS</span>
-      <div class="fighter right" id="fb"><div class="pw"></div><b id="fnb"></b><div class="bar hp" style="--ok:var(--bad)"><i id="hb" style="background:var(--bad)"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hnb"></span></span><div class="gw-queue" id="gw-tb"></div></div>
+      <div class="fighter right" id="fb"><div class="pw"></div><b id="fnb"></b><div class="bar hp" style="--ok:var(--bad)"><i id="hb" style="background:var(--bad)"></i></div><span class="hpnum mono with-ic">${ic('con','ic-hp')}<span id="hnb"></span></span></div>
     </div>
+    <div class="gw-queues"><div class="gw-queue" id="gw-ta"></div><div class="gw-queue right" id="gw-tb"></div></div>
     <div class="blog" id="blog" aria-live="polite"></div>
     <div id="bend" class="stack"></div>
   </div></div>`;
@@ -4370,7 +4372,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.03 16:27';
+const BUILD='2026.11.03 17:24';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
