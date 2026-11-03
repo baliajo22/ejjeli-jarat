@@ -2009,11 +2009,13 @@ function floorPower(d,fl){
   return {lvl,mult};
 }
 // dungeons are a real step up from tavern quests: tougher foes, bigger pay
-// tuned for well-geared heroes: every floor a bit tougher than the last, and the boss on top of that
-const DUNG_HARD=1.5, DUNG_PAY=1.6, DUNG_RAMP=.03, DUNG_BOSS=1.2;
+// tuned for well-geared heroes from the second dungeon on: every floor a bit tougher than the last, the boss hits harder but has less health
+// the first dungeon stays the gentle intro
+const DUNG_HARD0=1.3, DUNG_HARD=1.5, DUNG_PAY=1.6, DUNG_RAMP=.03, DUNG_BOSS=1.2;
+let DUNG_BOSS_HP=.65;
 // high-level enemies outscale players faster, so later dungeons ease off a little to keep the same curve; dawn stays steeper
 function dungTune(d){ const l=d.unlock; return d.dawn?.93:(l<=15?1:Math.max(.9,1-(l-15)*.1/30)); }
-function dungeonFoe(d,fl){ const boss=fl===9, p=floorPower(d,fl), lvl=p.lvl, mult=p.mult*DUNG_HARD*dungTune(d)*(boss?DUNG_BOSS:1+fl*DUNG_RAMP); return {level:lvl, boss, cls:Object.keys(CLASSES)[(fl+d.unlock)%Object.keys(CLASSES).length], mult, gold:Math.round((20+lvl*14)*(boss?3:1)*DUNG_PAY*goldMult()), xp:Math.round((40+lvl*22)*(boss?2:1)*DUNG_PAY*xpMult())}; }
+function dungeonFoe(d,fl){ const boss=fl===9, p=floorPower(d,fl), lvl=p.lvl, first=DUNGEONS.indexOf(d)===0, mult=p.mult*dungTune(d)*(first?DUNG_HARD0:DUNG_HARD*(boss?DUNG_BOSS:1+fl*DUNG_RAMP)); return {level:lvl, boss, hp:boss&&!first?DUNG_BOSS_HP:1, cls:Object.keys(CLASSES)[(fl+d.unlock)%Object.keys(CLASSES).length], mult, gold:Math.round((20+lvl*14)*(boss?3:1)*DUNG_PAY*goldMult()), xp:Math.round((40+lvl*22)*(boss?2:1)*DUNG_PAY*xpMult())}; }
 
 /* arena ladder */
 const LADDER_N=50;
@@ -3949,7 +3951,7 @@ function doDungeon(id,pay){
   const d=DUNGEONS.find(x=>x.id===id); if(!d||dungLocked(d)) return;
   const fl=state.dungeons[d.id]||0; if(fl>=10) return;
   if((state.dungeonReadyAt||0)>now()&&!(pay&&spendPog(1))) return;
-  const f=dungeonFoe(d,fl), foe=genFighter(d.floors[fl],f.level,f.mult,f.cls); foe.art=ENEMY_ART[d.art[fl]];
+  const f=dungeonFoe(d,fl), foe=genFighter(d.floors[fl],f.level,f.mult,f.cls); foe.hp=Math.round(foe.hp*f.hp); foe.art=ENEMY_ART[d.art[fl]];
   const me=playerFighter(), res=simulate(me,foe); let rw='';
   if(res.win){
     state.dungeons[d.id]=fl+1; state.gold+=f.gold; track('dungeon',1);
@@ -4368,7 +4370,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.03 16:21';
+const BUILD='2026.11.03 16:27';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
