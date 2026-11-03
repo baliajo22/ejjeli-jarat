@@ -2047,7 +2047,7 @@ function heroFighter(st){
   const fx=skillFx(st);
   return {wpn:st.equip&&st.equip.fegyver&&st.equip.fegyver.base, name:st.name, cls:st.cls, level:st.level, stats:s, wMin:w?w.min:1, wMax:w?w.max:3, armor:Math.round(armor*(1+(fx.armor||0))), hp:Math.round(maxHp(s.con,st.level,st.cls)*(1+(fx.hp||0))), art:artOf(st.cls,sexLook(st)||'m'), sex:sexLook(st)||'m', real:true, cid:st.cid, fx};
 }
-function writeOther(st){ try{ localStorage.setItem(CHAR_PREFIX+st.cid, JSON.stringify(st)); }catch(e){} }
+function writeOther(st){ try{ if(st&&st._pub){ const raw=localStorage.getItem(CHAR_PREFIX+st.cid); const full=raw&&JSON.parse(raw); if(!full||full._pub) return; const {_pub,...pub}=st; localStorage.setItem(CHAR_PREFIX+st.cid, JSON.stringify({...full,...pub})); return; } localStorage.setItem(CHAR_PREFIX+st.cid, JSON.stringify(st)); }catch(e){} }
 
 /* guilds (céh): unlock at 10, simulated members and rival guilds */
 const GUILD_UNLOCK=10, GUILD_COST=300, GUILD_CD=60000, GUILD_N=20, GUILD_ACCEPT=.65;
@@ -4372,7 +4372,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.03 17:24';
+const BUILD='2026.11.03 18:42';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -4388,6 +4388,8 @@ function newerThan(a,b){ // true if save a went further than save b: level, then
   if((a.level||0)!==(b.level||0)) return (a.level||0)>(b.level||0);
   if((a.xp||0)!==(b.xp||0)) return (a.xp||0)>(b.xp||0);
   return (a.rev||0)>(b.rev||0); }
+async function serverMeta(cid){ let {data,error}=await SB.from('characters').select('id,lv:data->level,xp:data->xp,rev:data->rev').eq('id',cid); if(error){ console.warn('meta select',error); ({data,error}=await SB.from('characters').select('id,data').eq('id',cid)); } if(error) throw error; const r=data&&data[0]; if(!r) return null;
+  const d=r.data||{}; return {cid:r.id,level:+(r.lv??d.level)||0,xp:+(r.xp??d.xp)||0,rev:+(r.rev??d.rev)||0}; }
 async function serverCopy(cid){ const {data,error}=await SB.from('characters').select('id,data').eq('id',cid); if(error) throw error; return data&&data[0]?{...(data[0].data||{}),cid:data[0].id}:null; }
 function adoptServer(sv,why){ // replace the hero in memory with the server copy
   try{ localStorage.setItem(CHAR_PREFIX+sv.cid, JSON.stringify(sv)); }catch(e){}
@@ -4397,8 +4399,8 @@ function adoptServer(sv,why){ // replace the hero in memory with the server copy
 async function pushChar(st){ if(!SB||!ONLINE.user||!st) return; const snap=JSON.parse(JSON.stringify(st));
   const fields={name:String(snap.name||'Hős').slice(0,24),cls:snap.cls,level:snap.level,data:snap,updated_at:new Date().toISOString()};
   try{
-    const sv=await serverCopy(snap.cid);
-    if(sv&&newerThan(sv,snap)&&(sv.rev||0)!==(SYNC[snap.cid]||0)){ adoptServer(sv); return; }   // someone else went further: don't overwrite
+    const sv=await serverMeta(snap.cid);
+    if(sv&&newerThan(sv,snap)&&(sv.rev||0)!==(SYNC[snap.cid]||0)){ const full=await serverCopy(snap.cid); if(full) adoptServer(full); return; }   // someone else went further: don't overwrite
     if(sv){ const up=await SB.from('characters').update(fields).eq('id',snap.cid).select('id'); if(up.error) throw up.error; }
     else { const ins=await SB.from('characters').insert({...fields,id:snap.cid,user_id:ONLINE.user.id}); if(ins.error) throw ins.error; }
     SYNC[snap.cid]=snap.rev||0; ONLINE.saveErr=false;
@@ -4407,7 +4409,7 @@ function flushCloud(){ if(cloudTimer){ clearTimeout(cloudTimer); cloudTimer=null
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') flushCloud(); else checkRemote(); });
 window.addEventListener('focus',()=>checkRemote());
 let lastRemoteCheck=0;
-async function checkRemote(){ if(!SB||!ONLINE.user||!state||now()-lastRemoteCheck<15000) return; lastRemoteCheck=now(); try{ const sv=await serverCopy(state.cid); if(sv&&newerThan(sv,state)&&(sv.rev||0)!==(SYNC[state.cid]||0)) adoptServer(sv); }catch(e){} }
+async function checkRemote(){ if(!SB||!ONLINE.user||!state||now()-lastRemoteCheck<15000) return; lastRemoteCheck=now(); try{ const sv=await serverMeta(state.cid); if(sv&&newerThan(sv,state)&&(sv.rev||0)!==(SYNC[state.cid]||0)){ const full=await serverCopy(state.cid); if(full) adoptServer(full); } }catch(e){} }
 setInterval(()=>{ if(document.visibilityState==='visible') checkRemote(); },60000);
 window.addEventListener('pagehide',()=>flushCloud());
 async function pullRoster(){
@@ -4422,9 +4424,19 @@ async function pullRoster(){
   writeRoster({current: ids.includes(r.current)?r.current:null, ids});
   for(const st of push){ SYNC[st.cid]=null; await pushChar(st); if(st.level) toast(`${st.name}: ezen az eszközön újabb mentés volt, azt tartottuk meg.`); }
 }
+/* other players: only what fights, profiles and guilds need (no bag, shop, quest or bot lists) -> ~5x less data */
+const PUB_SKIP=new Set(['inv','ladder','guildLadder','shop','quests','arena','bought','inbox','outbox']);
+const PUB_BASE=['stats','equip','skills','guild','memberOf','sex','look','level','xp','rev','fame','wins','losses','vehicle','dungeons'];
+function pubKeys(){ return [...new Set([...PUB_BASE,...Object.keys(state||{})])].filter(k=>!PUB_SKIP.has(k)&&/^[A-Za-z_][A-Za-z0-9_]*$/.test(k)); }
+function pubCols(keys){ return 'id,user_id,name,cls,level,rating,'+keys.map(k=>`j_${k}:data->${k}`).join(','); }
+function pubRow(r,keys){ if(r.data!==undefined) return r; const d={_pub:1}; let any=false;
+  for(const k of keys){ const v=r['j_'+k]; delete r['j_'+k]; if(v!==null&&v!==undefined){ d[k]=v; any=true; } } r.data=any?d:null; return r; }
+async function pubSelect(build){ const keys=pubKeys(); let res=await build(pubCols(keys));
+  if(res&&res.error){ console.warn('slim select',res.error); res=await build('id,user_id,name,cls,level,rating,data'); }   // safety net: old full query
+  if(res&&res.data) res.data.forEach(r=>pubRow(r,keys)); return res; }
 async function loadPlayers(){
   if(!SB||!ONLINE.user||ONLINE.loadingPlayers) return; ONLINE.loadingPlayers=true;
-  try{ const {data,error}=await SB.from('characters').select('id,user_id,name,cls,level,rating,data').order('rating',{ascending:false}).limit(150); if(error) throw error;
+  try{ const {data,error}=await pubSelect(c=>SB.from('characters').select(c).order('rating',{ascending:false}).limit(150)); if(error) throw error;
     ONLINE.all=data.filter(p=>p.data&&p.data.stats); ONLINE.all.forEach(p=>{ p.sex=(p.data.sex||'m')+(p.data.look&&p.data.look<lookCount(p.cls,p.data.sex||'m')?p.data.look:''); }); ONLINE.players=ONLINE.all.filter(p=>p.user_id!==ONLINE.user.id); const me=data.find(p=>state&&p.id===state.cid); ONLINE.myRating=me?me.rating:1000; ONLINE.playersAt=now();
     if((view==='arena'||view==='ceh')&&!battle) render(); if(view==='rang'&&!battle){ if($('#rsearch')===document.activeElement) rangRefresh(); else render(); } }
   catch(e){ ONLINE.playersAt=now(); console.warn(e); } finally{ ONLINE.loadingPlayers=false; }
@@ -4457,8 +4469,8 @@ function realGuildLeaders(){ if(!ONLINE.playersAt||now()-ONLINE.playersAt>20000)
 let RS_T=null, RS_Q='';
 function rangSearchRemote(q){ q=String(q||'').trim(); clearTimeout(RS_T); if(q.length<2||q===RS_Q) return;
   RS_T=setTimeout(async()=>{ RS_Q=q; if(!SB||!ONLINE.user) return; const pat='%'+q.replace(/[%_,()]/g,' ')+'%';
-    try{ const cols='id,user_id,name,cls,level,rating,data';
-      const [a,g]=await Promise.all([SB.from('characters').select(cols).ilike('name',pat).limit(30), SB.from('characters').select(cols).ilike('data->guild->>name',pat).limit(30)]);
+    try{
+      const [a,g]=await Promise.all([pubSelect(c=>SB.from('characters').select(c).ilike('name',pat).limit(30)), pubSelect(c=>SB.from('characters').select(c).ilike('data->guild->>name',pat).limit(30))]);
       const rows=[...((a&&a.data)||[]),...((g&&g.data)||[])].filter(p=>p.data&&p.data.stats); if(!rows.length) return;
       ONLINE.all=ONLINE.all||[]; for(const p of rows){ if(ONLINE.all.some(x=>x.id===p.id)) continue; p.sex=(p.data.sex||'m')+(p.data.look&&p.data.look<lookCount(p.cls,p.data.sex||'m')?p.data.look:''); ONLINE.all.push(p); if(p.user_id!==ONLINE.user.id) ONLINE.players.push(p); }
       if(view==='rang') rangRefresh(); }catch(e){ console.warn(e); } },350); }
@@ -4482,7 +4494,7 @@ async function gwSign(war,side,on){
   return true; }
 async function gwFinish(war,result){ const {data,error}=await SB.from('guild_wars').update({status:'done',result}).eq('id',war.id).eq('status','pending').select('id'); if(error){ console.warn(error); return false; } return !!(data&&data.length); }
 async function gwPrefetch(ids){ const need=[...new Set(ids)].filter(id=>id!==state.cid&&!(ONLINE.all||[]).some(p=>p.id===id)); if(!need.length) return;
-  const {data,error}=await SB.from('characters').select('id,user_id,name,cls,level,rating,data').in('id',need); if(error) return;
+  const {data,error}=await pubSelect(c=>SB.from('characters').select(c).in('id',need)); if(error) return;
   ONLINE.all=ONLINE.all||[]; for(const p of data||[]){ if(!p.data) continue; p.sex=p.data.sex||'m'; ONLINE.all.push(p); } }
 setInterval(()=>{ if(state&&ONLINE.user&&guildChannel()) gwStale(); },30000);
 function onlineChar(cid){ const p=(ONLINE.all||[]).find(x=>x.id===cid); return p&&p.data?{...p.data,cid:p.id,name:p.name,cls:p.cls,level:p.level}:null; }
