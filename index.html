@@ -970,13 +970,13 @@ body::before{background:rgba(12,13,23,.86)}
 .card,.journey{--fa:#f2a33a;--fb:#9d8bff;border:1px solid rgba(140,146,210,.22);
   box-shadow:inset 0 0 0 3px rgba(12,13,23,.55),inset 0 0 0 4px rgba(140,146,210,.09),inset 0 1px 0 rgba(255,255,255,.06),0 12px 28px -14px rgba(0,0,0,.8)}
 .card{padding:16px}
-.card::after,.journey::after{content:"";position:absolute;inset:5px;pointer-events:none;border-radius:9px;z-index:2;
-  background:
-   linear-gradient(var(--fa),var(--fa)) left top/16px 2px no-repeat, linear-gradient(var(--fa),var(--fa)) left top/2px 16px no-repeat,
-   linear-gradient(var(--fa),var(--fa)) right top/16px 2px no-repeat, linear-gradient(var(--fa),var(--fa)) right top/2px 16px no-repeat,
-   linear-gradient(var(--fb),var(--fb)) left bottom/16px 2px no-repeat, linear-gradient(var(--fb),var(--fb)) left bottom/2px 16px no-repeat,
-   linear-gradient(var(--fb),var(--fb)) right bottom/16px 2px no-repeat, linear-gradient(var(--fb),var(--fb)) right bottom/2px 16px no-repeat;
-  filter:drop-shadow(0 0 3px color-mix(in srgb,var(--fa) 70%,transparent));opacity:.85}
+.card::after,.journey::after{content:"";position:absolute;inset:5px;pointer-events:none;border-radius:10px;z-index:2;padding:2px;box-sizing:border-box;
+  background:linear-gradient(180deg,var(--fa) 50%,var(--fb) 50%);
+  /* only the rounded corners of a 2px ring are kept: (left/right ends) ∩ (top/bottom ends) ∩ (ring) */
+  -webkit-mask:linear-gradient(90deg,#000 18px,transparent 18px calc(100% - 18px),#000 calc(100% - 18px)),linear-gradient(180deg,#000 18px,transparent 18px calc(100% - 18px),#000 calc(100% - 18px)),linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:source-in,source-in,xor,source-over;
+  mask:linear-gradient(90deg,#000 18px,transparent 18px calc(100% - 18px),#000 calc(100% - 18px)),linear-gradient(180deg,#000 18px,transparent 18px calc(100% - 18px),#000 calc(100% - 18px)),linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask-composite:intersect,intersect,exclude,add;opacity:.9}
 .journey{position:relative}
 /* fejléc: a doboz első sora (címke) alá fénylő elválasztó csík */
 .card>.row.between:first-child:has(>.label){position:relative;padding-bottom:10px;margin-bottom:12px!important}
@@ -4196,7 +4196,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.03 13:32';
+const BUILD='2026.11.03 13:37';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
