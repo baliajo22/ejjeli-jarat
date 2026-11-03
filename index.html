@@ -2050,6 +2050,10 @@ function xpNeed(l){return Math.round(60*Math.pow(l,1.45))}
 function statCost(n){return Math.round(4+n*1.6+n*n*.08)}
 
 /* ================= items ================= */
+// rarity tables: weapon damage / armor, stat value, number of stats (trinkets get more stats)
+// v3: epic and special items were far ahead of everything else (two oranges trivialised dungeons), so they were toned down
+const RAR_RM=[.8,1,1.15,1.25,1.4], RAR_SM=[.8,1,1.15,1.2,1.35], STAT_N=[1,1,1,2,2], STAT_NT=[1,1,2,2,3];
+const OLD_RM=[.8,1,1.15,1.4,1.7], OLD_N=[1,1,1,2,3];
 function genItem(lvl, slot, cls, force){
   slot = slot || pick(SLOTS)[0];
   const roll=Math.random(); const r = force!=null ? force : roll<.04?3:roll<.18?2:roll<.48?1:0;
@@ -2057,13 +2061,13 @@ function genItem(lvl, slot, cls, force){
   let name=pick(PREFIX[r])+' '+base.toLowerCase();
   const it={id:uid(),slot,rar:r,lvl,base,name,bonus:{},armor:0};
   // flatter curve: rarity adds ~10–15% per tier, more stats instead of huge numbers
-  const RM_=[.8,1,1.15,1.4,1.7][r]; // grey is the cheap, weak tier
+  const RM_=RAR_RM[r], SM_=RAR_SM[r]; // grey is the cheap, weak tier
   if(slot==='fegyver'){ it.min=Math.round((lvl*1.6+2)*RM_); it.max=Math.round((lvl*2.4+4)*RM_)+rand(0,1); }
   else if(ARMOR_W[slot]){ it.armor=Math.round((lvl*ARMOR_W[slot]+2)*RM_)+rand(0,1); }
-  const n = TRINKET.includes(slot) ? [1,1,2,2,3][r] : [1,1,1,2,3][r];
+  const n = TRINKET.includes(slot) ? STAT_NT[r] : STAT_N[r];
   const pool=STATS.map(x=>x[0]).sort(()=>Math.random()-.5);
   if(slot==='kabala'){ pool.splice(pool.indexOf('lck'),1); pool.unshift('lck'); }
-  for(let i=0;i<n;i++) it.bonus[pool[i]]=Math.round((1.6+lvl*.7)*RM_)+rand(0,1);
+  for(let i=0;i<n;i++) it.bonus[pool[i]]=Math.round((1.6+lvl*.7)*SM_)+rand(0,1);
   it.price = Math.round((18+lvl*14)*[.6,1,1.5,2.3,3.1][r]);
   return it;
 }
@@ -2092,7 +2096,7 @@ function newPlayer(name, cls){
   state={name, cls, level:1, xp:0, gold:40, energy:ENERGY_MAX, lastTick:now(), stats:s,
     bought:{str:0,dex:0,int:0,con:0,lck:0}, equip:Object.fromEntries(SLOTS.map(([k])=>[k,null])),
     inv:[], quests:[], active:null, shop:[], arena:[], arenaReadyAt:0, fame:0, wins:0, losses:0,
-    ladder:genLadder(), dungeons:{}, dungeonReadyAt:0, vehicle:null, pog:POG_START, guild:null, guildLadder:null, pogReset25:true, autoGain:true, rarV2:true};
+    ladder:genLadder(), dungeons:{}, dungeonReadyAt:0, vehicle:null, pog:POG_START, guild:null, guildLadder:null, pogReset25:true, autoGain:true, rarV2:true, itemV3:true};
   const starter=WEAPONS[cls][0];
   state.equip.fegyver={id:uid(),slot:'fegyver',rar:0,lvl:1,base:starter,name:starter,min:3,max:6,armor:0,bonus:{},price:10};
   state.quests=genQuests(); state.shop=genShop(); state.arena=genArena();
@@ -2106,6 +2110,11 @@ function migrate(s){ if(s&&!s.sex) s.sex='m';
   if(typeof s.vehicle==='string') s.vehicle={id:s.vehicle,until:now()+RENT_MS};
   if(!s.autoGain){ s.autoGain=true; lvlGain(s,(s.level||1)-1); }
   if(!s.rarV2){ s.rarV2=true; const up=it=>{ if(it&&it.rar>0) it.rar+=1; }; Object.values(s.equip||{}).forEach(up); (s.inv||[]).forEach(up); (s.shop||[]).forEach(up); }
+  if(!s.itemV3){ s.itemV3=true; const fixR=it=>{ if(!it||it.rar<3) return; const r=it.rar, k=RAR_RM[r]/OLD_RM[r];
+      if(it.min!=null){ it.min=Math.max(1,Math.round(it.min*k)); it.max=Math.max(it.min+1,Math.round(it.max*k)); } if(it.armor) it.armor=Math.round(it.armor*k);
+      const n=Object.keys(it.bonus||{}).length, want=TRINKET.includes(it.slot)?STAT_NT[r]:STAT_N[r], sm=RAR_SM[r]/OLD_RM[r]*(n>want?want/n:1);
+      for(const b of Object.keys(it.bonus||{})) it.bonus[b]=Math.max(1,Math.round(it.bonus[b]*sm)); };
+    Object.values(s.equip||{}).forEach(fixR); (s.inv||[]).forEach(fixR); (s.shop||[]).forEach(fixR); }
   if(!s.ladder) s.ladder=genLadder(); s.dungeons=s.dungeons||{}; s.dungeonReadyAt=s.dungeonReadyAt||0; if(!('vehicle' in s)) s.vehicle=null; if(s.pog==null) s.pog=POG_START; if(!s.pogReset25){ s.pogReset25=true; if(s.pogTest5000||s.pog>POG_START) s.pog=POG_START; } if(!('guild' in s)) s.guild=null;
   Object.values(s.equip||{}).forEach(fix); (s.inv||[]).forEach(fix); (s.shop||[]).forEach(fix);
   (s.quests||[]).forEach(q=>q.mult=questMult(q.diff,s.level||1)); if(s.active) s.active.q.mult=questMult(s.active.q.diff,s.level||1);
@@ -2883,17 +2892,17 @@ function disenchant(id){ const i=state.inv.findIndex(x=>x.id===id); if(i<0) retu
 function convertMat(r){ const m=mats(), a=MATS[r].id, b=MATS[r+1].id, fee=craftFee(r); if((m[a]||0)<CONVERT_N||state.gold<fee) return;
   m[a]-=CONVERT_N; m[b]=(m[b]||0)+1; state.gold-=fee; save(); render(); sfx('coins'); toast(`${CONVERT_N} ${MATS[r].name} → 1 ${MATS[r+1].name}`); }
 let CRAFT={slot:'fegyver',rar:1,stats:[]};
-function craftStatN(){ return TRINKET.includes(CRAFT.slot)?[1,1,2,2,3][CRAFT.rar]:[1,1,1,2,3][CRAFT.rar]; }
-function craftPreview(){ const lvl=state.level, RM_=[.8,1,1.15,1.4,1.7][CRAFT.rar], p=[];
+function craftStatN(){ return TRINKET.includes(CRAFT.slot)?STAT_NT[CRAFT.rar]:STAT_N[CRAFT.rar]; }
+function craftPreview(){ const lvl=state.level, RM_=RAR_RM[CRAFT.rar], SM_=RAR_SM[CRAFT.rar], p=[];
   if(CRAFT.slot==='fegyver') p.push(`<span class="with-ic">${ic('sword','ic-crit')}${Math.round((lvl*1.6+2)*RM_)}–${Math.round((lvl*2.4+4)*RM_)}</span>`);
   else if(ARMOR_W[CRAFT.slot]) p.push(`<span class="with-ic">${ic('shield','ic-armor')}${Math.round((lvl*ARMOR_W[CRAFT.slot]+2)*RM_)}</span>`);
-  const v=Math.round((1.6+lvl*.7)*RM_); CRAFT.stats.forEach(k=>p.push(`<span class="with-ic">${ic(k,'ic-'+k)}+${v}</span>`));
+  const v=Math.round((1.6+lvl*.7)*SM_); CRAFT.stats.forEach(k=>p.push(`<span class="with-ic">${ic(k,'ic-'+k)}+${v}</span>`));
   return p.join(''); }
 function doCraft(){ const r=CRAFT.rar, cost=craftCost(), fee=craftFee(r), n=craftStatN(), pg=CRAFT_POG[r];
   if(CRAFT.stats.length!==n||!canPay(cost)||state.gold<fee||(state.pog||0)<pg||state.inv.length>=INV_MAX) return;
   state.pog-=pg;
-  const it=genItem(state.level,CRAFT.slot,null,r), RM_=[.8,1,1.15,1.4,1.7][r], m=mats();
-  it.bonus={}; CRAFT.stats.forEach(k=>it.bonus[k]=Math.round((1.6+state.level*.7)*RM_)+rand(0,1)); it.crafted=true;
+  const it=genItem(state.level,CRAFT.slot,null,r), SM_=RAR_SM[r], m=mats();
+  it.bonus={}; CRAFT.stats.forEach(k=>it.bonus[k]=Math.round((1.6+state.level*.7)*SM_)+rand(0,1)); it.crafted=true;
   for(const [k,v] of Object.entries(cost)) m[k]-=v; state.gold-=fee; addItem(it); save();
   CRAFT.made=it.id; LOOT[it.id]=it; track('craft',1); render(); sfx('buy'); toast(`Elkészült: ${it.name}!`); }
 function renderMuhely(){
@@ -4125,7 +4134,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.03 10:43';
+const BUILD='2026.11.03 10:53';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
