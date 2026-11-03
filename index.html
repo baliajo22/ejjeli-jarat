@@ -3351,11 +3351,6 @@ function renderArena(){
       <div data-act="inspect" data-id="${o.id}" class="insp"><div class="item-name"><span class="rank-tag">#${o.rank}</span> ${esc(o.name)}</div><div class="item-stats"><span>${o.level}. szint · ${CLASSES[o.cls].name}</span><span class="with-ic">${ic('con','ic-hp')}${fmt(o.hp)}</span></div></div>
       ${left?`<button class="btn small pog-btn" data-act="duel" data-pog="1" data-id="${o.id}" ${(state.pog||0)<1?'disabled':''}>${pogIc()}1 · Kihív most</button>`:`<button class="btn small primary" data-act="duel" data-id="${o.id}">${ic('fight')}Kihív</button>`}</div>`;
   }
-  const log=(state.arenaLog||[]).concat(ONLINE.logs).sort((a,b)=>a.at-b.at).slice(-6).reverse();
-  if(log.length){
-    html+=`</section><section class="card"><div class="row between" style="margin-bottom:6px"><span class="label">${ic('fight')}Akik megtámadtak</span><button class="btn small" data-act="clearlog">Törlés</button></div>`;
-    html+=log.map(l=>`<div class="alog ${l.won?'won':'lost'}"><span class="with-ic">${ic(l.won?'shield':'fight')}</span><span><b>${esc(l.by)}</b> ${l.won?'megtámadott, de visszavertél.':'legyőzött az arénában.'}</span><span class="note mono">${new Date(l.at).toLocaleString(LOCALE(),{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span></div>`).join('');
-  }
   html+=`</section><section class="card"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('trophy')}Ranglétra</span><span class="note">${state.ladder.length} hős a városban</span></div><div class="ladder">${ladderRows(myI,mv)}</div></section>`;
   return html;
 }
@@ -4372,7 +4367,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.03 15:56';
+const BUILD='2026.11.03 16:00';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
