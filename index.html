@@ -4072,7 +4072,7 @@ function gwRelay(A,D){ const duels=[]; if(!A.length||!D.length) return duels; le
     const ea=r.win?Math.max(1,last.hA):0, eb=r.win?0:Math.max(1,last.hB); duels.push({a,b,win:r.win,aFrom:ha,aTo:ea,bFrom:hb,bTo:eb,res:r});
     if(r.win){ ha=ea; j++; hb=D[j]?D[j].hp:0; } else { hb=eb; i++; ha=A[i]?A[i].hp:0; } }
   return duels; }
-async function gwResolve(w){
+async function gwResolveLocal(w){
   const S=w.signups||[], seed=gwSeed(w); gwAt=w.starts;
   if(typeof gwPrefetch==='function') await gwPrefetch([w.atk.ch,w.def.ch,...S.map(s=>s.cid)].filter(Boolean));
   const r=withSeed(seed,()=>{ const A=gwSide(w.atk.ch,[w.atk.ch,...S.filter(s=>s.side==='a').map(s=>s.cid)]);
@@ -4372,7 +4372,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.03 18:42';
+const BUILD='2026.11.03 19:03';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -4431,13 +4431,16 @@ function pubKeys(){ return [...new Set([...PUB_BASE,...Object.keys(state||{})])]
 function pubCols(keys){ return 'id,user_id,name,cls,level,rating,'+keys.map(k=>`j_${k}:data->${k}`).join(','); }
 function pubRow(r,keys){ if(r.data!==undefined) return r; const d={_pub:1}; let any=false;
   for(const k of keys){ const v=r['j_'+k]; delete r['j_'+k]; if(v!==null&&v!==undefined){ d[k]=v; any=true; } } r.data=any?d:null; return r; }
-async function pubSelect(build){ const keys=pubKeys(); let res=await build(pubCols(keys));
+let PUB_SUS=true;   // false once we know the database has no "suspect" column yet
+async function pubSelect(build){ const keys=pubKeys(); let res=await build((PUB_SUS?'suspect,':'')+pubCols(keys));
+  if(res&&res.error&&PUB_SUS&&/suspect/.test(res.error.message||'')){ PUB_SUS=false; res=await build(pubCols(keys)); }
   if(res&&res.error){ console.warn('slim select',res.error); res=await build('id,user_id,name,cls,level,rating,data'); }   // safety net: old full query
   if(res&&res.data) res.data.forEach(r=>pubRow(r,keys)); return res; }
 async function loadPlayers(){
   if(!SB||!ONLINE.user||ONLINE.loadingPlayers) return; ONLINE.loadingPlayers=true;
   try{ const {data,error}=await pubSelect(c=>SB.from('characters').select(c).order('rating',{ascending:false}).limit(150)); if(error) throw error;
-    ONLINE.all=data.filter(p=>p.data&&p.data.stats); ONLINE.all.forEach(p=>{ p.sex=(p.data.sex||'m')+(p.data.look&&p.data.look<lookCount(p.cls,p.data.sex||'m')?p.data.look:''); }); ONLINE.players=ONLINE.all.filter(p=>p.user_id!==ONLINE.user.id); const me=data.find(p=>state&&p.id===state.cid); ONLINE.myRating=me?me.rating:1000; ONLINE.playersAt=now();
+    const mine=data.find(p=>state&&p.id===state.cid); if(mine&&mine.suspect&&!ONLINE.susNote){ ONLINE.susNote=true; toast('A szerver szokatlan változást észlelt a hősödnél, ezért egyelőre nem jelenik meg a ranglistán és nem harcolhat az arénában. Ha tévedés, szólj a játék gazdájának.'); }
+    ONLINE.all=data.filter(p=>p.data&&p.data.stats&&(!p.suspect||p.user_id===ONLINE.user.id)); ONLINE.all.forEach(p=>{ p.sex=(p.data.sex||'m')+(p.data.look&&p.data.look<lookCount(p.cls,p.data.sex||'m')?p.data.look:''); }); ONLINE.players=ONLINE.all.filter(p=>p.user_id!==ONLINE.user.id); const me=data.find(p=>state&&p.id===state.cid); ONLINE.myRating=me?me.rating:1000; ONLINE.playersAt=now();
     if((view==='arena'||view==='ceh')&&!battle) render(); if(view==='rang'&&!battle){ if($('#rsearch')===document.activeElement) rangRefresh(); else render(); } }
   catch(e){ ONLINE.playersAt=now(); console.warn(e); } finally{ ONLINE.loadingPlayers=false; }
 }
@@ -4449,7 +4452,33 @@ async function loadOnlineLogs(announce){
   if(fresh.length&&announce){ state.seenOnline=now(); save(); toast(`${fresh.length} játékos támadott meg az arénában, amíg távol voltál.`); }
   if(view==='arena'&&!battle) render();
 }
+/* the fight server (Edge Function "harc"): arena and guild war results are decided there.
+   missing:true means the function is not deployed yet -> the old way keeps the game working */
+async function harcCall(body){
+  try{ const {data,error}=await SB.functions.invoke('harc',{body});
+    if(!error) return {ok:true,data};
+    const st=error.context&&error.context.status;
+    if(error.name==='FunctionsFetchError'||error.name==='FunctionsRelayError'||st===404) return {ok:false,missing:true};
+    let msg=''; try{ msg=(await error.context.json()).error||''; }catch(e){}
+    return {ok:false,msg:msg||'A harcszerver most nem elérhető, próbáld újra.'}; }
+  catch(e){ console.warn(e); return {ok:false,missing:true}; } }
+function srvMsg(error,fallback){ const m=(error&&error.message)||''; return /ellenőrzés alatt|elfogytak a csapások|Túl nagy sebzés/.test(m)?m.replace(/^.*?(A hősöd|Mára|Túl nagy)/,'$1'):fallback; }
 async function doOnlineDuel(id,pay){
+  INSPECT=null; const p0=ONLINE.players.find(x=>x.id===id); if(!p0) return;
+  const cool=state.arenaReadyAt>now(); if(cool&&!(pay&&(state.pog||0)>=1)){ if(pay) spendPog(1); return; }
+  if(ONLINE.duelBusy) return; ONLINE.duelBusy=true;
+  let sv; try{ await flushCloud(); sv=await harcCall({action:'arena',attacker:state.cid,defender:id}); } finally{ ONLINE.duelBusy=false; }
+  if(!sv.ok&&sv.missing) return doOnlineDuelLocal(id,pay);
+  if(!sv.ok){ toast(sv.msg); return; }
+  if(cool) spendPog(1);
+  const R=sv.data, oL=heroFighter(p0.data), me={...playerFighter(),...R.a}, o={...R.d,sex:oL.sex}; me.art=artOf(me.cls,sexLook(state)); o.art=artOf(o.cls,o.sex,o.name);
+  const res={log:R.log,win:R.win}; let rw='';
+  if(res.win){ const g=Math.round((3+o.level*4)*goldMult()), x=Math.round(o.level*8*xpMult()); state.gold+=g; state.fame+=10; state.wins++; gainXp(x);
+    rw=`<span class="chip">${ic('coin','ic-gold')}+${g} Ft</span><span class="chip">${ic('xp','ic-xp')}+${x} XP</span><span class="chip">${ic('fame','ic-fame')}+10 hírnév</span>`; }
+  else { state.fame=Math.max(0,state.fame-5); state.losses++; rw=`<span class="chip">${ic('fame','ic-fame')}−5 hírnév</span>`; }
+  const delta=+R.delta||0; rw+=`<span class="chip rank-chip ${delta>=0?'up':'down'}">${ic('trophy')}${delta>=0?'+':''}${delta} rangpont</span>`;
+  state.arenaReadyAt=now()+ARENA_CD; save(); ONLINE.playersAt=0; openBattle(me,o,res,rw); }
+async function doOnlineDuelLocal(id,pay){
   INSPECT=null; const p=ONLINE.players.find(x=>x.id===id); if(!p) return;
   if(state.arenaReadyAt>now()&&!(pay&&spendPog(1))) return;
   const o=heroFighter(p.data); o.name=p.name; o.art=artOf(o.cls,o.sex,o.name);
@@ -4471,13 +4500,16 @@ function rangSearchRemote(q){ q=String(q||'').trim(); clearTimeout(RS_T); if(q.l
   RS_T=setTimeout(async()=>{ RS_Q=q; if(!SB||!ONLINE.user) return; const pat='%'+q.replace(/[%_,()]/g,' ')+'%';
     try{
       const [a,g]=await Promise.all([pubSelect(c=>SB.from('characters').select(c).ilike('name',pat).limit(30)), pubSelect(c=>SB.from('characters').select(c).ilike('data->guild->>name',pat).limit(30))]);
-      const rows=[...((a&&a.data)||[]),...((g&&g.data)||[])].filter(p=>p.data&&p.data.stats); if(!rows.length) return;
+      const rows=[...((a&&a.data)||[]),...((g&&g.data)||[])].filter(p=>p.data&&p.data.stats&&(!p.suspect||p.user_id===ONLINE.user.id)); if(!rows.length) return;
       ONLINE.all=ONLINE.all||[]; for(const p of rows){ if(ONLINE.all.some(x=>x.id===p.id)) continue; p.sex=(p.data.sex||'m')+(p.data.look&&p.data.look<lookCount(p.cls,p.data.sex||'m')?p.data.look:''); ONLINE.all.push(p); if(p.user_id!==ONLINE.user.id) ONLINE.players.push(p); }
       if(view==='rang') rangRefresh(); }catch(e){ console.warn(e); } },350); }
 /* ---------- scheduled guild war on the server: guild_wars + guild_war_signups ---------- */
 ONLINE_GW_MS=20000;
 const gwRow=r=>({id:r.id,atk:{ch:r.atk_ch,name:r.atk_name,emblem:r.atk_emblem},def:{ch:r.def_ch,name:r.def_name,emblem:r.def_emblem,bot:r.def_bot||null},at:Date.parse(r.created_at),starts:Date.parse(r.starts_at),status:r.status,result:r.result,signups:[]});
-function gwErr(e){ console.warn(e); toast(/guild_war/.test((e&&e.message)||'')?'A céhharchoz frissíteni kell az adatbázist (guild_wars tábla).':'Nem sikerült, próbáld újra.'); }
+function gwErr(e){ console.warn(e); toast(/guild_war/.test((e&&e.message)||'')?'A céhharchoz frissíteni kell az adatbázist (guild_wars tábla).':srvMsg(e,'Nem sikerült, próbáld újra.')); }
+async function gwResolve(w){ const sv=await harcCall({action:'gwar',war:w.id});
+  if(sv.ok){ if(sv.data&&sv.data.result){ w.status='done'; w.result=sv.data.result; } else { GW.at=0; await gwFetch(); GW.at=now(); } return; }
+  if(sv.missing) return gwResolveLocal(w); console.warn('gwar',sv.msg); }
 async function gwFetch(){ if(!SB||!ONLINE.user||!state) return; const ch=guildChannel();
   const qs=[SB.from('guild_wars').select('*').eq('status','pending').limit(300)];
   if(ch){ qs.push(SB.from('guild_wars').select('*').eq('atk_ch',ch).order('created_at',{ascending:false}).limit(15)); qs.push(SB.from('guild_wars').select('*').eq('def_ch',ch).order('created_at',{ascending:false}).limit(15)); }
@@ -4524,7 +4556,7 @@ function pendingDonations(cur='ft'){ const ch=state&&guildChannel(); if(!ch) ret
 async function donateToGuild(a,cur='ft'){ const mo=state.memberOf, L=(ONLINE.all||[]).find(p=>p.id===(mo&&mo.leaderCid)); if(!mo||!L||GI.donBusy||(cur==='pog'?(state.pog||0)<a:state.gold<a)) return; GI.donBusy=true;
   try{ await flushCloud();
     const {data,error}=await SB.from('guild_donations').insert({from_char:state.cid,from_user:ONLINE.user.id,from_name:state.name,leader_char:mo.leaderCid,leader_user:L.user_id,amount:a,currency:cur}).select('*');
-    if(error){ console.warn(error); return toast(/relation|does not exist|schema cache|guild_donations/i.test(error.message||'')?'A befizetéshez frissíteni kell az adatbázist (guild_donations tábla).':'Nem sikerült befizetni, próbáld újra.'); }
+    if(error){ console.warn(error); return toast(/relation|does not exist|schema cache|guild_donations/i.test(error.message||'')?'A befizetéshez frissíteni kell az adatbázist (guild_donations tábla).':srvMsg(error,'Nem sikerült befizetni, próbáld újra.')); }
     if(cur==='pog') state.pog-=a; else state.gold-=a; if(data&&data.length) GDON.rows=(GDON.rows||[]).concat(data); else GI.myDon.push({leader_char:mo.leaderCid,from_char:state.cid,amount:a,currency:cur,local:true}); GDON.at=now(); save(); render(); sfx('coins'); toast(cur==='pog'?`+${a} pogácsa a céh kasszájába. Köszi!`:`+${fmt(a)} Ft a céh kasszájába. Köszi!`);
   } finally{ GI.donBusy=false; } }
 function onKickReal(m){ SB.from('guild_invites').delete().eq('from_char',state.cid).eq('to_char',m.cid).then(()=>{}); }
@@ -4592,7 +4624,7 @@ function bossBoard(){ const wk=weekKey(); if(BB.wk!==wk||now()-BB.at>20000) setT
 async function recordBossHit(dealt){ const wk=weekKey(); state.bossDmg=state.bossDmg||{}; state.bossDmg[wk]=(state.bossDmg[wk]||0)+dealt; save();
   await flushCloud();
   const {error}=await SB.from('world_boss_hits').insert({week:wk,char_id:state.cid,user_id:ONLINE.user.id,name:state.name,cls:state.cls,level:state.level,dmg:dealt});
-  if(error){ console.warn(error); toast(/relation|does not exist|schema cache|world_boss/i.test(error.message||'')?'A városi főgonoszhoz frissíteni kell az adatbázist (world_boss_hits tábla).':'A sebzést most nem sikerült elküldeni.'); }
+  if(error){ console.warn(error); toast(/relation|does not exist|schema cache|world_boss/i.test(error.message||'')?'A városi főgonoszhoz frissíteni kell az adatbázist (world_boss_hits tábla).':srvMsg(error,'A sebzést most nem sikerült elküldeni.')); }
   BB.at=0; loadBoss(); }
 /* ---------- mailbox, friends and guild chat on the server: messages table ---------- */
 const MB={items:[],sent:[],at:0,busy:false,gc:[],gcAt:0,gcCh:null,gcSig:'',seenIds:null};
@@ -4649,7 +4681,7 @@ function raidRows(){ const ch=guildChannel(); if(!ch) return []; if(RB.ch!==ch||
 async function recordRaidHit(dealt){ const ch=guildChannel(); if(!ch) return; state.raidLocal=state.raidLocal||{}; state.raidLocal[ch]=(state.raidLocal[ch]||0)+dealt; save();
   await flushCloud();
   const {error}=await SB.from('guild_raid_hits').insert({channel:ch,char_id:state.cid,user_id:ONLINE.user.id,name:state.name,cls:state.cls,dmg:dealt});
-  if(error){ console.warn(error); toast(/relation|does not exist|schema cache|guild_raid/i.test(error.message||'')?'A céhes főgonoszhoz frissíteni kell az adatbázist (guild_raid_hits tábla).':'A sebzést most nem sikerült elküldeni.'); }
+  if(error){ console.warn(error); toast(/relation|does not exist|schema cache|guild_raid/i.test(error.message||'')?'A céhes főgonoszhoz frissíteni kell az adatbázist (guild_raid_hits tábla).':srvMsg(error,'A sebzést most nem sikerült elküldeni.')); }
   RB.at=0; loadRaid(ch); }
 function renderNoConfig(){
   return `<div class="create wrap">${langBtn('lang-fab')}${banner('skyline')}<div class="logo">Éjjeli<br><span>Járat</span></div>

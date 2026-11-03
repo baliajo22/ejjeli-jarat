@@ -7,6 +7,8 @@ Böngészős RPG modern városi fantasy világban. Ez a változat Supabase-t has
 - `index.html` – maga a játék
 - `config.js` – a Supabase projekt címe és nyilvános (anon) kulcsa
 - `schema.sql` – az adatbázis táblái és jogosultságai
+- `anticheat_1.sql`, `anticheat_2.sql` – csalásvédelem (lásd lent)
+- `supabase/functions/harc/index.ts` – a harcszerver: itt dől el az aréna és a céhharc
 
 ## Beállítás
 
@@ -19,5 +21,12 @@ Böngészős RPG modern városi fantasy világban. Ez a változat Supabase-t has
 ## Tudnivalók
 
 - A `service_role` kulcsot soha ne tedd a játékba vagy a repóba.
-- A játék logikája a böngészőben fut, így egy ügyes játékos csalhatna. Baráti teszthez ez rendben van; nyilvános megjelenés előtt a harcot és a jutalmakat szerveroldalra kell vinni.
-- A rangpontot csak az `arena_result` adatbázis-függvény változtathatja, a kliens nem írhatja át közvetlenül.
+- A rangpontot és a harcok eredményét a kliens nem írhatja át közvetlenül.
+
+## Csalásvédelem
+
+1. **Hihetőségi ellenőrzés:** SQL Editor → futtasd az `anticheat_1.sql`-t. Minden mentésnél ellenőrzi a hőst (szint, pénz, tárgyak, statok); a lehetetlen változást mutató hőst `suspect`-nek jelöli. A gyanús hős nem látszik a ranglistán, nem harcolhat, nem üthet főgonoszt. Téves jelölésnél a Table Editorban a `characters` táblában állítsd a `suspect` oszlopot `false`-ra (az okot a `flags` oszlop mutatja).
+2. **Harcszerver:** Edge Functions → Deploy a new function → Via Editor → a neve legyen pontosan `harc` → a kódot cseréld le a `supabase/functions/harc/index.ts` tartalmára → Deploy. Ettől kezdve az arénát és a céhharcot a szerver számolja.
+3. **Régi utak lezárása:** ha a harcszerver működik (az arénában a harc után megjelenik a rangpont), futtasd az `anticheat_2.sql`-t.
+
+A harcszerver kódját a `build_harc.py` állítja elő a játék kódjából, így a szabályok mindig egyeznek; a játék harcszabályainak módosítása után újra kell telepíteni.
