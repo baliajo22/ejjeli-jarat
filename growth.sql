@@ -31,7 +31,7 @@ end $$;
 create unique index if not exists characters_name_lower_key on public.characters (lower(btrim(name)));
 
 -- =====================================================================
--- 2) MEGHÍVÓ JUTALOM: ha a meghívott barát eléri az 5. szintet, mindketten kapnak pogácsát
+-- 2) MEGHÍVÓ JUTALOM: ha a meghívott barát eléri a 10. szintet, mindketten kapnak pogácsát
 -- =====================================================================
 create table if not exists public.referrals (
   id               bigint generated always as identity primary key,
@@ -71,7 +71,7 @@ begin
   return n > 0;
 end $$;
 
--- a meghívott hős elérte az 5. szintet?
+-- a meghívott hős elérte a 10. szintet?
 create or replace function public.referral_check() returns int
 language plpgsql security definer set search_path = public as $$
 declare n int;
@@ -79,7 +79,7 @@ begin
   update public.referrals f set status = 'qualified', qualified_at = now()
     from public.characters c
    where f.referee_user = auth.uid() and f.status = 'pending'
-     and c.id = f.referee_char and c.level >= 5 and not c.suspect;
+     and c.id = f.referee_char and c.level >= 10 and not c.suspect;
   get diagnostics n = row_count;
   return n;
 end $$;
@@ -200,8 +200,9 @@ select (level / 10) * 10 || '–' || ((level / 10) * 10 + 9) as szint, count(*) 
   from public.characters group by level / 10 order by level / 10;
 
 -- meghívások
-create or replace view stats.meghivok as
-select c.name as meghivo, count(*) as meghivott, count(*) filter (where r.status = 'qualified') as elerte_5_szintet
+drop view if exists stats.meghivok;
+create view stats.meghivok as
+select c.name as meghivo, count(*) as meghivott, count(*) filter (where r.status = 'qualified') as elerte_10_szintet
   from public.referrals r join public.characters c on c.id = r.referrer_char
  group by 1 order by 2 desc;
 
