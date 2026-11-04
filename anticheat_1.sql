@@ -120,7 +120,7 @@ end $$;
 create or replace function public.ej_check_character() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare
-  probs text[]; dt numeric; lv int;
+  probs text[]; dt numeric; lv int; od jsonb; gp numeric := 0; gg numeric := 0;
 begin
   lv := coalesce(public.ej_num(new.data->'level'), new.level)::int;
   new.level := lv;                                    -- a ranglista mindig a mentés szerinti szintet mutatja
@@ -130,7 +130,16 @@ begin
   else
     new.suspect := old.suspect; new.flags := old.flags;
     dt := greatest(1, extract(epoch from (now() - old.checked_at)));
-    probs := public.ej_char_problems(new.data, lv, old.data, old.level, dt);
+    od := old.data;
+    -- a játék gazdájától kapott ajándék (gifts tábla) nem számít gyanúsnak
+    if to_regclass('public.gifts') is not null then
+      execute 'select coalesce(sum(pog),0), coalesce(sum(gold),0) from public.gifts where char_id = $1 and claimed_at >= $2 - interval ''10 minutes'''
+        into gp, gg using new.id, old.checked_at;
+      if gp > 0 or gg > 0 then
+        od := jsonb_set(jsonb_set(od, '{pog}', to_jsonb(coalesce(public.ej_num(od->'pog'), 0) + gp)), '{gold}', to_jsonb(coalesce(public.ej_num(od->'gold'), 0) + gg));
+      end if;
+    end if;
+    probs := public.ej_char_problems(new.data, lv, od, old.level, dt);
   end if;
   new.checked_at := now();
   if array_length(probs, 1) > 0 then
