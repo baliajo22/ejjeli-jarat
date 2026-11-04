@@ -665,6 +665,35 @@ details.install-card ol{margin:10px 0 0;padding-left:20px;display:flex;flex-dire
 .mg-art{width:56px;height:56px;display:block}
 .mg-art svg{width:100%;height:100%}
 .mg-free{color:var(--ok);font-weight:700}
+.scene.has-help,main.wrap > section.has-help{position:relative}
+.scene.has-help{padding-right:44px}
+.help-btn{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(242,163,58,.7);background:rgba(19,20,31,.72);color:var(--sodium);font:700 16px/1 Rubik,system-ui,sans-serif;display:grid;place-items:center;cursor:pointer;z-index:3;backdrop-filter:blur(4px)}
+.help-btn:hover{background:var(--sodium);color:#1b1206}
+.help-card h3{font-size:15px;margin:0 0 6px;color:var(--sodium)}
+.help-card p{margin:0 0 6px;font-size:14px;line-height:1.5}
+.h-sec{border-top:1px solid var(--line);padding-top:10px}
+.h-list{margin:0;padding-left:18px;font-size:14px;line-height:1.5;display:grid;gap:4px}
+.h-rars{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;text-align:center;font-size:11px}
+.h-rars>div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.h-tile.itile{width:34px;height:34px;flex:0 0 34px}
+.h-rows{display:grid;gap:6px;margin:4px 0}
+.h-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
+.h-mat{display:inline-flex;align-items:center;gap:3px}
+.h-mat b{font-size:13px}
+.h-mat .mat-ic{width:24px;height:24px}
+.h-mat .mat-ic svg{width:100%;height:100%}
+.h-arrow{color:var(--muted);font-weight:700}
+.h-plus{color:var(--muted)}
+.h-bars{display:grid;gap:6px}
+.h-bar{display:grid;grid-template-columns:110px 1fr 44px;align-items:center;gap:8px;font-size:13px}
+.h-bar i{height:8px;border-radius:99px;background:var(--panel);overflow:hidden}
+.h-bar b{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--sodium))}
+.h-ladder{display:grid;gap:4px;margin:4px 0 8px;max-width:220px}
+.h-lrow{display:flex;gap:10px;padding:6px 10px;border-radius:10px;background:var(--panel);font-size:13px}
+.h-lrow.me{box-shadow:inset 0 0 0 2px var(--sodium)}
+.h-floors{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin:4px 0 8px}
+.h-floors span{display:grid;place-items:center;height:26px;border-radius:6px;background:var(--panel);font:600 12px/1 Rubik,sans-serif;color:var(--muted)}
+.h-floors span.boss{background:var(--bad);color:#fff}
 .mg-card{position:relative;width:min(440px,100%);max-height:100%;overflow-y:auto;background:radial-gradient(120% 50% at 50% 0%,rgba(242,163,58,.12),transparent 60%),var(--concrete);border:2px solid var(--sodium);border-radius:18px 18px 0 0;padding:18px max(14px,env(safe-area-inset-left,0px)) calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;animation:pop .3s ease-out both}
 @media(min-width:600px){.overlay .mg-card{border-radius:18px;margin:auto}}
 .mg-card h2{margin:-6px 0 0}
@@ -2579,6 +2608,64 @@ const $=s=>document.querySelector(s);
 let pickedClass='kidobo';
 const DIFF=['Könnyű','Közepes','Nehéz'];
 
+/* ---------- help: a small "?" on every page opens a short illustrated guide ---------- */
+const RCOL=['var(--r-common)','var(--r-uncommon)','var(--r-rare)','var(--r-epic)','var(--r-special)'];
+const RAR_EN=['Common','Good','Rare','Epic','Special'];
+const MAT_EN=['Rusty bolt','Neon dust','Moon crystal','Midnight essence','Wisp spark'];
+const HT=(hu,en)=>LANG==='en'?en:hu;
+const HELP_IC=`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>`;
+const hTile=(r,slot='test')=>`<span class="itile t${r} h-tile" style="--rc:${RCOL[r]}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${SLOT_EMPTY[slot]}</svg></span>`;
+const hRar=r=>`<b style="color:${RCOL[r]}">${HT(RAR_NAME[r],RAR_EN[r])}</b>`;
+const hMat=(i,n)=>`<span class="h-mat">${matIc(i,'sm')}${n!=null?`<b>${n}×</b>`:''}</span>`;
+const hArrow=`<span class="h-arrow" aria-hidden="true">→</span>`;
+const hPog=n=>`<span class="h-mat">${pogIc()}<b>${n}</b></span>`;
+const hSec=(title,body)=>`<section class="h-sec"><h3>${title}</h3>${body}</section>`;
+const hList=items=>`<ul class="h-list">${items.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+function helpKey(){ if(view==='bolt') return boltTab==='garazs'?'garazs':boltTab==='muhely'?'muhely':'bolt'; if(view==='kazamata') return kazTab==='boss'?'boss':'kazamata'; return view; }
+const HELP={
+  muhely:()=>({t:HT('Műhely','Workshop'),b:
+    hSec(HT('A tárgyak színe','Item colours'),`<div class="h-rars">${RAR_NAME.map((_,r)=>`<div>${hTile(r)}${hRar(r)}</div>`).join('')}</div><p class="note">${HT('Balról jobbra egyre erősebb. A színt a tárgy kerete és neve mutatja.','Weakest on the left, strongest on the right. The frame and the name show the colour.')}</p>`)+
+    hSec(HT('Szétszedés','Taking apart'),`<p>${HT('Minden tárgyból 1 nyersanyag lesz, mégpedig a tárgy színével megegyező:','Every item gives 1 material of its own colour:')}</p><div class="h-rows">${MATS.map((m,i)=>`<div class="h-row">${hTile(i)}${hArrow}${hMat(i,1)}<span>${HT(m.name,MAT_EN[i])}</span></div>`).join('')}</div>`)+
+    hSec(HT('Saját tárgy készítése','Crafting your own item'),`<p>${HT('Kell hozzá 3 nyersanyag a választott színből és 2 az eggyel gyengébből, plusz egy kis forint.','You need 3 materials of the chosen colour, 2 of the colour below it, and some forint.')}</p>
+      <div class="h-rows">${CRAFT_COST.map((c,r)=>`<div class="h-row">${Object.entries(c).map(([k,v])=>hMat(MATS.findIndex(x=>x.id===k),v)).join('<span class="h-plus">+</span>')}${CRAFT_POG[r]?`<span class="h-plus">+</span>${hPog(CRAFT_POG[r])}`:''}${hArrow}${hTile(r,'fegyver')}${hRar(r)}</div>`).join('')}</div>
+      ${hList([HT('Fegyverhez +2 kell a választott színből.','A weapon takes 2 more of the chosen colour.'),HT('Te választod ki a tulajdonságokat: a gyengébb tárgyakon 1, az epikuson 2, a különlegesen 2 (gyűrűn, nyakláncon, kabalán 3).','You pick the stats: 1 on lower colours, 2 on Epic, 2 on Special (3 on rings, necklaces and charms).'),HT('A tárgy a mostani szintedhez készül, ezért érdemes időnként újat csinálni.','Items are made for your current level, so it pays to craft a new one now and then.')])}`)+
+    hSec(HT('Átváltás','Converting'),`<div class="h-row">${hMat(0,5)}${hArrow}${hMat(1,1)}<span class="note">${HT('+ egy kis forint','+ a little forint')}</span></div><p class="note">${HT('5 nyersanyagból 1 lesz a következő színből, bármelyik színnél.','5 materials become 1 of the next colour, for any colour.')}</p>`)}),
+  bolt:()=>({t:HT('Kisbolt','Corner shop'),b:
+    hSec(HT('Vásárlás és eladás','Buying and selling'),hList([HT('Feri kínálata minden éjfélkor megújul. Ha nem tetszik, 1 pogácsáért azonnal új kínálatot kérhetsz.','Feri restocks every midnight. If you don\'t like the offer, 1 scone gets you a new one right away.'),HT('A ▲ jel azt mutatja, hogy a tárgy jobb annál, ami most rajtad van, a ▼ pedig, hogy gyengébb.','▲ means the item beats what you wear now, ▼ means it is weaker.'),HT(`A hátizsákba ${INV_MAX} tárgy fér. Amit nem használsz, add el, vagy szedd szét a Műhelyben.`,`Your backpack holds ${INV_MAX} items. Sell what you don't use, or take it apart in the Workshop.`)]))+
+    hSec(HT('Dupla eszpresszó','Double espresso'),`<div class="h-row">${hPog(1)}${hArrow}<span class="h-mat">${ic('coffee','ic-coffee')}<b>+${ESPRESSO_GAIN}</b></span></div><p class="note">${HT(`Azonnal tölt kávét, naponta legfeljebb ${ESPRESSO_DAILY}-szer.`,`Instant coffee refill, up to ${ESPRESSO_DAILY} times a day.`)}</p>`)}),
+  garazs:()=>({t:HT('Garázs','Garage'),b:
+    hSec(HT('Mire jó a jármű?','What a vehicle does'),`<p>${HT('Rövidebb lesz minden küldetés útja. A jutalom nem csökken. A járművet 7 napra béreled.','Every quest trip gets shorter, with the same reward. You rent a vehicle for 7 days.')}</p><div class="h-bars">${VEHICLES.map(v=>`<div class="h-bar"><span>${esc(v.name)}</span><i><b style="width:${v.red*200}%"></b></i><span class="mono">−${Math.round(v.red*100)}%</span></div>`).join('')}</div>`)+
+    hSec(HT('Repülő seprű','Flying broom'),`<p>${HT('Az egyetlen, amivel kevesebb kávé is fogy a küldetéseken, mert a rövidebb út kávéját számolja.','The only one that also saves coffee on quests, because the shorter trip costs less.')}</p>`)+
+    hSec(HT('Hosszabbítás','Extending'),`<p>${HT('Ha ugyanazt a járművet újra kibérled, még 7 nap hozzáadódik.','Renting the same vehicle again adds another 7 days.')}</p>`)}),
+  kocsma:()=>({t:HT('Romkocsma','Ruin bar'),b:
+    hSec(HT('Küldetések','Quests'),`<div class="h-row">${DIFF.map((d,i)=>`<span class="chip">${HT(d,['Easy','Medium','Hard'][i])}</span>`).join('')}</div>${hList([HT('Válassz egy bejelentést. A nehezebb erősebb ellenfelet jelent, de több forintot és XP-t ad, és nagyobb eséllyel tárgyat vagy pogácsát is.','Pick a job. Harder means a tougher enemy, but more forint and XP, and a better chance of an item or a scone.'),HT('Minden küldetés kávéba kerül. A kávé éjfélkor újratöltődik.','Every quest costs coffee. Coffee refills at midnight.'),HT('Útközben 1 pogácsáért azonnal megérkezhetsz. Ha visszafordulsz, a kávét visszakapod.','On the way, 1 scone gets you there instantly. If you turn back, you get the coffee back.')])}`)+
+    hSec(HT('Feladatok','Daily tasks'),`<p>${HT('Minden nap 3 feladatot kapsz. Mindegyikért jutalom jár, és ha mindhármat teljesíted, még +1 pogácsa.','You get 3 tasks every day. Each pays a reward, and finishing all three adds +1 scone.')}</p>`)+
+    hSec(HT('Szerencsekerék és póker','Wheel and poker'),hList([HT(`Naponta 1 ingyen pörgetés, utána még ${WHEEL_PAID_DAILY} pörgetés 1-1 pogácsáért. A kerékről forint, kávé, XP, pogácsa vagy tárgy jöhet, a főnyeremény 5 pogácsa.`,`1 free spin a day, then ${WHEEL_PAID_DAILY} more for 1 scone each. You can win forint, coffee, XP, scones or an item; the jackpot is 5 scones.`),HT(`Pókerben naponta ${POKER_DAILY} kört játszhatsz Ica ellen, forintban vagy pogácsában.`,`You can play ${POKER_DAILY} poker rounds a day against Ica, for forint or scones.`)]))}),
+  karakter:()=>({t:HT('Karakter','Character'),b:
+    hSec(HT('Tulajdonságok','Stats'),`<div class="h-rows">${STATS.map(([k,nm,d])=>`<div class="h-row">${ic(k,'ic-'+k)}<b>${HT(nm,{str:'Strength',dex:'Dexterity',int:'Intellect',con:'Stamina',lck:'Luck'}[k])}</b><span class="note">${HT(d,{str:'Bouncer damage',dex:'Rooftop Shooter and Pickpocket damage',int:'Block Mage damage',con:'Health',lck:'Critical hits'}[k])}</span></div>`).join('')}</div><p class="note">${HT('Minden szintlépésnél nő a kasztod fő tulajdonsága és a Kitartás.','Each level raises your class\'s main stat and Stamina.')}</p>`)+
+    hSec(HT('Felszerelés','Gear'),hList([HT('Nyomj egy tárgyra, vagy húzd a helyére. A rajtad lévő tárgy tulajdonságai hozzáadódnak a tiédhez.','Tap an item or drag it into its slot. Worn items add their stats to yours.'),HT('Egy hősnek 9 helye van: fegyver, fej, nyaklánc, test, gyűrű, kesztyű, öv, cipő és kabala.','A hero has 9 slots: weapon, head, necklace, body, ring, gloves, belt, shoes and charm.')]))+
+    hSec(HT('Képességfa','Skill tree'),`<p>${HT(`Bizonyos szinteken (${SKILL_LV.slice(0,4).join(', ')}…) két képesség közül választhatsz egyet. Az első újratanulás ingyenes, utána ${RESPEC_POG} pogácsába kerül.`,`At certain levels (${SKILL_LV.slice(0,4).join(', ')}…) you choose one of two skills. Your first reset is free, after that it costs ${RESPEC_POG} scones.`)}</p>`)}),
+  arena:()=>({t:HT('Aréna','Arena'),b:
+    hSec(HT('Ranglétra','Ladder'),`<div class="h-ladder"><div class="h-lrow"><span class="mono">#3</span><span>${HT('ellenfél','opponent')}</span></div><div class="h-lrow me"><span class="mono">#5</span><span>${HT('te','you')}</span></div></div>${hList([HT('Csak olyat hívhatsz ki, aki előtted áll.','You can only challenge someone ahead of you.'),HT('Ha nyersz, átveszed a helyét. Ha kikapsz, két helyet csúszol.','Win and you take their place. Lose and you drop two places.'),HT(`Két harc között ${Math.round(ARENA_CD/1000)} másodpercet kell várnod, 1 pogácsáért azonnal mehetsz.`,`You wait ${Math.round(ARENA_CD/1000)} seconds between fights, or go right away for 1 scone.`)])}`)+
+    hSec(HT('Jutalom','Rewards'),`<div class="h-rows">${RANK_POG.map(([top,n])=>`<div class="h-row">${ic('trophy')}<span>${top===1?HT('Először az 1. helyen','First time at #1'):HT(`Először a top ${top}-ben`,`First time in the top ${top}`)}</span>${hArrow}${hPog(n)}</div>`).join('')}</div>`)}),
+  kazamata:()=>({t:HT('Kazamaták','Dungeons'),b:
+    hSec(HT('Emeletek','Floors'),`<div class="h-floors">${Array.from({length:10},(_,i)=>`<span class="${i===9?'boss':''}">${i===9?'☠':i+1}</span>`).join('')}</div>${hList([HT(`Az ${DUNGEON_UNLOCK}. szinten nyílik meg. Minden kazamatában 10 emelet van, a tizediken főgonosz vár.`,`Opens at level ${DUNGEON_UNLOCK}. Every dungeon has 10 floors, with a boss on the tenth.`),HT(`Egy emelet után ${Math.round(DUNGEON_CD/1000)} másodpercig pihenned kell, 1 pogácsáért azonnal mehetsz tovább.`,`After a floor you rest for ${Math.round(DUNGEON_CD/1000)} seconds, or go on right away for 1 scone.`),HT('Minden emeleten forint jár, néha tárgy vagy pogácsa is. A főgonosz biztosan ad 1 pogácsát.','Every floor pays forint, sometimes an item or a scone. A boss always gives 1 scone.'),HT('Ha a legutolsó éjszakai kazamatát is végigviszed, felkel a nap, és új, hajnali kazamaták nyílnak.','Clear the very last night dungeon and the sun rises, opening new dawn dungeons.')])}`)}),
+  boss:()=>({t:HT('A heti főgonosz','Weekly boss'),b:
+    hSec(HT('Közös ellenség','A shared enemy'),hList([HT('Minden héten egy új főgonosz jön, akit a város összes hőse együtt üt.','Every week a new boss arrives, and every hero in the city fights it together.'),HT(`Naponta ${BOSS_FREE} ütés ingyenes, utána még ${BOSS_PAID} 1-1 pogácsáért.`,`You get ${BOSS_FREE} free hits a day, then ${BOSS_PAID} more for 1 scone each.`),HT('Minél többet sebzel, annál előrébb vagy a listán. Ha legyőzitek, a helyezésed szerint jár a jutalom, és mindenki kap egy heti ládát is:','The more damage you deal, the higher you rank. When it falls, rewards follow your rank, and everyone also gets a weekly chest:')]))+`<div class="h-rows">${[[HT('1. hely','#1'),10],[HT('2–3. hely','#2–3'),5],[HT('4–10. hely','#4–10'),3],[HT('a többiek','everyone else'),1]].map(([l,n])=>`<div class="h-row">${ic('trophy')}<span>${l}</span>${hArrow}${hPog(n)}<span class="note">${HT('+ forint','+ forint')}</span></div>`).join('')}</div>`}),
+  ceh:()=>({t:HT('Céh','Guild'),b:
+    hSec(HT('Alapítás és tagság','Founding and joining'),hList([HT(`A ${GUILD_UNLOCK}. szinttől alapíthatsz céhet, vagy beléphetsz egybe meghívóval.`,`From level ${GUILD_UNLOCK} you can found a guild or join one by invitation.`),HT('A tagok pogácsát és forintot fizethetnek a közös kasszába. A fejlesztéseket a vezető veszi meg belőle.','Members can pay scones and forint into the shared chest. The leader buys upgrades from it.')]))+
+    hSec(HT('Fejlesztések','Upgrades'),`<div class="h-rows">${GUILD_UPG.map(u=>`<div class="h-row">${ic(u.icon)}<b>${HT(u.name,{kincstar:'Treasury',edzo:'Gym',klub:'Clubroom',fegyver:'Armoury'}[u.id])}</b><span class="note">${HT(u.fx(1)+' / szint',{kincstar:'+2% forint',edzo:'+2% XP',klub:'+2 members',fegyver:'+2% guild-war damage'}[u.id]+' / level')}</span></div>`).join('')}</div>`)+
+    hSec(HT('Harc, főgonosz, chat','Wars, boss, chat'),hList([HT('Céhharc: jelentkezz, és a céhetek a város többi céhe ellen harcol.','Guild war: sign up and your guild fights the other guilds of the city.'),HT('Főgonosz: a céh saját főgonosza, akit csak ti ütögettek. Minden legyőzött főgonosz egy kicsit több forintot és XP-t ad a tagoknak.','Boss: your guild\'s own boss that only you fight. Every boss you defeat gives members a little more forint and XP.'),HT('Chat: üzenj a céhtársaidnak.','Chat: talk to your guildmates.')]))}),
+  rang:()=>({t:HT('Ranglista','Leaderboard'),b:
+    hSec(HT('Ki a legjobb a városban?','Who rules the city?'),hList([HT('A Játékosok fülön a hősök sorrendje látszik, a Céhek fülön a céheké.','The Players tab ranks heroes, the Guilds tab ranks guilds.'),HT('Az aréna ranglétráján harcolva kerülhetsz előrébb.','Fight on the arena ladder to climb.')]))})
+};
+function openHelp(){ const f=HELP[helpKey()]; if(!f) return; const h=f();
+  $('#overlay-root').innerHTML=`<div class="overlay" data-act="closemg"><div class="mg-card help-card" data-act="noop" role="dialog" aria-label="${esc(h.t)}">
+  <button class="ins-x" data-act="closemg" aria-label="${HT('Bezárás','Close')}">×</button><span class="label">${HELP_IC}${HT('Segítség','Help')}</span><h2>${h.t}</h2>${h.b}
+  <button class="btn primary" data-act="closemg">${HT('Értem','Got it')}</button></div></div>`; }
+function addHelpBtn(){ if(!state||!HELP[helpKey()]) return; const host=$('main.wrap .scene')||$('main.wrap > section'); if(!host||host.querySelector('.help-btn')) return;
+  host.classList.add('has-help'); const b=document.createElement('button'); b.className='help-btn'; b.dataset.act='help'; b.setAttribute('aria-label',HT('Segítség','Help')); b.title=HT('Segítség','Help'); b.textContent='?'; host.appendChild(b); }
+
 function render(){
   const app=$('#app');
   hideTip();
@@ -2588,7 +2675,7 @@ function render(){
   if(view==='terkep') view='karakter';
   { const vk=view+'/'+(view==='bolt'?boltTab:''); if(vk!==BUB_VIEW){ BUB_VIEW=vk; BUB.k=null; } }
   app.innerHTML = renderHud() + `<main class="wrap">${({kocsma:renderKocsma,karakter:renderKarakter,bolt:renderBolt,arena:renderArena,kazamata:renderKazamata,ceh:renderCeh,rang:renderRang,terkep:renderTerkep})[view]()}</main>` + renderTabs();
-  syncViewBg();
+  syncViewBg(); addHelpBtn();
   if(lvlFx && !battle){ const L=lvlFx; lvlFx=false; showLevelUp(L); }
   tick(true);
   maybeShowLogin();
@@ -4373,6 +4460,7 @@ document.addEventListener('click',e=>{
     case 'pkstand': pokerStand(); return;
     case 'pkagain': PK={phase:'bet',cur:PK.cur}; renderPoker(); return;
     case 'npcsay': npcSay(id); return;
+    case 'help': openHelp(); return;
     case 'closemg': if(WHEEL_BUSY||(PK&&(PK.phase==='play'||PK.phase==='ica'))) return; PK=null; $('#overlay-root').innerHTML=''; render(); return;
     case 'closeinsp': INSPECT=null; hideTip(); $('#overlay-root').innerHTML=''; return;
     case 'noop': if(tr&&!HOVER){ tipKey===tr.dataset.tip?hideTip():showTip(tr); } else if(!tr) hideTip(); return;
@@ -4476,7 +4564,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.04 23:54';
+const BUILD='2026.11.05 00:04';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
