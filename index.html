@@ -4470,7 +4470,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.04 21:00';
+const BUILD='2026.11.04 23:51';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -4863,7 +4863,7 @@ async function doDelAcct(){ const b=$('#delgo'); if(!b||b.disabled) return; b.di
     await SB.auth.signOut(); toast('A fiókodat és minden adatodat töröltük. Köszönjük, hogy játszottál!'); }
   catch(e){ console.warn(e); b.disabled=false; b.textContent='Fiók végleges törlése'; toast(/function|schema cache/i.test((e&&e.message)||'')?'A fióktörléshez frissíteni kell az adatbázist (account.sql).':'Nem sikerült törölni, próbáld újra.'); } }
 /* ---------- pogácsabolt: a fizetés a Stripe oldalán történik, a pogácsát a szerver adja (bolt függvény) ---------- */
-const SHOP_PACKS=[{id:'p10',pog:10,huf:990},{id:'p30',pog:30,huf:2490},{id:'p80',pog:80,huf:5990,best:1},{id:'p200',pog:200,huf:12990}];
+const SHOP_PACKS=[{id:'p10',pog:10,huf:1190},{id:'p30',pog:30,huf:2490},{id:'p80',pog:80,huf:5990,best:1},{id:'p200',pog:200,huf:12990}];
 const SHOP={ok:false,busy:false};
 function openShop(){ if(!SB||!ONLINE.user||!state){ toast('A pogácsabolthoz jelentkezz be.'); return; }
   const base=SHOP_PACKS[0].huf/SHOP_PACKS[0].pog;

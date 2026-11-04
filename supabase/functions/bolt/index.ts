@@ -8,7 +8,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 // a csomagok árát csak itt lehet megadni (a játék nem küldhet saját árat)
 export const PACKS = {
-  p10:  { pog: 10,  huf: 990 },
+  p10:  { pog: 10,  huf: 1190 },
   p30:  { pog: 30,  huf: 2490 },
   p80:  { pog: 80,  huf: 5990 },
   p200: { pog: 200, huf: 12990 },
