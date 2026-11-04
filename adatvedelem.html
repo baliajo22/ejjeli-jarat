@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Adatkezelési tájékoztató – Éjjeli Járat</title>
+<meta name="description" content="Az Éjjeli Járat / Night Line: Budapest adatkezelési tájékoztatója">
+<link rel="icon" href="icon-192.png">
+<style>
+@font-face{font-family:Bangers;src:url(fonts/Bangers-Regular.ttf);font-display:swap}
+@font-face{font-family:Rubik;src:url(fonts/Rubik.ttf);font-weight:300 900;font-display:swap}
+:root{--night:#13141f;--panel:#272a42;--line:#393d5c;--text:#ece7da;--muted:#9a9bb4;--sodium:#f2a33a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--night);color:var(--text);font:16px/1.65 Rubik,system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:28px 16px 64px}
+h1{font:400 clamp(34px,7vw,48px)/1.05 Bangers,Impact,sans-serif;letter-spacing:1px;color:var(--sodium);margin:8px 0 4px}
+h2{font-size:19px;margin:34px 0 8px;padding-top:6px;border-top:1px solid var(--line)}
+p,li{color:#d9d4c8}
+.muted{color:var(--muted);font-size:14px}
+a{color:var(--sodium)}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}
+th,td{text-align:left;vertical-align:top;padding:8px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:500}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:14px 0}
+section+section{margin-top:72px}
+@media (max-width:520px){table,thead,tbody,tr,th,td{display:block}thead{display:none}td{border:0;padding:2px 0}tr{border-bottom:1px solid var(--line);padding:8px 0}td:first-child{font-weight:600;color:var(--text)}
+ td+td::before{color:var(--muted);font-size:13px}
+ #hu td:nth-child(2)::before{content:"Mire: "} #hu td:nth-child(3)::before{content:"Jogalap: "} #hu td:nth-child(4)::before{content:"Meddig: "}
+ #en td:nth-child(2)::before{content:"Purpose: "} #en td:nth-child(3)::before{content:"Legal basis: "} #en td:nth-child(4)::before{content:"Kept for: "}}
+</style></head><body><main>
+<div class="top"><a href="./">← Vissza a játékba</a><a href="#en">English</a></div>
+
+<section id="hu" lang="hu">
+<h1>Adatkezelési tájékoztató</h1>
+<p class="muted">Éjjeli Járat (Night Line: Budapest) · nightlinebudapest.com · Hatályos: 2026. november 4.</p>
+
+<h2>Ki kezeli az adataidat?</h2>
+<p>Adatkezelő: <b>Kovács Balázs</b><br>Kapcsolat: <a href="mailto:ejjelijarat.support@gmail.com">ejjelijarat.support@gmail.com</a></p>
+<p>Ha bármilyen kérdésed van az adataiddal kapcsolatban, ide írj, 30 napon belül válaszolunk.</p>
+
+<h2>Milyen adatokat kezelünk, miért?</h2>
+<table><thead><tr><th>Adat</th><th>Mire kell</th><th>Jogalap</th><th>Meddig</th></tr></thead><tbody>
+<tr><td>E-mail-cím és jelszó (a jelszót csak titkosított, visszafejthetetlen formában tároljuk)</td><td>Fiók létrehozása, belépés, elfelejtett jelszó</td><td>Szerződés teljesítése (a játék szolgáltatása)</td><td>A fiók törléséig</td></tr>
+<tr><td>Játékadatok: hősök neve, szintje, tárgyai, céhek, ranglista, harcnapló</td><td>A játék működése, mentés több eszközön</td><td>Szerződés teljesítése</td><td>A fiók törléséig</td></tr>
+<tr><td>Üzenetek, céhmeghívók, meghívó jutalmak</td><td>Játékosok közti kommunikáció, jutalmak</td><td>Szerződés teljesítése</td><td>A fiók törléséig</td></tr>
+<tr><td>Játékstatisztika: mikor lépsz be, milyen küldetést, harcot csinálsz (név és e-mail nélkül, a fiók azonosítójához kötve)</td><td>A játék fejlesztése: mi tetszik, hol akadnak el a játékosok</td><td>Jogos érdek</td><td>120 nap</td></tr>
+<tr><td>Csalásvédelmi jelzések (gyanús mentések)</td><td>Tisztességes ranglista és harcok</td><td>Jogos érdek</td><td>A fiók törléséig</td></tr>
+<tr><td>Technikai naplók (IP-cím, böngésző), amelyeket a tárhely és a szerver szolgáltatók automatikusan rögzítenek</td><td>Az oldal biztonságos kiszolgálása</td><td>Jogos érdek</td><td>A szolgáltatók szabályai szerint, jellemzően néhány nap–néhány hét</td></tr>
+</tbody></table>
+<p>A játék a böngésződben (localStorage) is tárol mentést és beállításokat (pl. nyelv, hang). Ez a te eszközödön marad. <b>Nem használunk</b> nyomkövető vagy reklám sütiket, nem használunk Google Analyticset vagy Facebook pixelt, és az adataidat nem adjuk el senkinek. A betűtípusokat is a saját tárhelyünkről töltjük be.</p>
+
+<h2>Kik segítenek a működtetésben? (adatfeldolgozók)</h2>
+<ul>
+<li><b>Supabase Inc.</b> (USA) – adatbázis, fiókkezelés, a belépési e-mailek kiküldése. A szerver helye: Európai Unió, Írország (AWS eu-west-1).</li>
+<li><b>GitHub Inc.</b> (USA) – a játék weboldalának tárhelye (GitHub Pages).</li>
+<li><b>jsDelivr</b> (Prospect One, Lengyelország, a Cloudflare és Fastly hálózatán) – egy programkönyvtár letöltése.</li>
+</ul>
+<p>Az USA-beli szolgáltatók az EU–USA adatvédelmi keretrendszer (Data Privacy Framework) és/vagy az Európai Bizottság általános szerződési feltételei alapján kezelhetnek adatot.</p>
+
+<h2>Milyen jogaid vannak?</h2>
+<ul>
+<li><b>Hozzáférés és hordozhatóság:</b> a játékban a Karakter fülön, a fiókod alatt az <i>Adataim letöltése</i> gombbal egy fájlban letöltheted mindazt, amit rólad tárolunk.</li>
+<li><b>Törlés:</b> ugyanott a <i>Fiók törlése</i> gombbal azonnal, végleg törölheted a fiókodat és minden adatodat. Írhatsz e-mailt is, és mi töröljük.</li>
+<li><b>Helyesbítés, korlátozás, tiltakozás</b> (pl. a statisztika ellen): írj a fenti e-mail-címre.</li>
+<li><b>Panasz:</b> ha úgy érzed, megsértettük a jogaidat, fordulhatsz a Nemzeti Adatvédelmi és Információszabadság Hatósághoz (NAIH, 1055 Budapest, Falk Miksa utca 9–11., <a href="https://naih.hu" rel="noopener">naih.hu</a>) vagy bírósághoz.</li>
+</ul>
+
+<h2>Életkor</h2>
+<p>A regisztráció 16 éves kortól lehetséges. Ha 16 év alatti vagy, csak a szülőd vagy gondviselőd beleegyezésével játszhatsz fiókkal.</p>
+
+<h2>Változások</h2>
+<p>Ha ez a tájékoztató lényegesen változik, a játékban jelezzük. A fenti dátum mutatja az utolsó módosítást.</p>
+</section>
+
+<section id="en" lang="en">
+<h1>Privacy notice</h1>
+<p class="muted">Night Line: Budapest (Éjjeli Járat) · nightlinebudapest.com · Effective: 4 November 2026</p>
+
+<h2>Who handles your data?</h2>
+<p>Controller: <b>Kovács Balázs</b><br>Contact: <a href="mailto:ejjelijarat.support@gmail.com">ejjelijarat.support@gmail.com</a></p>
+<p>Write to us with any question about your data; we reply within 30 days.</p>
+
+<h2>What we keep and why</h2>
+<table><thead><tr><th>Data</th><th>Purpose</th><th>Legal basis</th><th>Kept for</th></tr></thead><tbody>
+<tr><td>E-mail address and password (the password is stored only as a one-way hash)</td><td>Creating your account, signing in, password reset</td><td>Performance of contract (providing the game)</td><td>Until you delete your account</td></tr>
+<tr><td>Game data: hero names, levels, items, guilds, leaderboards, fight log</td><td>Running the game, saving across devices</td><td>Performance of contract</td><td>Until you delete your account</td></tr>
+<tr><td>Messages, guild invites, invite rewards</td><td>Communication between players, rewards</td><td>Performance of contract</td><td>Until you delete your account</td></tr>
+<tr><td>Gameplay statistics: when you play, which quests and fights you do (tied to your account ID, without name or e-mail)</td><td>Improving the game</td><td>Legitimate interest</td><td>120 days</td></tr>
+<tr><td>Anti-cheat flags (suspicious saves)</td><td>Fair leaderboards and fights</td><td>Legitimate interest</td><td>Until you delete your account</td></tr>
+<tr><td>Technical logs (IP address, browser) recorded automatically by our hosting and server providers</td><td>Serving the site securely</td><td>Legitimate interest</td><td>As set by the providers, typically days to weeks</td></tr>
+</tbody></table>
+<p>The game also stores a save and your settings (such as language and sound) in your browser's localStorage, which stays on your device. We use <b>no</b> tracking or advertising cookies, no Google Analytics or Facebook pixel, and we never sell your data. Fonts are served from our own host.</p>
+
+<h2>Who helps us run it (processors)</h2>
+<ul>
+<li><b>Supabase Inc.</b> (USA): database, accounts and sign-in e-mails. Server location: EU, Ireland (AWS eu-west-1).</li>
+<li><b>GitHub Inc.</b> (USA): website hosting (GitHub Pages).</li>
+<li><b>jsDelivr</b> (Prospect One, Poland, on the Cloudflare and Fastly networks): delivery of one code library.</li>
+</ul>
+<p>US providers may process data under the EU–US Data Privacy Framework and/or the European Commission's Standard Contractual Clauses.</p>
+
+<h2>Your rights</h2>
+<ul>
+<li><b>Access and portability:</b> in the game, on the Character tab under your account, <i>Download my data</i> gives you a file with everything we store about you.</li>
+<li><b>Erasure:</b> in the same place, <i>Delete account</i> permanently deletes your account and all your data at once. You can also e-mail us and we will do it.</li>
+<li><b>Rectification, restriction, objection</b> (for example to statistics): e-mail us at the address above.</li>
+<li><b>Complaint:</b> you may complain to the Hungarian data protection authority (NAIH, <a href="https://naih.hu" rel="noopener">naih.hu</a>), to the authority in your own EU country, or go to court.</li>
+</ul>
+
+<h2>Age</h2>
+<p>You must be 16 or older to create an account. If you are younger, you may play with an account only with a parent's or guardian's consent.</p>
+
+<h2>Changes</h2>
+<p>If this notice changes materially, we will say so in the game. The date above shows the latest update.</p>
+<p><a href="./">← Back to the game</a></p>
+</section>
+</main>
+<script>
+try{ if(!location.hash && localStorage.getItem('ejjeli-jarat-lang')==='en') location.replace('#en'); }catch(e){}
+try{ if(location.hash==='#en') document.title='Privacy notice – Night Line: Budapest'; addEventListener('hashchange',()=>{ document.title=location.hash==='#en'?'Privacy notice – Night Line: Budapest':'Adatkezelési tájékoztató – Éjjeli Járat'; }); }catch(e){}
+</script>
+</body></html>
