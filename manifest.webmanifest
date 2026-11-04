@@ -1,7 +1,7 @@
 {
-  "name": "Éjjeli Járat",
+  "name": "Éjjeli Járat · Night Line: Budapest",
   "short_name": "Éjjeli Járat",
-  "description": "Böngészős szerepjáték a budapesti éjszakában.",
+  "description": "Böngészős szerepjáték a budapesti éjszakában. A browser RPG in Budapest after dark.",
   "lang": "hu",
   "start_url": "./",
   "scope": "./",
