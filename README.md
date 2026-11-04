@@ -8,6 +8,7 @@ Böngészős RPG modern városi fantasy világban. Ez a változat Supabase-t has
 - `config.js` – a Supabase projekt címe és nyilvános (anon) kulcsa
 - `schema.sql` – az adatbázis táblái és jogosultságai
 - `anticheat_1.sql`, `anticheat_2.sql` – csalásvédelem (lásd lent)
+- `growth.sql` – egyedi hősnevek, meghívó jutalom, statisztika (lásd lent)
 - `supabase/functions/harc/index.ts` – a harcszerver: itt dől el az aréna és a céhharc
 
 ## Beállítás
@@ -30,3 +31,15 @@ Böngészős RPG modern városi fantasy világban. Ez a változat Supabase-t has
 3. **Régi utak lezárása:** ha a harcszerver működik (az arénában a harc után megjelenik a rangpont), futtasd az `anticheat_2.sql`-t.
 
 A harcszerver kódját a `build_harc.py` állítja elő a játék kódjából, így a szabályok mindig egyeznek; a játék harcszabályainak módosítása után újra kell telepíteni.
+
+## Statisztika és meghívók
+
+SQL Editor → futtasd a `growth.sql`-t (az `anticheat_1.sql` után). Ezután:
+
+- `select * from stats.napi;` – napi aktív játékosok, regisztrációk, játékidő
+- `select * from stats.megtartas;` – hányan jönnek vissza másnap / egy hét / egy hónap múlva
+- `select * from stats.tolcser;` – hol morzsolódnak le a játékosok
+- `select * from stats.esemenyek;` – mit csinálnak a játékban (utolsó 7 nap)
+- `select * from stats.szintek;` és `select * from stats.meghivok;`
+
+A `stats` séma a játékból nem érhető el, csak az SQL Editorból.
