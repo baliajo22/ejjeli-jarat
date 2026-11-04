@@ -2636,12 +2636,12 @@ function dayReset(){ const t=todayKey(); if(state.mgDay!==t){ state.mgDay=t; sta
 function wheelFreeReady(){ return !!state && (state.mgDay!==todayKey() || state.wheelFree); }
 const WHEEL=[
   {k:'ft',  w:26, c:'#3a3f66', lab:()=>`${fmt(20+state.level*8)} Ft`,  icon:()=>ic('coin','ic-gold'), give(){ const g=Math.round((20+state.level*8)*goldMult()); state.gold+=g; return `+${fmt(g)} Ft`; }},
-  {k:'cof', w:18, c:'#5a3d2a', lab:()=>'+20 kávé', icon:()=>ic('coffee','ic-coffee'), give(){ state.energy=Math.min(ENERGY_MAX,state.energy+20); return '+20 kávé'; }},
+  {k:'cof', w:18, c:'#5a3d2a', lab:()=>'+20 kávé', icon:()=>ic('coffee','ic-coffee'), give(){ state.energy+=20; return '+20 kávé'; }},
   {k:'xp',  w:16, c:'#3d3170', lab:()=>'XP', icon:()=>ic('xp','ic-xp'), give(){ const x=Math.round(xpNeed(state.level)*.08); gainXp(x); return `+${fmt(x)} XP`; }},
   {k:'pog', w:12, c:'#6b4a1a', lab:()=>'1 pogi', icon:()=>pogIc(), give(){ state.pog=(state.pog||0)+1; return '+1 pogácsa'; }},
   {k:'ft2', w:10, c:'#2f5a45', lab:()=>`${fmt(60+state.level*30)} Ft`, icon:()=>ic('coin','ic-gold'), give(){ const g=Math.round((60+state.level*30)*goldMult()); state.gold+=g; return `+${fmt(g)} Ft`; }},
   {k:'item',w:10, c:'#2a4a6b', lab:()=>RAR_NAME[wheelItem().rar], icon:()=>`<span class="wh-item">${itemTile(wheelItem())}</span>`, give(){ const it={...wheelItem(),id:uid()}; state.wheelItem=null; const ok=addItem(it); if(ok) LOOT[it.id]=it; WHEEL_WON={it,ok}; return ok?`${it.name}`:`${it.name}, de tele a hátizsák, eladtad`; }},
-  {k:'cof2',w:6,  c:'#6b3a2a', lab:()=>'+40 kávé', icon:()=>ic('coffee','ic-coffee'), give(){ state.energy=Math.min(ENERGY_MAX,state.energy+40); return '+40 kávé'; }},
+  {k:'cof2',w:6,  c:'#6b3a2a', lab:()=>'+40 kávé', icon:()=>ic('coffee','ic-coffee'), give(){ state.energy+=40; return '+40 kávé'; }},
   {k:'jack',w:2,  c:'#8a6a12', lab:()=>'5 pogi!', icon:()=>pogIc(), give(){ state.pog=(state.pog||0)+5; return 'FŐNYEREMÉNY: +5 pogácsa!'; }}
 ];
 let WHEEL_ROT=0, WHEEL_ROT_SHOW=null, WHEEL_BUSY=false, WHEEL_MSG='', WHEEL_PRIZE=null, WHEEL_WON=null;
@@ -2894,7 +2894,7 @@ function loginInfo(){ const L=state.login||{}; const today=todayKey(), yest=dayK
   if(L.last===today) return {claimed:true,day:L.streak};             // already taken today
   const next=L.last===yest?(L.streak%7)+1:1; return {claimed:false,day:next,broke:!!L.last&&L.last!==yest&&L.streak>0}; }
 function claimLogin(){ const I=loginInfo(); if(I.claimed) return; const D=LOGIN_DAYS[I.day-1], v=D.v();
-  if(D.k==='gold') state.gold+=v; else if(D.k==='coffee') state.energy=Math.min(ENERGY_MAX+30,state.energy+v); else if(D.k==='pog') state.pog=(state.pog||0)+v;
+  if(D.k==='gold') state.gold+=v; else if(D.k==='coffee') state.energy=Math.max(state.energy,Math.min(ENERGY_MAX+30,state.energy+v)); else if(D.k==='pog') state.pog=(state.pog||0)+v;
   else if(D.k==='mat'){ const m=mats(); m.kristaly=(m.kristaly||0)+v; } else if(D.k==='xp') gainXp(v); else if(D.k==='chest') state.chests=(state.chests||0)+1;
   state.login={last:todayKey(),streak:I.day}; save(); sfx(D.k==='chest'?'levelup':'coins');
   toast(D.k==='chest'?'Megkaptad a Heti ládát! A Kocsmában, a Feladatoknál nyithatod ki.':`Napi jutalom: ${D.txt(v)}`); renderLogin(true); }
@@ -4355,7 +4355,7 @@ document.addEventListener('click',e=>{
       if(selQuest) requestAnimationFrame(()=>{ const g=document.querySelector('.quest.sel .quest-go'); if(!g) return; const r=g.getBoundingClientRect(), bar=(document.querySelector('.tabs')?.offsetHeight||70)+12;
         if(r.bottom>innerHeight-bar) window.scrollBy({top:r.bottom-(innerHeight-bar),behavior:RM?'auto':'smooth'}); }); } break;
     case 'quest': { const q=state.quests.find(x=>x.id===id); if(!q||state.active) return; const c=qCost(q), d=effDur(q); if(state.energy<c) return; state.energy-=c; track('coffee',c); state.active={q, dur:d, cost:c, endsAt:now()+d*1000}; save(); render(); window.scrollTo(0,0); } break;
-    case 'cancel': state.energy=Math.min(ENERGY_MAX,state.energy+(state.active.cost||state.active.q.cost)); state.active=null; save(); render(); break;
+    case 'cancel': state.energy+=(state.active.cost||state.active.q.cost); state.active=null; save(); render(); break;
     case 'fight': if(state.active&&state.active.endsAt<=now()) doFight(); break;
     case 'skip': endBattle(); break;
     case 'closebattle': closeBattle(); break;
@@ -4444,7 +4444,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.04 18:04';
+const BUILD='2026.11.04 18:09';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -4861,7 +4861,7 @@ function tick(force){
   const t=now();
   document.querySelectorAll('[data-until]').forEach(el=>{ const l=+el.dataset.until-t; el.textContent=fmtHMS(l); if(l<=0&&!el.dataset.fired){ el.dataset.fired=1; GW.at=0; gwStale(); } });
   // coffee does not trickle back; the pot is refilled once a day at midnight
-  if(state.energyDay!==todayKey()){ state.energyDay=todayKey(); state.energy=ENERGY_MAX; save(); }
+  if(state.energyDay!==todayKey()){ state.energyDay=todayKey(); state.energy=Math.max(state.energy,ENERGY_MAX); save(); }
   // Feri restocks the shop at midnight
   if(state.shopDay!==todayKey()){ const had=!!state.shopDay; state.shopDay=todayKey(); if(had){ state.shop=genShop(); if(view==='bolt'&&!battle&&!force){ render(); toast('Feri éjfélkor kipakolt egy új adagot.'); } } save(); }
   const en=$('#en'); if(en) en.textContent=state.energy;
