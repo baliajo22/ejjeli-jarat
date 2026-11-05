@@ -668,6 +668,7 @@ details.install-card ol{margin:10px 0 0;padding-left:20px;display:flex;flex-dire
 .scene.has-help,main.wrap > section.has-help{position:relative}
 .scene.has-help{padding-right:44px}
 .help-btn{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(242,163,58,.7);background:rgba(19,20,31,.72);color:var(--sodium);font:700 16px/1 Rubik,system-ui,sans-serif;display:grid;place-items:center;cursor:pointer;z-index:3;backdrop-filter:blur(4px)}
+.help-btn.help-inline{position:static;align-self:center;margin-top:2px}
 .help-btn:hover{background:var(--sodium);color:#1b1206}
 .help-card h3{font-size:15px;margin:0 0 6px;color:var(--sodium)}
 .help-card p{margin:0 0 6px;font-size:14px;line-height:1.5}
@@ -725,6 +726,8 @@ details.install-card ol{margin:10px 0 0;padding-left:20px;display:flex;flex-dire
 .wh-ic{width:32px;height:32px;display:grid;place-items:center;color:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
 .wh-ic .ic,.wh-ic>svg{width:22px;height:22px}
 .wh-ic.jk .ic{filter:drop-shadow(0 0 4px #fff3c4)}
+.wh-ic2{filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
+.wh-ic2.jk{filter:drop-shadow(0 0 4px #fff3c4)}
 .wh-t{fill:#fff;font:400 11.5px var(--f-display,sans-serif);letter-spacing:.04em;stroke:#120f1f;stroke-width:2.6px;paint-order:stroke}
 .wh-t.jk{fill:#fff3c4}
 .stakes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -2663,7 +2666,9 @@ function openHelp(){ const f=HELP[helpKey()]; if(!f) return; const h=f();
   $('#overlay-root').innerHTML=`<div class="overlay" data-act="closemg"><div class="mg-card help-card" data-act="noop" role="dialog" aria-label="${esc(h.t)}">
   <button class="ins-x" data-act="closemg" aria-label="${HT('Bezárás','Close')}">×</button><span class="label">${HELP_IC}${HT('Segítség','Help')}</span><h2>${h.t}</h2>${h.b}
   <button class="btn primary" data-act="closemg">${HT('Értem','Got it')}</button></div></div>`; }
-function addHelpBtn(){ if(!state||!HELP[helpKey()]) return; const host=$('main.wrap .scene')||$('main.wrap > section'); if(!host||host.querySelector('.help-btn')) return;
+function addHelpBtn(){ if(!state||!HELP[helpKey()]) return;
+  if(view==='karakter'){ const col=document.querySelectorAll('.doll .doll-col')[1]; if(col&&!col.querySelector('.help-btn')){ const b=document.createElement('button'); b.className='help-btn help-inline'; b.dataset.act='help'; b.setAttribute('aria-label',HT('Segítség','Help')); b.title=HT('Segítség','Help'); b.textContent='?'; col.appendChild(b); } return; }
+  const host=$('main.wrap .scene')||$('main.wrap > section'); if(!host||host.querySelector('.help-btn')) return;
   host.classList.add('has-help'); const b=document.createElement('button'); b.className='help-btn'; b.dataset.act='help'; b.setAttribute('aria-label',HT('Segítség','Help')); b.title=HT('Segítség','Help'); b.textContent='?'; host.appendChild(b); }
 
 function render(){
@@ -2759,12 +2764,16 @@ const WHEEL=[
 let WHEEL_ROT=0, WHEEL_ROT_SHOW=null, WHEEL_BUSY=false, WHEEL_MSG='', WHEEL_PRIZE=null, WHEEL_WON=null;
 function wheelItem(){ const w=state.wheelItem; if(!w||!w.name||Math.abs((w.lvl||0)-state.level)>2) state.wheelItem=genItem(state.level,null,null,Math.random()<.3?2:1); return state.wheelItem; }
 const WH_COL={ft:['#2c3a7a','#4a5fc0'],cof:['#5a2e1c','#a0552f'],xp:['#3b2378','#7a4fd6'],pog:['#6b3f0e','#c98426'],ft2:['#17533d','#2fa477'],item:['#13466b','#2b86c2'],cof2:['#6b1f2e','#c2405a'],jack:['#7a5a06','#f2c230']};
+/* icons go straight into the wheel's SVG (no foreignObject: iPhone Safari draws those outside the rotating wheel) */
+function whNest(str,x,y,w,h){ return String(str).replace(/<svg\b/,`<svg x="${x}" y="${y}" width="${w}" height="${h}" style="width:${w}px;height:${h}px;overflow:visible"`); }
+function whItemSvg(){ const it=wheelItem(), col=['var(--r-common)','var(--r-uncommon)','var(--r-rare)','var(--r-epic)','var(--r-special)'][it.rar]||'#fff';
+  return `<rect x="-15" y="-71" width="30" height="30" rx="7" fill="rgba(8,8,18,.65)" style="stroke:${col}" stroke-width="2"/>${whNest(svg(ITEM_ART[it.base]||ITEM_DEFAULT),-13,-69,26,26)}`; }
 function wheelSvg(){
   const n=WHEEL.length, R=92, seg=360/n; let defs='', g='';
   WHEEL.forEach((p,i)=>{ const [c0,c1]=WH_COL[p.k]||[p.c,p.c], a0=(i*seg-90-seg/2)*Math.PI/180, a1=((i+1)*seg-90-seg/2)*Math.PI/180;
     defs+=`<radialGradient id="whg${i}" cx="0" cy="0" r="${R}" gradientUnits="userSpaceOnUse"><stop offset=".18" stop-color="${c0}"/><stop offset="1" stop-color="${c1}"/></radialGradient>`;
     g+=`<path d="M0 0L${(R*Math.cos(a0)).toFixed(2)} ${(R*Math.sin(a0)).toFixed(2)}A${R} ${R} 0 0 1 ${(R*Math.cos(a1)).toFixed(2)} ${(R*Math.sin(a1)).toFixed(2)}z" fill="url(#whg${i})"/>`;
-    g+=`<g transform="rotate(${i*seg})"><circle cy="-56" r="17" fill="rgba(8,8,18,.42)" stroke="rgba(255,255,255,.18)" stroke-width="1"/><foreignObject x="-16" y="-72" width="32" height="32"><div xmlns="http://www.w3.org/1999/xhtml" class="wh-ic ${p.k==='jack'?'jk':''}">${p.icon()}</div></foreignObject><text y="-80" text-anchor="middle" class="wh-t ${p.k==='jack'?'jk':''}">${esc(p.lab())}</text></g>`; });
+    g+=`<g transform="rotate(${i*seg})"><circle cy="-56" r="17" fill="rgba(8,8,18,.42)" stroke="rgba(255,255,255,.18)" stroke-width="1"/><g class="wh-ic2 ${p.k==='jack'?'jk':''}" color="#fff">${p.k==='item'?whItemSvg():whNest(p.icon(),-11,-67,22,22)}</g><text y="-80" text-anchor="middle" class="wh-t ${p.k==='jack'?'jk':''}">${esc(p.lab())}</text></g>`; });
   for(let i=0;i<n;i++){ const a=(i*seg-90-seg/2)*Math.PI/180; g+=`<line x1="0" y1="0" x2="${(R*Math.cos(a)).toFixed(2)}" y2="${(R*Math.sin(a)).toFixed(2)}" stroke="#f2c230" stroke-opacity=".75" stroke-width="1.6"/>`; }
   return `<svg viewBox="-104 -104 208 208" class="wheel-svg"><defs>${defs}<radialGradient id="whsh" cx="0" cy="0" r="92" gradientUnits="userSpaceOnUse"><stop offset=".7" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient></defs>${g}<circle r="92" fill="url(#whsh)"/></svg>`;
 }
@@ -4564,7 +4573,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.05 00:04';
+const BUILD='2026.11.05 06:53';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
