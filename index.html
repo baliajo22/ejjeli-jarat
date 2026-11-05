@@ -1310,6 +1310,24 @@ html[lang=en] .logo::after{content:"Budapest";display:block;margin-top:8px;font-
 
 /* szint a harcban: a név mellett zárójelben */
 .lv-p{font-weight:600;color:var(--muted);font-family:var(--f-body);font-size:.85em}
+
+/* ===== desktop: use the whole screen, columns, side rail for the tabs ===== */
+@media (min-width:1100px){
+  .app{max-width:min(1640px,100vw);padding-left:128px;padding-right:24px}
+  main.wrap{display:block;column-count:2;column-gap:22px;padding-bottom:40px}
+  main.wrap>*{break-inside:avoid;-webkit-column-break-inside:avoid;margin:0 0 16px}
+  main.wrap>section.stack:not(.card){break-inside:auto}
+  main.wrap>section.stack:not(.card)>*{break-inside:avoid;-webkit-column-break-inside:avoid}
+  main.wrap>.mg-bar{column-span:all;-webkit-column-span:all}
+  main.wrap>.mg-bar+.mg-bar{margin-top:-8px}
+  .tabs{top:0;bottom:0;left:0;right:auto;width:118px;display:flex;align-items:center;padding:0 0 0 14px;pointer-events:none}
+  .tabs .in{grid-template-columns:1fr;grid-auto-rows:auto;gap:4px;max-width:none;width:100%;padding:10px 6px;border-radius:22px;pointer-events:auto;margin:0}
+  .tabs .tab{padding:10px 4px}
+}
+@media (min-width:1200px){ main.wrap{column-count:3} }
+@media (min-width:1100px){ main.wrap:has(>:only-child){column-count:1;max-width:620px;margin-inline:auto} }
+@media (min-width:1100px){ #rlist{max-height:calc(100vh - 300px);overflow-y:auto;overscroll-behavior:contain} }
+@media (min-width:1800px) and (min-height:950px){ .app{zoom:1.18} }
 </style>
 </head>
 <body>
@@ -4573,7 +4591,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.05 06:53';
+const BUILD='2026.11.05 09:54';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
