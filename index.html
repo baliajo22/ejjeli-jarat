@@ -1328,6 +1328,32 @@ html[lang=en] .logo::after{content:"Budapest";display:block;margin-top:8px;font-
 @media (min-width:1100px){ main.wrap:has(>:only-child){column-count:1;max-width:620px;margin-inline:auto} }
 @media (min-width:1100px){ #rlist{max-height:calc(100vh - 300px);overflow-y:auto;overscroll-behavior:contain} }
 @media (min-width:1800px) and (min-height:950px){ .app{zoom:1.18} }
+
+.mg-group{display:contents}
+@media (min-width:1100px){
+  main.wrap>.mg-bar{max-width:760px;margin-inline:auto}
+  main.wrap>.mg-group{column-span:all;-webkit-column-span:all;display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin:0 0 18px}
+  .mg-group>.mg-bar{display:contents}
+  .mg-group .mg-chip{flex:0 0 auto;width:auto;min-width:210px;padding-inline:22px}
+  /* sign-in: artwork and title on the left, the form on the right, in the middle of the screen */
+  .create:has(#authf){display:grid;grid-template-columns:minmax(0,1.25fr) minmax(340px,420px);column-gap:56px;row-gap:14px;align-content:center;min-height:100vh;max-width:1180px;margin-inline:auto;padding-block:32px}
+  .create:has(#authf)>*{grid-column:1}
+  .create:has(#authf)>#authf{grid-column:2;grid-row:1 / span 3;align-self:center}
+  .create:has(#authf)>.install-card{grid-column:2}
+  .create:has(#authf) .tag{margin:0;text-align:center}
+  /* new hero: a calmer stage and inputs of a sensible width */
+  .create:not(:has(#authf)){max-width:1120px;margin-inline:auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:28px;row-gap:14px;align-content:start;padding-block:24px}
+  .create:not(:has(#authf))>*{grid-column:1 / -1}
+  .create:not(:has(#authf)) .logo{font-size:clamp(40px,4.4vw,60px)}
+  .create:not(:has(#authf)) .tag{margin:0 auto;text-align:center}
+  .create:not(:has(#authf))>.hero-stage{grid-column:1;grid-row:span 4;align-self:start}
+  .create:not(:has(#authf))>.sex-pick,.create:not(:has(#authf))>.cls-pick,.create:not(:has(#authf))>.field,.create:not(:has(#authf))>#startbtn{grid-column:2;margin:0;align-self:start}
+  .create .hero-stage{grid-template-columns:1fr;max-height:none}
+  .create .hs-art{max-width:300px;margin:0 auto}
+  .create .c-tabs{width:100%;max-width:520px;margin-inline:auto}
+  .create .cls-pick{grid-template-columns:repeat(4,1fr)}
+  .create .cls2{padding:6px}
+}
 </style>
 </head>
 <body>
@@ -3049,9 +3075,9 @@ function maybeShowLogin(){ if(!state||battle||$('#overlay-root').firstElementChi
 
 function minigameBar(){
   dayReset();
-  return `<div class="mg-bar"><button class="mg-chip mg-wide" data-act="opentasks"><span class="mg-ic">${chestIc()}</span>Feladatok${tasksClaimable()?'<span class="mg-dot" aria-label="átvehető jutalom"></span>':''}</button></div>
+  return `<div class="mg-group"><div class="mg-bar"><button class="mg-chip mg-wide" data-act="opentasks"><span class="mg-ic">${chestIc()}</span>Feladatok${tasksClaimable()?'<span class="mg-dot" aria-label="átvehető jutalom"></span>':''}</button></div>
     <div class="mg-bar"><button class="mg-chip" data-act="openwheel"><span class="mg-ic">${svg(`<circle cx="32" cy="34" r="24" fill="${OR}"/><path d="M32 34L32 10M32 34L52 22M32 34L52 46M32 34L32 58M32 34L12 46M32 34L12 22" stroke-width="2"/><circle cx="32" cy="34" r="5" fill="${Y}"/>`)}</span>Szerencsekerék${state.wheelFree?'<span class="mg-dot" aria-label="ingyen pörgetés"></span>':''}</button>
-    <button class="mg-chip" data-act="openpoker"><span class="mg-ic">${svg(`<rect x="8" y="14" width="36" height="36" rx="7" fill="${WH}"/><circle cx="18" cy="24" r="3.5" fill="${K}" stroke="none"/><circle cx="26" cy="32" r="3.5" fill="${K}" stroke="none"/><circle cx="34" cy="40" r="3.5" fill="${K}" stroke="none"/>`)}</span>Kockapóker</button></div>`;
+    <button class="mg-chip" data-act="openpoker"><span class="mg-ic">${svg(`<rect x="8" y="14" width="36" height="36" rx="7" fill="${WH}"/><circle cx="18" cy="24" r="3.5" fill="${K}" stroke="none"/><circle cx="26" cy="32" r="3.5" fill="${K}" stroke="none"/><circle cx="34" cy="40" r="3.5" fill="${K}" stroke="none"/>`)}</span>Kockapóker</button></div></div>`;
 }
 function minigameCard(){
   dayReset();
@@ -4591,7 +4617,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.05 09:54';
+const BUILD='2026.11.05 12:36';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
