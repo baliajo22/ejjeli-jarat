@@ -1,6 +1,7 @@
 -- Éjjeli Járat – ÚJ SZERVER (2026. november 11.)
--- Minden hős, céh, üzenet, aréna- és főgonosz-eredmény törlődik. A fiókok (e-mail, jelszó) megmaradnak,
--- mindenki új hőst készít az 1. szintről. Aki valódi pénzért vett pogácsát, az új hőse visszakapja.
+-- A hősök megmaradnak (név, kaszt, kinézet), de mindenki visszakerül az 1. szintre: felszerelés, forint, pogácsa,
+-- céhek, üzenetek, aréna- és főgonosz-eredmények az elejéről indulnak. A fiókok (e-mail, jelszó) maradnak.
+-- Aki valódi pénzért vett pogácsát, az visszakapja.
 -- Supabase: SQL Editor -> New query -> illeszd be az egészet -> Run.   NEM LEHET VISSZACSINÁLNI.
 -- Ha véletlenül másodszor is lefuttatod, nem csinál semmit (kiírja, hogy már lefutott).
 
@@ -38,6 +39,19 @@ begin
 end $$;
 drop trigger if exists ej_block_retired on public.characters;
 create trigger ej_block_retired before insert on public.characters for each row execute function public.ej_block_retired();
+
+
+-- az új szerveres hőst egy régi, még nyitva hagyott játék nem írhatja felül a régi állapotával
+create or replace function public.ej_season_guard() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if coalesce((old.data->>'season')::int, 0) >= 2 and coalesce((new.data->>'season')::int, 0) < 2 then
+    raise exception 'EJ_RETIRED: ez a mentés még a régi szerverről való';
+  end if;
+  return new;
+end $$;
+drop trigger if exists ej_season_guard on public.characters;
+create trigger ej_season_guard before update on public.characters for each row execute function public.ej_season_guard();
 
 -- az ajándékfelvétel előbb a fiókhoz kötött jóváírásokat is a hőshöz rakja
 create or replace function public.gift_claim(cid text) returns json
@@ -94,21 +108,37 @@ begin
      where status = 'paid' and coalesce(livemode, true) and user_id is not null
      group by user_id;
     get diagnostics n_grants = row_count;
-    update public.purchases set char_id = null where char_id is not null;   -- a régi hős már nem létezik
   end if;
-
-  insert into public.retired_chars (id) select id from public.characters on conflict do nothing;
 
   foreach t in array array['arena_log','gifts','guild_donations','guild_invites','guild_raid_hits','guild_war_signups',
                            'guild_wars','messages','referrals','world_boss_hits'] loop
     if to_regclass('public.' || t) is not null then execute format('delete from public.%I', t); end if;
   end loop;
-  delete from public.characters;
+
+  -- minden hős az 1. szintre: név, kaszt, nem, kinézet marad; a többi egy friss kezdő hős
+  -- (a játék az első belépéskor ebből teljes, új hőst épít: küldetések, bolt, ranglétra)
+  alter table public.characters disable trigger user;
+  update public.characters c set
+    level = 1, rating = 1000, suspect = false, flags = '[]'::jsonb, updated_at = now(), checked_at = now(),
+    data = jsonb_build_object(
+      'cid', c.id, 'name', c.name, 'cls', c.cls, 'sex', coalesce(c.data->'sex', '"m"'::jsonb), 'look', c.data->'look',
+      'level', 1, 'xp', 0, 'gold', 40, 'energy', 100, 'lastTick', (extract(epoch from now()) * 1000)::bigint, 'pog', 25,
+      'stats', jsonb_build_object('str', case when c.cls = 'kidobo' then 10 else 5 end, 'dex', case when c.cls in ('futar','zsebmetszo') then 10 else 5 end,
+                                  'int', case when c.cls = 'magus' then 10 else 5 end, 'con', 8, 'lck', 5),
+      'bought', jsonb_build_object('str',0,'dex',0,'int',0,'con',0,'lck',0),
+      'equip', jsonb_build_object('fegyver', jsonb_build_object('id', 'w' || c.id, 'slot', 'fegyver', 'rar', 0, 'lvl', 1,
+                 'base', w.n, 'name', w.n, 'min', 3, 'max', 6, 'armor', 0, 'bonus', '{}'::jsonb, 'price', 10),
+                 'fej', null, 'nyaklanc', null, 'test', null, 'gyuru', null, 'kesztyu', null, 'ov', null, 'cipo', null, 'kabala', null),
+      'inv', '[]'::jsonb, 'fame', 0, 'wins', 0, 'losses', 0, 'guild', null, 'memberOf', null,
+      'season', 2, 'reset2', true, 'rev', coalesce((c.data->>'rev')::int, 0) + 1, 'savedAt', (extract(epoch from now()) * 1000)::bigint)
+  from (values ('kidobo','Sörösrekesz'),('magus','Lejárt bérlet'),('futar','Csúzli'),('zsebmetszo','Bicskapár')) w(cls, n)
+  where w.cls = c.cls;
+  alter table public.characters enable trigger user;
 
   insert into public.server_meta (key, value) values ('season', jsonb_build_object('n', 2, 'started', now()))
   on conflict (key) do update set value = excluded.value, updated_at = now();
-  raise notice 'Kész: % hős törölve, % fiók kap vissza megvásárolt pogácsát.', n_chars, coalesce(n_grants, 0);
+  raise notice 'Kész: % hős visszakerült az 1. szintre, % fiók kap vissza megvásárolt pogácsát.', n_chars, coalesce(n_grants, 0);
 end $$;
 
--- Ellenőrzés:  select count(*) from characters;              (0 kell legyen)
+-- Ellenőrzés:  select name, level from characters;           (mindenki 1. szintű)
 --              select * from account_grants;                 (kik kapnak vissza pogácsát)
