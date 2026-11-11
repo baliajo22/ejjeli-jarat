@@ -79,7 +79,7 @@ language plpgsql security definer set search_path = public as $$
 declare n int;
 begin
   if not exists (select 1 from public.characters where id = cid and user_id = auth.uid()) then return false; end if;
-  if exists (select 1 from public.founders where char_id = cid) then return true; end if;
+  if exists (select 1 from public.founders where user_id = auth.uid()) then return true; end if;   -- alapító fiók: minden hőse alapító (a pogácsa csak egyszer járt)
   if not exists (select 1 from public.server_meta where key = 'season' and (value->>'n')::int >= 2) then return false; end if;   -- csak az új szerveren
   if now() < timestamptz '2026-11-11 00:00 Europe/Budapest' or now() >= timestamptz '2026-11-19 00:00 Europe/Budapest' then return false; end if;
   insert into public.founders (user_id, char_id) values (auth.uid(), cid) on conflict (user_id) do nothing;
