@@ -673,6 +673,7 @@ details.install-card ol{margin:10px 0 0;padding-left:20px;display:flex;flex-dire
 .scene.has-help{padding-right:44px}
 .help-btn{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(242,163,58,.7);background:rgba(19,20,31,.72);color:var(--sodium);font:700 16px/1 Rubik,system-ui,sans-serif;display:grid;place-items:center;cursor:pointer;z-index:3;backdrop-filter:blur(4px)}
 .founder-badge{display:inline-flex;align-items:center;gap:4px;margin:2px 0 4px;padding:3px 10px;border-radius:99px;font:800 12px/1.2 Rubik,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#1b1206;background:linear-gradient(180deg,#ffd98a,#f2a33a);box-shadow:0 0 12px rgba(242,163,58,.55)}
+.lad-name .founder-badge{align-self:flex-start;width:max-content;margin:2px 0}
 .founder-badge.sm{margin:0 0 0 6px;padding:1px 7px;font-size:10px;vertical-align:middle}
 .disband-row{display:flex;justify-content:center;margin:6px 0 10px}
 .linkbtn{color:var(--muted);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:4px 0;font:inherit;cursor:pointer}
@@ -3354,6 +3355,8 @@ function fAvg(f){ const c=CLASSES[f.cls]; return ((f.wMin+f.wMax)/2+f.stats[c.ma
 function openInspect(key){ if(key&&state&&key.slice(2)===state.cid) key='me'; const x=inspectOf(key); if(!x){ toast('Ennek a játékosnak az adatai most nem érhetők el.'); return; } const st=key==='me'?state:key.startsWith('c-')?realData(key.slice(2)):key.startsWith('p-')?realData(key.slice(2)):null;
   if(st){ x.skills=(st.skills||[]).map((c,i)=>c==null?null:(SKILLS[st.cls]||[])[i]&&SKILLS[st.cls][i][c]).filter(Boolean); }
   if(st){ const G=st.guild||(st.memberOf&&(realData(st.memberOf.leaderCid)||{}).guild)||null; const lc=st.guild?(st.cid||(key==='me'?state.cid:key.slice(2))):st.memberOf&&st.memberOf.leaderCid; if(G) x.gInfo={name:G.name,emblem:G.emblem,desc:G.desc,lead:!!st.guild,lc}; else if(st.memberOf) x.gInfo={name:st.memberOf.name,emblem:st.memberOf.emblem,lc}; }
+  if(key==='me') x.founder=!!state.founder; else if(st&&st.founder) x.founder=true;
+  else if(key.startsWith('p-')&&typeof ONLINE!=='undefined'){ const p=(ONLINE.all||ONLINE.players||[]).find(q=>q.id===key.slice(2)); if(p&&p.data&&p.data.founder) x.founder=true; }
   INSPECT=x; INSPECT.key=key; renderInspect(); }
 function renderInspect(){
   const x=INSPECT; if(!x){ return; }
@@ -3367,7 +3370,7 @@ function renderInspect(){
     <div class="doll"><div class="doll-bg" aria-hidden="true">${roomScene()}</div>
       <div class="doll-col">${DOLL_LEFT.map(slot).join('')}</div>
       <div class="doll-center">${portrait(artOf(x.cls,sexLook(x),x.name),'doll-port')}
-        <div><h2>${esc(x.name)}</h2><div class="muted" style="font-size:13px">${x.level}. szintű ${c.name.toLowerCase()}</div>${(x.titles||[]).length?`<div class="title-chip">${ic('trophy')}${esc(x.titles[x.titles.length-1])}</div>`:''}
+        <div><h2>${esc(x.name)}</h2>${founderBadge(x)}<div class="muted" style="font-size:13px">${x.level}. szintű ${c.name.toLowerCase()}</div>${(x.titles||[]).length?`<div class="title-chip">${ic('trophy')}${esc(x.titles[x.titles.length-1])}</div>`:''}
         <div class="ins-meta">${x.rating!=null?`<span class="with-ic">${ic('trophy','ic-fame')}${x.rating} rangpont</span>`:''}${x.fame!=null?`<span class="with-ic">${ic('fame','ic-fame')}${x.fame} hírnév</span>`:''}${x.wins!=null?`<span>${x.wins} gy · ${x.losses} v</span>`:''}</div></div>
         <div class="wslot" ${w?'data-tip="ins:fegyver"':''}>${w?itemTile(w):emptyTile('fegyver')}<div><div class="label">Fegyver</div>${w?`<div class="item-name r${w.rar}">${esc(w.name)}</div>`:'<div class="muted">Üres</div>'}</div></div>
       </div>
@@ -3529,7 +3532,7 @@ function arenaBar(){ return `<div class="mg-bar" role="tablist">${[['arena','Ar�
 /* real players only: offline these are your own heroes on this device (the online build replaces this) */
 function realPlayers(){
   if(!ONLINE.playersAt||now()-ONLINE.playersAt>20000) setTimeout(loadPlayers,0);
-  const out=(ONLINE.all||[]).map(p=>{ const base={name:p.name,cls:p.cls,sex:p.sex||'m',level:p.level,score:p.rating};
+  const out=(ONLINE.all||[]).map(p=>{ const base={name:p.name,cls:p.cls,sex:p.sex||'m',level:p.level,score:p.rating,founder:!!(p.data&&p.data.founder)};
     if(p.id===state.cid) return {...base,key:'me',sex:sexLook(state),name:state.name,level:state.level,score:ONLINE.myRating??p.rating,me:true};
     if(p.user_id===ONLINE.user.id) return {...base,key:'c-'+p.id,duel:'c-'+p.id};
     return {...base,key:'p-'+p.id,pduel:p.id}; });
@@ -3546,7 +3549,7 @@ function renderRealLadder(){
   const L=realPlayers(), left=Math.max(0,state.arenaReadyAt-now());
   let html=`<section class="scene"><span class="label">${ic('trophy')}Népliget · eredményjelző tábla</span><h2>A város legjobbjai</h2><p>${REAL_NOTE}</p></section><section class="card"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('trophy')}Ranglétra</span><span class="note">${L.length} játékos</span></div><div class="ladder">`;
   if(!L.length) html+=`<p class="muted">Betöltés…</p>`;
-  L.forEach((p,i)=>{ html+=`<div class="lad-row rl-row ${p.me?'me':''}" role="button" tabindex="0" data-act="inspect" data-id="${p.key}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(artOf(p.cls,sexLook(p),p.name),'lad-port')}<span class="lad-name">${esc(p.name)}${p.me?' <em>te</em>':''}<small class="note">${p.level}. szint · ${CLASSES[p.cls]?CLASSES[p.cls].name:''}</small></span><span class="lad-lvl mono">${fmt(p.score)} <small>${REAL_SCORE_LABEL}</small></span>${p.me?'':`<button class="btn small ${left?'pog-btn':'primary'}" data-act="${p.pduel?'pduel':'duel'}" data-id="${p.pduel||p.duel}" ${left?`data-pog="1" ${(state.pog||0)<1?'disabled':''}`:''}>${left?pogIc()+'1':ic('fight')}</button>`}</div>`; });
+  L.forEach((p,i)=>{ html+=`<div class="lad-row rl-row ${p.me?'me':''}" role="button" tabindex="0" data-act="inspect" data-id="${p.key}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(artOf(p.cls,sexLook(p),p.name),'lad-port')}<span class="lad-name">${esc(p.name)}${founderBadge(p.founder||(p.data&&p.data.founder)||(p.me&&state.founder)?{founder:1}:null,true)}${p.me?' <em>te</em>':''}<small class="note">${p.level}. szint · ${CLASSES[p.cls]?CLASSES[p.cls].name:''}</small></span><span class="lad-lvl mono">${fmt(p.score)} <small>${REAL_SCORE_LABEL}</small></span>${p.me?'':`<button class="btn small ${left?'pog-btn':'primary'}" data-act="${p.pduel?'pduel':'duel'}" data-id="${p.pduel||p.duel}" ${left?`data-pog="1" ${(state.pog||0)<1?'disabled':''}`:''}>${left?pogIc()+'1':ic('fight')}</button>`}</div>`; });
   return html+`</div></section>`;
 }
 /* ================= leaderboard: players and guilds, with search ================= */
@@ -3566,7 +3569,7 @@ function rangPlayerRows(){ const L=realPlayers(), q=fold(RANG.q).trim(), left=Ma
   const hit=L.map((p,i)=>({p,i})).filter(({p})=>!q||fold(p.name).includes(q)||fold(CLASSES[p.cls]?CLASSES[p.cls].name:'').includes(q));
   if(!L.length) return `<p class="muted">Betöltés…</p>`;
   if(!hit.length) return `<p class="muted rang-none">Nincs „${esc(RANG.q)}” nevű játékos.</p>`;
-  return hit.slice(0,q?40:100).map(({p,i})=>`<div class="lad-row rl-row ${p.me?'me':''}" role="button" tabindex="0" data-act="inspect" data-id="${p.key}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(artOf(p.cls,sexLook(p),p.name),'lad-port')}<span class="lad-name">${esc(p.name)}${p.me?' <em>te</em>':''}<small class="note">${p.level}. szint · ${CLASSES[p.cls]?CLASSES[p.cls].name:''}</small></span><span class="lad-lvl mono">${fmt(p.score)} <small>${REAL_SCORE_LABEL}</small></span>${p.me?'':`<button class="btn small ${left?'pog-btn':'primary'}" data-act="${p.pduel?'pduel':'duel'}" data-id="${p.pduel||p.duel}" ${left?`data-pog="1" ${(state.pog||0)<1?'disabled':''}`:''} aria-label="Kihívás">${left?pogIc()+'1':ic('fight')}</button>`}</div>`).join(''); }
+  return hit.slice(0,q?40:100).map(({p,i})=>`<div class="lad-row rl-row ${p.me?'me':''}" role="button" tabindex="0" data-act="inspect" data-id="${p.key}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(artOf(p.cls,sexLook(p),p.name),'lad-port')}<span class="lad-name">${esc(p.name)}${founderBadge(p.founder||(p.data&&p.data.founder)||(p.me&&state.founder)?{founder:1}:null,true)}${p.me?' <em>te</em>':''}<small class="note">${p.level}. szint · ${CLASSES[p.cls]?CLASSES[p.cls].name:''}</small></span><span class="lad-lvl mono">${fmt(p.score)} <small>${REAL_SCORE_LABEL}</small></span>${p.me?'':`<button class="btn small ${left?'pog-btn':'primary'}" data-act="${p.pduel?'pduel':'duel'}" data-id="${p.pduel||p.duel}" ${left?`data-pog="1" ${(state.pog||0)<1?'disabled':''}`:''} aria-label="Kihívás">${left?pogIc()+'1':ic('fight')}</button>`}</div>`).join(''); }
 function rangGuildRows(){ const G=rankGuilds(), q=fold(RANG.q).trim();
   const hit=G.map((g,i)=>({g,i})).filter(({g})=>!q||fold(g.name).includes(q)||fold(g.leader).includes(q));
   if(!G.length) return `<p class="muted">${RANG_EMPTY_G}</p>`;
@@ -4661,7 +4664,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.11 13:17';
+const BUILD='2026.11.11 13:33';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
