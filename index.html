@@ -4659,7 +4659,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.10 20:46';
+const BUILD='2026.11.11 12:40';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -4673,6 +4673,7 @@ const SYNC={};   // cid -> rev the server had when we last read or wrote it
 const progressOf=d=>d?[d.rev||0,d.level||0,d.xp||0]:[0,0,0];
 function newerThan(a,b){ // true if save a went further than save b: level, then XP, then number of saves
   if(!a) return false; if(!b) return true;
+  const sa=(a.season||0)>=2, sb=(b.season||0)>=2; if(sa!==sb) return sa;   // a save from the new server always beats one from the old server
   if((a.level||0)!==(b.level||0)) return (a.level||0)>(b.level||0);
   if((a.xp||0)!==(b.xp||0)) return (a.xp||0)>(b.xp||0);
   return (a.rev||0)>(b.rev||0); }
@@ -4689,7 +4690,7 @@ async function pushChar(st){ if(!SB||!ONLINE.user||!st) return; const snap=JSON.
   try{
     const sv=await serverMeta(snap.cid);
     if(sv&&newerThan(sv,snap)&&(sv.rev||0)!==(SYNC[snap.cid]||0)){ const full=await serverCopy(snap.cid); if(full) adoptServer(full); return; }   // someone else went further: don't overwrite
-    if(sv){ const up=await SB.from('characters').update(fields).eq('id',snap.cid).select('id'); if(up.error){ if(/EJ_RETIRED/.test(up.error.message||'')){ toast('Elindult az új szerver! A hősöd az 1. szintről folytatja.'); setTimeout(()=>location.reload(),1800); return; } if(await nameClash(up.error,snap)) return; throw up.error; } }
+    if(sv){ const up=await SB.from('characters').update(fields).eq('id',snap.cid).select('id'); if(up.error){ if(/EJ_RETIRED/.test(up.error.message||'')){ const full=await serverCopy(snap.cid); if(full) adoptServer(full,'Elindult az új szerver! A hősöd az 1. szintről folytatja.'); return; } if(await nameClash(up.error,snap)) return; throw up.error; } }
     else { const ins=await SB.from('characters').insert({...fields,id:snap.cid,user_id:ONLINE.user.id}); if(ins.error){ if(/EJ_RETIRED/.test(ins.error.message||'')){ retiredHero(snap.cid); return; } if(await nameClash(ins.error,snap,true)) return; throw ins.error; } refRegister(snap.cid); setTimeout(giftClaim,1500); }
     SYNC[snap.cid]=snap.rev||0; ONLINE.saveErr=false;
   }catch(e){ console.warn('mentés hiba',e); if(!ONLINE.saveErr){ ONLINE.saveErr=true; toast('Nem sikerült menteni a szerverre. Ellenőrizd az internetet.'); } } }
