@@ -673,7 +673,8 @@ details.install-card ol{margin:10px 0 0;padding-left:20px;display:flex;flex-dire
 .scene.has-help{padding-right:44px}
 .help-btn{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(242,163,58,.7);background:rgba(19,20,31,.72);color:var(--sodium);font:700 16px/1 Rubik,system-ui,sans-serif;display:grid;place-items:center;cursor:pointer;z-index:3;backdrop-filter:blur(4px)}
 .founder-badge{display:inline-flex;align-items:center;gap:4px;margin:2px 0 4px;padding:3px 10px;border-radius:99px;font:800 12px/1.2 Rubik,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#1b1206;background:linear-gradient(180deg,#ffd98a,#f2a33a);box-shadow:0 0 12px rgba(242,163,58,.55)}
-.lad-name .founder-badge{align-self:flex-start;width:max-content;margin:2px 0}
+.lad-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.founder-a{display:inline-grid;place-items:center;width:17px;height:17px;margin-left:6px;border-radius:50%;vertical-align:1px;font:900 11px/1 Rubik,system-ui,sans-serif;color:#1b1206;background:linear-gradient(180deg,#ffd98a,#f2a33a);box-shadow:0 0 8px rgba(242,163,58,.6)}
 .founder-badge.sm{margin:0 0 0 6px;padding:1px 7px;font-size:10px;vertical-align:middle}
 .disband-row{display:flex;justify-content:center;margin:6px 0 10px}
 .linkbtn{color:var(--muted);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:4px 0;font:inherit;cursor:pointer}
@@ -3156,7 +3157,7 @@ function livePortrait(){ const art=artOf(state.cls,sexLook(state)), k=state.cls,
   const fx=Array.from({length:18},(_,i)=>`<i style="--x:${(8+rr(i,12.9)*84).toFixed(1)}%;--y:${(12+rr(i,3.7)*70).toFixed(1)}%;--d:${(2.6+rr(i,78.2)*2.4).toFixed(2)}s;--dl:${(-rr(i,39.4)*6).toFixed(2)}s;--dx:${Math.round((rr(i,5.1)-.5)*44)}px;--s:${(3+rr(i,9.7)*3.5).toFixed(1)}px"></i>`).join('');
   const sheen=`<defs><mask id="dlm" style="mask-type:alpha">${art}</mask><linearGradient id="dlg" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
   return `<div class="doll-live dl-${k}"><div class="doll-aura" aria-hidden="true"></div><div class="port doll-port">${svg(sheen+art+`<g mask="url(#dlm)" stroke="none"><g transform="rotate(20 32 32)"><rect class="dl-sheen" x="-40" y="-20" width="20" height="110" fill="url(#dlg)"/></g></g>`)}</div><div class="doll-fx" aria-hidden="true">${fx}</div></div>`; }
-function founderBadge(d,small){ return d&&d.founder?`<span class="founder-badge${small?' sm':''}" title="Alapító: az új szerver első hetében kezdett">★ Alapító</span>`:''; }
+function founderBadge(d,small){ if(!d||!d.founder) return ''; return small?`<b class="founder-a" title="Alapító" aria-label="Alapító">A</b>`:`<span class="founder-badge" title="Alapító: az új szerver első hetében kezdett">★ Alapító</span>`; }
 function renderKarakter(){
   const s=effStats(), f=playerFighter(), c=CLASSES[state.cls];
   const dslot=k=>{ const it=state.equip[k]; return `<div class="dslot" data-drop="slot:${k}" ${it?`data-tip="eq:${k}" data-drag="eq:${k}"`:''}>${it?itemTile(it):emptyTile(k)}<span class="dslot-l">${SLOT_NAME[k]}</span></div>`; };
@@ -3549,7 +3550,7 @@ function renderRealLadder(){
   const L=realPlayers(), left=Math.max(0,state.arenaReadyAt-now());
   let html=`<section class="scene"><span class="label">${ic('trophy')}Népliget · eredményjelző tábla</span><h2>A város legjobbjai</h2><p>${REAL_NOTE}</p></section><section class="card"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('trophy')}Ranglétra</span><span class="note">${L.length} játékos</span></div><div class="ladder">`;
   if(!L.length) html+=`<p class="muted">Betöltés…</p>`;
-  L.forEach((p,i)=>{ html+=`<div class="lad-row rl-row ${p.me?'me':''}" role="button" tabindex="0" data-act="inspect" data-id="${p.key}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(artOf(p.cls,sexLook(p),p.name),'lad-port')}<span class="lad-name">${esc(p.name)}${founderBadge(p.founder||(p.data&&p.data.founder)||(p.me&&state.founder)?{founder:1}:null,true)}${p.me?' <em>te</em>':''}<small class="note">${p.level}. szint · ${CLASSES[p.cls]?CLASSES[p.cls].name:''}</small></span><span class="lad-lvl mono">${fmt(p.score)} <small>${REAL_SCORE_LABEL}</small></span>${p.me?'':`<button class="btn small ${left?'pog-btn':'primary'}" data-act="${p.pduel?'pduel':'duel'}" data-id="${p.pduel||p.duel}" ${left?`data-pog="1" ${(state.pog||0)<1?'disabled':''}`:''}>${left?pogIc()+'1':ic('fight')}</button>`}</div>`; });
+  L.forEach((p,i)=>{ html+=`<div class="lad-row rl-row ${p.me?'me':''}" role="button" tabindex="0" data-act="inspect" data-id="${p.key}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(artOf(p.cls,sexLook(p),p.name),'lad-port')}<span class="lad-name"><span class="lad-nm">${esc(p.name)}${founderBadge(p.founder||(p.data&&p.data.founder)||(p.me&&state.founder)?{founder:1}:null,true)}${p.me?' <em>te</em>':''}</span><small class="note">${p.level}. szint · ${CLASSES[p.cls]?CLASSES[p.cls].name:''}</small></span><span class="lad-lvl mono">${fmt(p.score)} <small>${REAL_SCORE_LABEL}</small></span>${p.me?'':`<button class="btn small ${left?'pog-btn':'primary'}" data-act="${p.pduel?'pduel':'duel'}" data-id="${p.pduel||p.duel}" ${left?`data-pog="1" ${(state.pog||0)<1?'disabled':''}`:''}>${left?pogIc()+'1':ic('fight')}</button>`}</div>`; });
   return html+`</div></section>`;
 }
 /* ================= leaderboard: players and guilds, with search ================= */
@@ -3569,7 +3570,7 @@ function rangPlayerRows(){ const L=realPlayers(), q=fold(RANG.q).trim(), left=Ma
   const hit=L.map((p,i)=>({p,i})).filter(({p})=>!q||fold(p.name).includes(q)||fold(CLASSES[p.cls]?CLASSES[p.cls].name:'').includes(q));
   if(!L.length) return `<p class="muted">Betöltés…</p>`;
   if(!hit.length) return `<p class="muted rang-none">Nincs „${esc(RANG.q)}” nevű játékos.</p>`;
-  return hit.slice(0,q?40:100).map(({p,i})=>`<div class="lad-row rl-row ${p.me?'me':''}" role="button" tabindex="0" data-act="inspect" data-id="${p.key}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(artOf(p.cls,sexLook(p),p.name),'lad-port')}<span class="lad-name">${esc(p.name)}${founderBadge(p.founder||(p.data&&p.data.founder)||(p.me&&state.founder)?{founder:1}:null,true)}${p.me?' <em>te</em>':''}<small class="note">${p.level}. szint · ${CLASSES[p.cls]?CLASSES[p.cls].name:''}</small></span><span class="lad-lvl mono">${fmt(p.score)} <small>${REAL_SCORE_LABEL}</small></span>${p.me?'':`<button class="btn small ${left?'pog-btn':'primary'}" data-act="${p.pduel?'pduel':'duel'}" data-id="${p.pduel||p.duel}" ${left?`data-pog="1" ${(state.pog||0)<1?'disabled':''}`:''} aria-label="Kihívás">${left?pogIc()+'1':ic('fight')}</button>`}</div>`).join(''); }
+  return hit.slice(0,q?40:100).map(({p,i})=>`<div class="lad-row rl-row ${p.me?'me':''}" role="button" tabindex="0" data-act="inspect" data-id="${p.key}"><span class="lad-rank r${i<3?i+1:0}">${i+1}</span>${portrait(artOf(p.cls,sexLook(p),p.name),'lad-port')}<span class="lad-name"><span class="lad-nm">${esc(p.name)}${founderBadge(p.founder||(p.data&&p.data.founder)||(p.me&&state.founder)?{founder:1}:null,true)}${p.me?' <em>te</em>':''}</span><small class="note">${p.level}. szint · ${CLASSES[p.cls]?CLASSES[p.cls].name:''}</small></span><span class="lad-lvl mono">${fmt(p.score)} <small>${REAL_SCORE_LABEL}</small></span>${p.me?'':`<button class="btn small ${left?'pog-btn':'primary'}" data-act="${p.pduel?'pduel':'duel'}" data-id="${p.pduel||p.duel}" ${left?`data-pog="1" ${(state.pog||0)<1?'disabled':''}`:''} aria-label="Kihívás">${left?pogIc()+'1':ic('fight')}</button>`}</div>`).join(''); }
 function rangGuildRows(){ const G=rankGuilds(), q=fold(RANG.q).trim();
   const hit=G.map((g,i)=>({g,i})).filter(({g})=>!q||fold(g.name).includes(q)||fold(g.leader).includes(q));
   if(!G.length) return `<p class="muted">${RANG_EMPTY_G}</p>`;
@@ -4664,7 +4665,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.11 14:05';
+const BUILD='2026.11.11 14:08';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
