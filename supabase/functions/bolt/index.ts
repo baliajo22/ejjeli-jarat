@@ -8,6 +8,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 // a csomagok árát csak itt lehet megadni (a játék nem küldhet saját árat)
 export const PACKS = {
+  start: { pog: 40, gold: 3000, huf: 1490, once: true },   // kezdőcsomag: fiókonként egyszer
   p10:  { pog: 10,  huf: 1190 },
   p30:  { pog: 30,  huf: 2490 },
   p80:  { pog: 80,  huf: 5990 },
@@ -84,6 +85,11 @@ async function checkout(req) {
   }
   const pk = PACKS[b.pack];
   if (!pk) return J({ error: "Nincs ilyen csomag." }, 400);
+  if (pk.once) {
+    const { count: had } = await admin().from("purchases").select("id", { count: "exact", head: true })
+      .eq("user_id", user.id).eq("pack", b.pack).in("status", ["paid", "refunded", "disputed"]);
+    if ((had || 0) > 0) return J({ error: "A kezdőcsomagot már megvetted." }, 409);
+  }
   if (b.consent !== true) return J({ error: "A vásárláshoz el kell fogadnod a feltételeket." }, 400);
   const { data: ch } = await admin().from("characters").select("id,name,user_id,suspect").eq("id", String(b.char || "")).maybeSingle();
   if (!ch || ch.user_id !== user.id) return J({ error: "Ez a hős nem a tiéd." }, 403);
@@ -91,7 +97,8 @@ async function checkout(req) {
     .eq("user_id", user.id).gte("created_at", new Date(Date.now() - 3600e3).toISOString());
   if ((count || 0) >= MAX_OPEN_PER_HOUR) return J({ error: "Túl sok próbálkozás, próbáld újra egy óra múlva." }, 429);
   const en = b.lang === "en";
-  const name = en ? `${pk.pog} magic scones` : `${pk.pog} bűvös pogácsa`;
+  const name = pk.once ? (en ? `Starter pack: ${pk.pog} magic scones + ${pk.gold} Ft` : `Kezdőcsomag: ${pk.pog} bűvös pogácsa + ${pk.gold} Ft`)
+                       : (en ? `${pk.pog} magic scones` : `${pk.pog} bűvös pogácsa`);
   const s = await stripe("checkout/sessions", {
     mode: "payment",
     managed_payments: { enabled: true },
@@ -108,7 +115,7 @@ async function checkout(req) {
     cancel_url: SITE + "?fizetes=megse",
   });
   const { error: ie } = await admin().from("purchases").insert({
-    session_id: s.id, user_id: user.id, char_id: ch.id, char_name: ch.name, pack: b.pack, pog: pk.pog, amount: pk.huf, currency: "huf", livemode: !!s.livemode,
+    session_id: s.id, user_id: user.id, char_id: ch.id, char_name: ch.name, pack: b.pack, pog: pk.pog, gold: pk.gold || 0, amount: pk.huf, currency: "huf", livemode: !!s.livemode,
   });
   if (ie) throw ie;
   return J({ ok: true, url: s.url });

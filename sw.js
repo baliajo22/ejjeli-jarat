@@ -1,6 +1,6 @@
 // Éjjeli Járat service worker: the game always tries the network first, so updates arrive at once;
 // the cached copy is only used when the phone is offline.
-const CACHE='ejjeli-20261111-1408';
+const CACHE='ejjeli-20261112-1534';
 const SHELL=['./','./index.html','./config.js','./manifest.webmanifest','./icon-192.png','./icon-512.png',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js'];
 self.addEventListener('install',e=>{ self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL).catch(()=>{}))); });
