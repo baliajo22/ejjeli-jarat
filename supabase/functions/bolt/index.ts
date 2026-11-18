@@ -7,6 +7,9 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 // a csomagok árát csak itt lehet megadni (a játék nem küldhet saját árat)
+export const BF_END = Date.parse("2026-11-29T23:00:00Z");
+// Black Friday árak 2026.11.29 éjfélig (budapesti idő)
+export const BF_HUF: Record<string, number> = { p10: 950, p30: 1890, p80: 4290, p200: 9090 };
 export const PACKS = {
   start: { pog: 40, gold: 3000, huf: 1490, once: true },   // kezdőcsomag: fiókonként egyszer
   p10:  { pog: 10,  huf: 1190 },
@@ -83,7 +86,8 @@ async function checkout(req) {
     const allow = (Deno.env.get("STRIPE_TEST_USERS") || "").toLowerCase().split(",").map((x) => x.trim()).filter(Boolean);
     if (!allow.includes(String(user.email || "").toLowerCase())) return J({ error: "A pogácsabolt hamarosan nyílik." }, 403);
   }
-  const pk = PACKS[b.pack];
+  const pk0 = PACKS[b.pack];
+  const pk = pk0 && Date.now() < BF_END && BF_HUF[b.pack] ? { ...pk0, huf: BF_HUF[b.pack] } : pk0;
   if (!pk) return J({ error: "Nincs ilyen csomag." }, 400);
   if (pk.once) {
     const { count: had } = await admin().from("purchases").select("id", { count: "exact", head: true })
