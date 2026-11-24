@@ -3132,7 +3132,7 @@ function openAppHow(){ const ios=IS_IOS;
   <ol class="app-steps">${ios?'<li>Nyisd meg ezt az oldalt <b>Safariban</b>.</li><li>Koppints lent a <b>Megosztás</b> gombra (négyzet felfelé nyíllal).</li><li>Görgess le, és válaszd a <b>Főképernyőhöz adás</b> lehetőséget, majd a <b>Hozzáadás</b>t.</li><li>Ezután a főképernyőn lévő <b>Éjjeli Járat</b> ikonnal indítsd.</li>':'<li>Nyisd meg ezt az oldalt <b>Chrome</b>-ban.</li><li>Koppints a jobb felső <b>⋮</b> menüre.</li><li>Válaszd az <b>Alkalmazás telepítése</b> vagy a <b>Hozzáadás a kezdőképernyőhöz</b> pontot.</li><li>Ezután a kezdőképernyőn lévő <b>Éjjeli Járat</b> ikonnal indítsd.</li>'}</ol>
   <p class="muted" style="margin:0">A hősöd ugyanaz marad, csak jelentkezz be ugyanazzal az e-mail-címmel.</p>
   <button class="btn primary" data-act="closemg">Értem</button></div></div>`; }
-function addHelpBtn(){ addGuestBar(); addAppHint(); if(!state||!HELP[helpKey()]) return;
+function addHelpBtn(){ addGuestBar(); guestPingMaybe(); addAppHint(); if(!state||!HELP[helpKey()]) return;
   if(view==='karakter'){ const col=document.querySelectorAll('.doll .doll-col')[1]; if(col&&!col.querySelector('.help-btn')){ const b=document.createElement('button'); b.className='help-btn help-inline'; b.dataset.act='help'; b.setAttribute('aria-label',HT('Segítség','Help')); b.title=HT('Segítség','Help'); b.textContent='?'; col.appendChild(b); } return; }
   const host=$('main.wrap .scene')||$('main.wrap > section'); if(!host||host.querySelector('.help-btn')) return;
   host.classList.add('has-help'); const b=document.createElement('button'); b.className='help-btn'; b.dataset.act='help'; b.setAttribute('aria-label',HT('Segítség','Help')); b.title=HT('Segítség','Help'); b.textContent='?'; host.appendChild(b); }
@@ -5596,7 +5596,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.24 09:38';
+const BUILD='2026.11.24 13:11';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
@@ -5652,7 +5652,7 @@ async function pullRoster(){
 }
 /* other players: only what fights, profiles and guilds need (no bag, shop, quest or bot lists) -> ~5x less data */
 const PUB_SKIP=new Set(['inv','ladder','guildLadder','shop','quests','arena','bought','inbox','outbox']);
-const PUB_BASE=['home','founder','stats','equip','skills','guild','memberOf','sex','look','level','xp','rev','fame','wins','losses','vehicle','dungeons'];
+const PUB_BASE=['home','founder','stats','equip','skills','guild','memberOf','sex','look','level','xp','rev','fame','wins','losses','vehicle','dungeons','frame','deep'];
 function pubKeys(){ return [...new Set([...PUB_BASE,...Object.keys(state||{})])].filter(k=>!PUB_SKIP.has(k)&&/^[A-Za-z_][A-Za-z0-9_]*$/.test(k)); }
 function pubCols(keys){ return 'id,user_id,name,cls,level,rating,'+keys.map(k=>`j_${k}:data->${k}`).join(','); }
 function pubRow(r,keys){ if(r.data!==undefined) return r; const d={_pub:1}; let any=false;
@@ -6121,6 +6121,13 @@ function openGuestSave(why){ const n=state&&state.name;
   <p class="muted" style="margin:0">${lead}</p>
   <div class="perk" style="display:flex;flex-direction:column;gap:4px;font-size:14px"><span>✓ Valódi játékosok az arénában és céhek</span><span>✓ Minden eszközödön folytathatod</span>${founderOpen()?'<span>👑 <b>Alapító jelvény + 10 pogácsa</b> november 18-ig</span>':''}</div>
   <button class="btn primary" data-act="guestsave">Mentés: csak egy e-mail és jelszó</button><button class="btn small" data-act="closemg">Később</button></div></div>`; }
+function adSrc(){ try{ let v=localStorage.getItem('ej-src'); if(v==null){ const q=new URLSearchParams(location.search); v=(q.get('utm_content')||q.get('utm_source')||(document.referrer?new URL(document.referrer).hostname:'')||'').slice(0,40); localStorage.setItem('ej-src',v); } return v; }catch(e){ return ''; } }
+function guestId(){ try{ let g=localStorage.getItem('ej-gid'); if(!g){ g=(crypto.randomUUID?crypto.randomUUID():'10000000-1000-4000-8000-100000000000'.replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16))); localStorage.setItem('ej-gid',g); } return g; }catch(e){ return null; } }
+let GPING={at:0,lvl:0};
+function guestPing(saved){ const g=guestId(); if(!SB||!g) return; GPING.at=Date.now(); GPING.lvl=(state&&state.level)||1;
+  SB.rpc('guest_ping',{p_gid:g,p_lvl:GPING.lvl,p_lang:(typeof LANG!=='undefined'?LANG:'hu'),p_src:adSrc(),p_saved:!!saved}).then(r=>{ if(r&&r.error) console.warn('guest ping',r.error.message); },()=>{}); }
+function guestPingMaybe(){ if(!ONLINE.guest||ONLINE.user||!state) return; const l=state.level||1; if(Date.now()-GPING.at>10*60e3||l!==GPING.lvl) guestPing(false); }
+adSrc();
 function addGuestBar(){ if(!ONLINE.guest||ONLINE.user||!state) return; if(view!=='kocsma'&&view!=='karakter'&&view!=='arena'&&view!=='ceh') return;
   try{ if(Number(localStorage.getItem('ej-gnudge')||0)>Date.now()&&state.level<3) return; }catch(e){}
   const host=$('main.wrap'); if(!host||host.querySelector('.guest-bar')) return;
@@ -6142,6 +6149,7 @@ async function guestUpload(){ const r=readRoster(); let n=0;
     const ins=await SB.from('characters').insert({id:c.cid||id,user_id:ONLINE.user.id,name:c.name,cls:c.cls,level:c.level,data:c,updated_at:new Date().toISOString()});
     if(ins.error&&!/duplicate key|already exists|characters_pkey/i.test(ins.error.message||'')){ console.warn('guest upload',ins.error); c.guest=1; try{ localStorage.setItem(CHAR_PREFIX+id,JSON.stringify(c)); }catch(e){} toast('Nem sikerült feltölteni a hősödet, újrapróbáljuk.'); continue; }
     try{ localStorage.setItem(CHAR_PREFIX+id,JSON.stringify(c)); }catch(e){} SYNC[c.cid||id]=c.rev; n++; refRegister(c.cid||id); evt('guest_saved',{lvl:c.level}); }
+  if(n){ try{ if(localStorage.getItem('ej-gid')) guestPing(true); }catch(e){} }
   if(n){ const cur=(state&&state.cid&&readChar(state.cid))?state.cid:r.ids.find(id=>readChar(id)); try{ const rr=readRoster(); rr.current=cur||rr.current; writeRoster(rr); }catch(e){} if(state) delete state.guest; }
   ONLINE.guest=false; ONLINE.saveFlow=false; try{ localStorage.removeItem('ej-guest'); }catch(e){}
   if(n) toast(n>1?`${n} hősöd elmentve a fiókodba!`:'A hősöd elmentve a fiókodba!'); }
