@@ -3992,6 +3992,14 @@ const NEWS=[
     ['🖼️',HT('Portrékeretek','Portrait frames'),HT('Festett keretek pogácsáért a Karakter fülön, Panelszürkétől Az Éjszaka Királyáig. Mindenki látja: a ranglétrán, az arénában, harcban és a postában is. A Téli fagy limitált, csak december 1. és január 6. között vehető meg.','Painted frames for scones on the Character tab, from Panel Grey to King of the Night. Everyone sees it: on the ranking, in the arena, in fights and in the mail. Winter Frost is limited, only buyable between 1 December and 6 January.')],
     ['🛍️',HT('Black Friday Icánál','Black Friday at Ica\'s'),HT('A pogácsacsomagok 20–30% kedvezménnyel kaphatók november 29-ig.','Scone packs are 20–30% off until 29 November.')]]}
 ];
+// Karácsonyi bejegyzés: december 1-jétől kerül a lista elejére, és új azonosítója miatt mindenkinek feljön egyszer
+(function(){ try{ const b=(typeof budNow==='function'?budNow().b:new Date()); if(!(b.getFullYear()===2026&&b.getMonth()===11)&&!(b.getFullYear()===2027&&b.getMonth()===0&&b.getDate()<=6)) return; }catch(e){ return; }
+  NEWS.unshift({id:'2026-12-01-xmas',d:HT('december 1.','1 December'),items:[
+    ['🎄',HT('Karácsony az Éjjeli Járaton!','Christmas on the Night Line!'),HT('Havazik a városban: január 6-ig téli köntösbe öltözött az egész játék.','Snow is falling on the city: the whole game wears its winter coat until 6 January.')],
+    ['🎁',HT('Adventi naptár','Advent calendar'),HT('December 1-jétől 24-ig minden nap kinyithatsz egy ablakot a Kocsmában: pénz, XP, tárgyak, nyersanyag, és összesen 20 pogácsa. Ha lekéstél egy napot, december 26-ig 3 pogácsáért pótolhatod.','From 1 to 24 December you can open a window every day in the Tavern: money, XP, items, materials and 20 scones in total. Missed a day? Catch up for 3 scones until 26 December.')],
+    ['❄️',HT('Limitált Téli fagy keret','Limited Winter Frost frame'),HT('Csak január 6-ig vásárolható meg 80 pogácsáért a Karakter fülön, utána eltűnik a boltból.','Only available until 6 January for 80 scones on the Character tab, then it leaves the shop.')],
+    ['🎡',HT('Karácsonyi szerencsekerék','Christmas lucky wheel'),HT('Ica szerencsekereke is ünneplőbe öltözött: naponta egy ingyen pörgetés jár.','Ica\'s lucky wheel is dressed up for the holidays: one free spin every day.')]]});
+})();
 const NEWS_KEY='ej-news-hide';
 let NEWS_SHOWN=false;
 function newsHidden(){ try{ return localStorage.getItem(NEWS_KEY)===NEWS[0].id; }catch(e){ return false; } }
@@ -5610,7 +5618,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ if(e.
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nm'){ const b=$('#startbtn'); if(b&&!b.disabled) b.click(); } });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); } });
 /* ================= online (Supabase) ================= */
-const BUILD='2026.11.25 15:48';
+const BUILD='2026.11.25 16:20';
 const CFG=window.EJJELI_CONFIG||{};
 const SESSION_STORE=(()=>{ let keep=true; try{ keep=localStorage.getItem('ej-remember')!=='0'; }catch(e){} const st=keep?window.localStorage:window.sessionStorage;
   return {getItem:k=>{ try{ return st.getItem(k); }catch(e){ return null; } }, setItem:(k,v)=>{ try{ (localStorage.getItem('ej-remember')!=='0'?localStorage:sessionStorage).setItem(k,v); }catch(e){} }, removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }}; })();
