@@ -3569,7 +3569,7 @@ function deepFoe(f){ const boss=f%10===0, ej=DUNGEONS.find(d=>d.id===FINAL_ID), 
 function deepRows(L){ L=L.filter(x=>x.best>0||x.me); if(!L.some(x=>x.me)) L.push({key:'me',me:true,name:state.name,cls:state.cls,sex:sexLook(state),level:state.level,best:(state.deep&&state.deep.best)||0});
   L.sort((a,b)=>b.best-a.best||b.level-a.level); L.forEach((x,i)=>x.rank=i+1); const top=L.slice(0,20), me=L.find(x=>x.me); if(me&&me.rank>20) top.push(me); return top; }
 async function loadDeepBoard(){ if(!SB||!ONLINE.user||loadDeepBoard.busy) return; loadDeepBoard.busy=true;
-  try{ const q=c=>SB.from('characters').select(c).gt('level',99).limit(1000); let r=await q('id,user_id,name,cls,level,suspect,deep:data->deep,sex:data->sex,look:data->look');
+  try{ const q=c=>SB.from('characters').select(c).gt('level',DEEP_LVL-1).limit(1000); let r=await q('id,user_id,name,cls,level,suspect,deep:data->deep,sex:data->sex,look:data->look');
     if(r.error) r=await q('id,user_id,name,cls,level,deep:data->deep,sex:data->sex,look:data->look'); if(r.error) throw r.error;
     ONLINE.deep=(r.data||[]).filter(p=>!p.suspect||p.user_id===ONLINE.user.id); ONLINE.deepAt=now();
     if(view==='kazamata'&&kazTab==='deep'&&!battle) render(); }
