@@ -2598,7 +2598,8 @@ function guildCap(){ return 5+2*gUpg('klub'); }
 // no level cap: every level costs more forint, and from level 10 on pogácsa too
 function upgCost(l){ return Math.round(250*Math.pow(l+1,2)/10)*10; }
 function upgPog(l){ return l>=10?l-9:0; }
-function memberLevel(m){ if(m.real){ const d=realData(m.cid); return d?d.level:(m.lvl||1); } return Math.max(1,state.level+m.off); }
+function memberLevel(m,base){ if(m.real){ const d=realData(m.cid); return d?d.level:(m.lvl||1); } return botLvl(m,base); }
+function botLvl(m,base){ if(m.lvl==null||m.real){ const v=Math.max(1,(base||state.level)+(m.off||0)); if(!m.real&&(!base||base===state.level)&&state&&((state.guild&&state.guild.members.includes(m))||(state.guildLadder||[]).includes(m))) m.lvl=v; return v; } return m.lvl; }   // a gépi tagok és gépi céhek szintje rögzített: egyszer kap értéket, utána mindenhol ugyanaz   // a gépi tag a céh vezetőjéhez igazodik, nem a nézőhöz
 /* real players in a guild. Offline these are your other heroes on this device; the online build swaps in server data */
 function realData(cid){ if(!cid) return null; return listChars().find(c=>c.cid===cid)||null; }
 function memberFighter(m){ if(m.real){ const d=realData(m.cid); if(d&&d.stats){ const f=heroFighter(d); f.name=d.name; return f; } } const f=genFighter(m.name,memberLevel(m),.95,m.cls); f.art=artOf(m.cls,sexLook(m),m.name); return f; }
@@ -2642,7 +2643,7 @@ function renderMemberGuild(){
     <section class="card"><div class="row between" style="margin-bottom:8px"><span class="label">${ic('trophy')}Céhek ranglétrája</span><span class="note">${L.length} céh a városban</span></div><div class="ladder">${myI>=0?guildLadderRows(myI,L,g):'<p class="muted">A vezető még nem töltötte be a ranglétrát.</p>'}</div></section>`;
   const row=(n,cls,l,role,me,cid)=>`<div class="opp ${cid?'pl-row':''}"${pIns(cid)}>${portrait(artOf(cls,cid&&sexLook(realData(cid)||{}),n),frc(cid))}<div><div class="item-name">${esc(n)} <span class="role-tag ${role==='Vezető'?'lead':role==='Játékos'?'real':''}">${role}</span>${me?' <em class="me-tag">te</em>':''}</div><div class="item-stats"><span>${l}. szint · ${CLASSES[cls]?CLASSES[cls].name:''}</span></div></div></div>`;
   html+=gwStatusCards(true);
-  return html+`<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Tagok</span><span class="note mono">${g.members.length+1} fő</span></div>${row(leader.name,leader.cls,leader.level,'Vezető',false,state.memberOf.leaderCid)}${g.members.map(m=>m.real&&m.cid===state.cid?row(state.name,state.cls,state.level,'Játékos',true,state.cid):row(m.name,m.cls,memberLevel(m),m.real?'Játékos':'Tag',false,m.real?m.cid:null)).join('')}</section>
+  return html+`<section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Tagok</span><span class="note mono">${g.members.length+1} fő</span></div>${row(leader.name,leader.cls,leader.level,'Vezető',false,state.memberOf.leaderCid)}${g.members.map(m=>m.real&&m.cid===state.cid?row(state.name,state.cls,state.level,'Játékos',true,state.cid):row(m.name,m.cls,memberLevel(m,(realData(state.memberOf.leaderCid)||{}).level),m.real?'Játékos':'Tag',false,m.real?m.cid:null)).join('')}</section>
    <section class="card row between"><span class="note">Ha kilépsz, alapíthatsz saját céhet, vagy más meghívását is elfogadhatod.</span><button class="btn small" data-act="gleave">Kilépés</button></section>`;
 }
 function guildLevel(){ return 1+Object.values(state.guild.upg).reduce((a,b)=>a+b,0); }
@@ -4621,7 +4622,7 @@ function openGuildView(lc){
   const row=(n,cls,l,role,cid)=>`<div class="opp ${cid?'pl-row':''}"${pIns(cid)}>${portrait(artOf(cls,cid&&sexLook(realData(cid)||{}),n),frc(cid))}<div><div class="item-name">${esc(n)} <span class="role-tag ${role==='Vezető'?'lead':role==='Játékos'?'real':''}">${role}</span></div><div class="item-stats"><span>${l}. szint · ${CLASSES[cls]?CLASSES[cls].name:''}</span></div></div></div>`;
   $('#overlay-root').innerHTML=`<div class="overlay" data-act="closemg"><div class="mg-card gv-card" data-act="noop" role="dialog" aria-label="${esc(g.name)}"><button class="ins-x" data-act="closemg" aria-label="Bezárás">×</button>
     <span class="label">${ic('fame')}Céh</span>${gHead(g,{view:true,rank,ladLen:lad.length,treasury:g.treasury})}
-    <section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Tagok</span><span class="note mono">${g.members.length+1} fő</span></div>${row(L.name,L.cls,L.level,'Vezető',lc)}${g.members.map(m=>row(m.name,m.cls,m.real?((realData(m.cid)||{}).level||m.lvl||1):memberLevel(m),m.real?'Játékos':'Tag',m.real?m.cid:null)).join('')}</section>
+    <section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Tagok</span><span class="note mono">${g.members.length+1} fő</span></div>${row(L.name,L.cls,L.level,'Vezető',lc)}${g.members.map(m=>row(m.name,m.cls,m.real?((realData(m.cid)||{}).level||m.lvl||1):memberLevel(m,L.level),m.real?'Játékos':'Tag',m.real?m.cid:null)).join('')}</section>
   </div></div>`; }
 function gDescHtml(g,lead){
   if(lead&&GDESC_EDIT) return `<div class="g-desc edit"><textarea id="gdesc" maxlength="300" rows="3" placeholder="pl. Napi 3 küldetés kötelező. Kincstár +15% pénz, Edzőterem +12% XP. Aktív, magyar céh.">${esc(g.desc||'')}</textarea><div class="row between"><span class="note">Ezt látják azok is, akiket meghívsz.</span><span class="row" style="gap:6px"><button class="btn small" data-act="gdesccancel">Mégse</button><button class="btn small primary" data-act="gdescsave">Mentés</button></span></div></div>`;
@@ -4702,7 +4703,7 @@ function renderGuildWar(){
   let html=raid+gwStatusCards()+`
   <section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('fight')}Megtámadható céhek</span><span class="note">A harc 12 órával a hadüzenet után kezdődik</span></div>`;
   for(const j of tg){ const e=L[j];
-    html+=`<div class="opp"><div class="port g-mini">${svg(emblemSvg(e.emblem))}</div><div><div class="item-name"><span class="rank-tag">#${j+1}</span> ${esc(e.name)}</div><div class="item-stats"><span>${e.size} tag · kb. ${Math.max(1,state.level+e.off)}. szint</span><span>ti: ${g.members.length+1} fő</span></div></div>
+    html+=`<div class="opp"><div class="port g-mini">${svg(emblemSvg(e.emblem))}</div><div><div class="item-name"><span class="rank-tag">#${j+1}</span> ${esc(e.name)}</div><div class="item-stats"><span>${e.size} tag · ${botLvl(e)}. szint</span><span>ti: ${g.members.length+1} fő</span></div></div>
       ${atkBtn(e.id,e.id)}</div>`; }
   const RG=realGuilds();
   html+=`</section><section class="card"><div class="row between" style="margin-bottom:4px"><span class="label">${ic('user')}Játékosok céhei</span><span class="note">${RG.length?'Valódi játékosok, becsület szerint':''}</span></div>`;
@@ -5250,7 +5251,7 @@ async function gwDeclare(id){
   const g=state.guild; if(!g) return; if(gwPendingAtk()) return toast('Már van egy folyamatban lévő támadásotok.');
   const real=String(id).startsWith('r-'), L=state.guildLadder, e=real?realGuilds().find(x=>x.id===id):L.find(x=>x.id===id); if(!e) return;
   const key=real?e.lc:e.id; if(gwUnderAttack(key)) return toast('Ezt a céhet már megtámadta valaki. Várd meg, amíg lezajlik.');
-  const war={atk:{ch:state.cid,name:g.name,emblem:g.emblem},def:real?{ch:e.lc,name:e.name,emblem:e.emblem}:{ch:null,name:e.name,emblem:e.emblem,bot:{id:e.id,size:e.size,off:e.off,lvl:state.level}},
+  const war={atk:{ch:state.cid,name:g.name,emblem:g.emblem},def:real?{ch:e.lc,name:e.name,emblem:e.emblem}:{ch:null,name:e.name,emblem:e.emblem,bot:{id:e.id,size:e.size,off:0,lvl:botLvl(e)}},
     at:now(),starts:now()+GW_DELAY,status:'pending',signups:[]};
   const w=await gwInsert(war); if(!w) return;
   await gwSign(w,'a',true); GW.at=0; gwStale();
@@ -5270,10 +5271,10 @@ function gwHero(cid){ const d=cid===state.cid?state:realData(cid); if(!d||!d.sta
 function gwSide(ch,signCids,leaderSigned){ // real members who signed up + every bot member of that guild
   const L=ch===state.cid?state:realData(ch), g=L&&L.guild; const out=[];
   const cids=[...new Set(signCids)].filter(c=>memberWait(c,ch,gwAt||now())===0); for(const c of cids){ const f=gwHero(c); if(f) out.push(f); }
-  if(g) for(const m of g.members.filter(m=>!m.real)){ const f=genFighter(m.name,Math.max(1,(L.level||1)+(m.off||0)),.95,m.cls); f.artKey=m.cls; out.push(f); }
+  if(g) for(const m of g.members.filter(m=>!m.real)){ const f=genFighter(m.name,(m.lvl||Math.max(1,(L.level||1)+(m.off||0))),.95,m.cls); f.artKey=m.cls; out.push(f); }
   const boost=1+.02*(((g||{}).upg||{}).fegyver||0); out.forEach(f=>{ f.wMin=Math.round(f.wMin*boost); f.wMax=Math.round(f.wMax*boost); });
   return out.sort((a,b)=>a.level-b.level); }
-function gwBots(bot){ return Array.from({length:bot.size},()=>{ const c=pick(Object.keys(CLASSES)), f=genFighter(`${pick(EPI)} ${pick(FIRST)}`,Math.max(1,bot.lvl+bot.off+rand(-2,1)),.95,c); f.artKey=c; return f; }).sort((a,b)=>a.level-b.level); }
+function gwBots(bot){ return Array.from({length:bot.size},()=>{ const c=pick(Object.keys(CLASSES)), f=genFighter(`${pick(EPI)} ${pick(FIRST)}`,Math.max(1,bot.lvl+bot.off),.95,c); f.artKey=c; return f; }).sort((a,b)=>a.level-b.level); }
 function gwRelay(A,D){ const duels=[]; if(!A.length||!D.length) return duels; let i=0,j=0,ha=A[0].hp,hb=D[0].hp;
   while(i<A.length&&j<D.length){ const a=A[i], b=D[j], r=simulate({...a,hp:ha,maxHp:a.hp},{...b,hp:hb,maxHp:b.hp}), last=r.log[r.log.length-1]||{hA:ha,hB:hb};
     const ea=r.win?Math.max(1,last.hA):0, eb=r.win?0:Math.max(1,last.hB); duels.push({a,b,win:r.win,aFrom:ha,aTo:ea,bFrom:hb,bTo:eb,res:r});
@@ -5320,7 +5321,7 @@ function gwReplay(id){ const w=GW.wars.find(x=>String(x.id)===String(id)); if(!w
 
 /* ---- UI ---- */
 function gwRoster(w,side){ const S=(w.signups||[]).filter(s=>s.side===side), ch=side==='a'?w.atk.ch:w.def.ch, L=ch?(ch===state.cid?state:realData(ch)):null;
-  const botM=L&&L.guild?L.guild.members.filter(m=>!m.real).map(m=>({name:m.name,cls:m.cls,level:Math.max(1,(L.level||1)+(m.off||0))})):[];
+  const botM=L&&L.guild?L.guild.members.filter(m=>!m.real).map(m=>({name:m.name,cls:m.cls,level:(m.lvl||Math.max(1,(L.level||1)+(m.off||0)))})):[];
   const bots=botM.length?botM.map(m=>m.level):(side==='d'&&w.def.bot?Array.from({length:w.def.bot.size},()=>Math.max(1,w.def.bot.lvl+w.def.bot.off)):[]);
   const lv=[...S.map(s=>s.level||1),...bots], n=lv.length, sum=lv.reduce((a,b)=>a+b,0);
   const list=S.map(s=>`<span class="gw-sg pl-row ${s.cid===state.cid?'me':''}"${pIns(s.cid)}>${portrait(artOf(s.cls,s.sex,s.name),frc(s.cid))}<span>${esc(s.name)}</span><small class="mono">${s.level}.</small></span>`).join('');
@@ -5350,7 +5351,7 @@ function doGuildWar(id,pay){
   if(g.readyAt>now()&&!(pay&&spendPog(1))) return;
   const boost=1+.02*gUpg('fegyver'), buff=f=>{ f.wMin=Math.round(f.wMin*boost); f.wMax=Math.round(f.wMax*boost); return f; };
   const mine=[buff({...playerFighter()}),...g.members.map(m=>buff(memberFighter(m)))].sort((a,b)=>a.level-b.level);
-  const theirs=real?realGuildFighters(e.lc).sort((a,b)=>a.level-b.level):Array.from({length:e.size},()=>{ const c=pick(Object.keys(CLASSES)), f=genFighter(`${pick(EPI)} ${pick(FIRST)}`,Math.max(1,state.level+e.off+rand(-2,1)),.95,c); f.art=artOf(c,null,f.name); return f; }).sort((a,b)=>a.level-b.level);
+  const theirs=real?realGuildFighters(e.lc).sort((a,b)=>a.level-b.level):Array.from({length:e.size},()=>{ const c=pick(Object.keys(CLASSES)), f=genFighter(`${pick(EPI)} ${pick(FIRST)}`,botLvl(e),.95,c); f.art=artOf(c,null,f.name); return f; }).sort((a,b)=>a.level-b.level);
   // relay: the winner fights on with whatever life is left, until someone knocks them out
   const duels=[]; let i=0,j=0,ha=mine[0].hp,hb=theirs[0]?theirs[0].hp:0;
   while(i<mine.length&&j<theirs.length){ const a=mine[i], b=theirs[j], r=simulate({...a,hp:ha,maxHp:a.hp},{...b,hp:hb,maxHp:b.hp}), last=r.log[r.log.length-1]||{hA:ha,hB:hb};
