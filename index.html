@@ -5818,7 +5818,8 @@ async function donateToGuild(a,cur='ft'){ const mo=state.memberOf, L=(ONLINE.all
   try{ await flushCloud();
     const {data,error}=await SB.from('guild_donations').insert({from_char:state.cid,from_user:ONLINE.user.id,from_name:state.name,leader_char:mo.leaderCid,leader_user:L.user_id,amount:a,currency:cur}).select('*');
     if(error){ console.warn(error); return toast(/relation|does not exist|schema cache|guild_donations/i.test(error.message||'')?'A befizetéshez frissíteni kell az adatbázist (guild_donations tábla).':srvMsg(error,'Nem sikerült befizetni, próbáld újra.')); }
-    if(cur==='pog') state.pog-=a; else state.gold-=a; if(data&&data.length) GDON.rows=(GDON.rows||[]).concat(data); else GI.myDon.push({leader_char:mo.leaderCid,from_char:state.cid,amount:a,currency:cur,local:true}); GDON.at=now(); save(); render(); sfx('coins'); toast(cur==='pog'?`+${a} pogácsa a céh kasszájába. Köszi!`:`+${fmt(a)} Ft a céh kasszájába. Köszi!`);
+    if(cur==='pog') state.pog-=a; else { state.gold-=a; track('donate',a); }   // a napi „Fizess be a céhbe” feladat a tagoknál is számoljon
+    if(data&&data.length) GDON.rows=(GDON.rows||[]).concat(data); else GI.myDon.push({leader_char:mo.leaderCid,from_char:state.cid,amount:a,currency:cur,local:true}); GDON.at=now(); save(); render(); sfx('coins'); toast(cur==='pog'?`+${a} pogácsa a céh kasszájába. Köszi!`:`+${fmt(a)} Ft a céh kasszájába. Köszi!`);
   } finally{ GI.donBusy=false; } }
 function onKickReal(m){ SB.from('guild_invites').delete().eq('from_char',state.cid).eq('to_char',m.cid).then(()=>{}); }
 async function leaveGuild(){ const mo=state.memberOf; state.memberOf=null; save(); render(); toast('Kiléptél a céhből.');
